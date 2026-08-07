@@ -1,0 +1,314 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply min-h-svh bg-background font-sans text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .mesh-surface {
+    --mesh-x: 50%;
+    --mesh-y: 50%;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+    border-radius: calc(var(--radius) * 2.4);
+    background: color-mix(in oklch, var(--background) 93%, var(--muted));
+  }
+
+  .mesh-surface.mesh-page {
+    min-height: 100svh;
+    border: 0;
+    border-radius: 0;
+    background: var(--background);
+  }
+
+  .mesh-visual {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0.72;
+    transition: opacity 500ms ease;
+  }
+
+  .mesh-surface:hover .mesh-visual {
+    opacity: 0.92;
+  }
+
+  .mesh-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle 15rem at var(--mesh-x) var(--mesh-y),
+      oklch(0.72 0.14 250 / 0.18),
+      transparent 70%
+    );
+    transition: opacity 300ms ease;
+  }
+
+  .mesh-orb {
+    position: absolute;
+    width: 22rem;
+    height: 22rem;
+    border-radius: 42% 58% 64% 36% / 44% 38% 62% 56%;
+    filter: blur(52px);
+    opacity: 0.2;
+    will-change: transform;
+  }
+
+  .mesh-page .mesh-orb {
+    width: min(38rem, 72vw);
+    height: min(38rem, 72vw);
+  }
+
+  .mesh-orb-one {
+    top: -12rem;
+    left: -7rem;
+    background: oklch(0.7 0.17 265);
+    animation: mesh-drift-one 13s ease-in-out infinite alternate;
+  }
+
+  .mesh-orb-two {
+    right: -9rem;
+    bottom: -13rem;
+    background: oklch(0.76 0.14 190);
+    animation: mesh-drift-two 16s ease-in-out infinite alternate;
+  }
+
+  .mesh-orb-three {
+    top: 18%;
+    left: 43%;
+    width: 16rem;
+    height: 16rem;
+    background: oklch(0.75 0.15 325);
+    opacity: 0.12;
+    animation: mesh-drift-three 11s ease-in-out infinite alternate;
+  }
+
+  .mesh-waves {
+    position: absolute;
+    inset: -35%;
+    background-image:
+      linear-gradient(oklch(0.55 0.08 255 / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.55 0.08 255 / 0.07) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse at center, black, transparent 67%);
+    transform: perspective(500px) rotateX(58deg) rotateZ(-8deg) translateY(5%);
+    animation: mesh-wave 14s ease-in-out infinite alternate;
+  }
+
+  .mesh-surface:hover .mesh-orb {
+    filter: blur(46px);
+  }
+
+  .scroll-assemble {
+    --assemble-delay: 0ms;
+    position: relative;
+  }
+
+  .scroll-assemble-content {
+    height: 100%;
+    will-change: transform, opacity, filter;
+    transition:
+      opacity 850ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--assemble-delay),
+      transform 950ms cubic-bezier(0.16, 1, 0.3, 1) var(--assemble-delay),
+      filter 800ms ease var(--assemble-delay);
+  }
+
+  .scroll-assemble[data-assembled="false"] .scroll-assemble-content {
+    opacity: 0.06;
+    filter: blur(12px) saturate(0.35);
+    transform: translate3d(0, 42px, 0) scale(0.965);
+  }
+
+  .scroll-assemble[data-assembled="true"] .scroll-assemble-content {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .scroll-assemble-particles {
+    pointer-events: none;
+    position: absolute;
+    inset: -3rem;
+    z-index: 20;
+    overflow: hidden;
+  }
+
+  .scroll-assemble-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--primary) 72%, transparent);
+    box-shadow: 0 0 12px color-mix(in oklch, var(--primary) 38%, transparent);
+    will-change: transform, opacity;
+    transition:
+      opacity 460ms ease calc(var(--assemble-delay) + var(--particle-delay)),
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1)
+        calc(var(--assemble-delay) + var(--particle-delay)),
+      filter 650ms ease calc(var(--assemble-delay) + var(--particle-delay));
+  }
+
+  .scroll-assemble[data-assembled="false"] .scroll-assemble-particle {
+    opacity: 0.72;
+    filter: blur(0);
+    transform: translate3d(var(--particle-x), var(--particle-y), 0) scale(0.65);
+  }
+
+  .scroll-assemble[data-assembled="true"] .scroll-assemble-particle {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translate3d(0, 0, 0) scale(1.8);
+  }
+}
+
+@keyframes mesh-drift-one {
+  to {
+    transform: translate3d(30%, 22%, 0) rotate(18deg) scale(1.08);
+  }
+}
+
+@keyframes mesh-drift-two {
+  to {
+    transform: translate3d(-24%, -18%, 0) rotate(-14deg) scale(1.12);
+  }
+}
+
+@keyframes mesh-drift-three {
+  to {
+    transform: translate3d(-22%, 28%, 0) rotate(22deg) scale(0.9);
+  }
+}
+
+@keyframes mesh-wave {
+  to {
+    transform: perspective(500px) rotateX(62deg) rotateZ(-4deg) translate3d(2%, -2%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-orb,
+  .mesh-waves {
+    animation: none;
+  }
+
+  .scroll-assemble-content {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .scroll-assemble-particles {
+    display: none;
+  }
+}
