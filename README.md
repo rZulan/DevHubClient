@@ -30,6 +30,10 @@ During local development, Vite proxies `/api` to `https://localhost:7116`. Start
 the DevHub API's HTTPS profile before starting the frontend. The proxy keeps the
 browser requests same-origin and accepts the local ASP.NET development certificate.
 
+Usernames use X-style handle syntax: 5-15 ASCII letters, numbers, or underscores.
+The displayed `@` prefix is not part of the stored username, and handles are unique
+without regard to letter casing.
+
 ## Project structure
 
 ```text

@@ -18,6 +18,13 @@ import { Label } from "@/components/ui/label"
 import { OAuthProviderButtons } from "@/components/oauth-provider-buttons"
 import { getApiErrorMessage } from "@/features/auth/api-error"
 import { acceptAuthentication } from "@/features/auth/auth-session"
+import {
+  getUsernameValidationError,
+  USERNAME_HELP_TEXT,
+  USERNAME_INPUT_PATTERN,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+} from "@/features/auth/username-policy"
 import { useRegisterMutation } from "@/services/api"
 
 export function RegisterPage() {
@@ -31,6 +38,13 @@ export function RegisterPage() {
     setErrorMessage(null)
 
     const formData = new FormData(event.currentTarget)
+    const username = String(formData.get("username")).trim()
+    const usernameError = getUsernameValidationError(username)
+
+    if (usernameError) {
+      setErrorMessage(usernameError)
+      return
+    }
 
     try {
       const response = await register({
@@ -38,6 +52,7 @@ export function RegisterPage() {
         firstName: String(formData.get("firstName")),
         lastName: String(formData.get("lastName")),
         password: String(formData.get("password")),
+        username,
       }).unwrap()
 
       acceptAuthentication(dispatch, response)
@@ -84,6 +99,32 @@ export function RegisterPage() {
                 required
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
+                @
+              </span>
+              <Input
+                aria-describedby="username-help"
+                autoCapitalize="none"
+                autoComplete="username"
+                className="pl-8"
+                id="username"
+                maxLength={USERNAME_MAX_LENGTH}
+                minLength={USERNAME_MIN_LENGTH}
+                name="username"
+                pattern={USERNAME_INPUT_PATTERN}
+                placeholder="developer_01"
+                required
+                spellCheck={false}
+                title={USERNAME_HELP_TEXT}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground" id="username-help">
+              {USERNAME_HELP_TEXT}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
