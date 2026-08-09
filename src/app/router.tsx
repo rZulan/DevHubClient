@@ -11,9 +11,9 @@ import { ProtectedLayout } from "@/features/auth/protected-layout"
 import { RootLayout } from "@/layouts/root-layout"
 import { AccountLayout } from "@/pages/account-layout"
 import { AccountPage } from "@/pages/account-page"
-import { AboutPage } from "@/pages/about-page"
 import { BillingPage } from "@/pages/billing-page"
 import { DisplayPage } from "@/pages/display-page"
+import { DiscoveryPage } from "@/pages/discovery-page"
 import { HomePage } from "@/pages/home-page"
 import { LoginPage } from "@/pages/login-page"
 import { NotFoundPage } from "@/pages/not-found-page"
@@ -29,7 +29,7 @@ export const router = createBrowserRouter([
     HydrateFallback: RouterFallback,
     children: [
       { index: true, Component: HomePage },
-      { path: "about", Component: AboutPage },
+      { path: "discovery", Component: DiscoveryPage },
       {
         loader: anonymousOnlyLoader,
         children: [

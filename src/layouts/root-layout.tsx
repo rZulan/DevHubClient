@@ -1,5 +1,5 @@
 import { Code2 } from "lucide-react"
-import { Link, NavLink, Outlet } from "react-router-dom"
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom"
 
 import { useAppSelector } from "@/app/hooks"
 import { AppFooter } from "@/components/app-footer"
@@ -11,15 +11,17 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "Home", to: "/" },
-  { label: "About", to: "/about" },
+  { label: "Discovery", to: "/discovery" },
 ]
 
 export function RootLayout() {
   const user = useAppSelector((state) => state.auth.user)
+  const location = useLocation()
+  const isDiscovery = location.pathname === "/discovery"
 
   return (
     <MeshSurface className="mesh-page" contentClassName="flex min-h-svh flex-col">
-      <header className="border-b bg-background/95 backdrop-blur">
+      {!isDiscovery && <header className="border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
           <Link className="flex items-center gap-2 font-semibold" to="/">
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -58,11 +60,16 @@ export function RootLayout() {
             )}
           </div>
         </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
+      </header>}
+      <main
+        className={cn(
+          "mx-auto w-full flex-1",
+          isDiscovery ? "max-w-none" : "max-w-5xl px-4 py-12 sm:py-16",
+        )}
+      >
         <Outlet />
       </main>
-      <AppFooter />
+      {!isDiscovery && <AppFooter />}
     </MeshSurface>
   )
 }

@@ -112,6 +112,28 @@
 }
 
 @layer components {
+  .discovery-flight { --flight-duration: 16s; position: relative; height: 100svh; min-height: 34rem; overflow: hidden; isolation: isolate; background: #03040d; perspective: 750px; }
+  .discovery-stars { position: absolute; inset: 0; pointer-events: none; background: url("/discovery-stars.svg") center / cover no-repeat; opacity: .82; }
+  .discovery-aurora { position: absolute; inset: 8% 15%; border-radius: 50%; background: radial-gradient(ellipse, rgba(43, 93, 209, .22), transparent 63%); filter: blur(30px); pointer-events: none; }
+  .discovery-forward-mesh { position: absolute; z-index: 1; right: 0; bottom: -5%; left: 0; height: 82%; overflow: hidden; pointer-events: none; opacity: .54; mask-image: linear-gradient(to bottom, transparent 0%, transparent 24%, rgba(0,0,0,.15) 37%, rgba(0,0,0,.8) 62%, black 100%); }
+  .discovery-forward-mesh::before, .discovery-forward-mesh::after { position: absolute; inset: 0; content: ""; transform-origin: 50% 8%; }
+  .discovery-forward-mesh::before { background: repeating-conic-gradient(from 180deg at 50% 8%, transparent 0deg 4.9deg, rgba(103,232,249,.2) 5deg 5.07deg, transparent 5.14deg 9.8deg); }
+  .discovery-forward-mesh::after { background: repeating-linear-gradient(to bottom, transparent 0 3.4rem, rgba(103,232,249,.24) 3.4rem 3.58rem, transparent 3.58rem 6.8rem); animation: discovery-mesh-forward var(--flight-duration) linear infinite; }
+  .discovery-copy { position: relative; z-index: 4; padding: 2.5rem max(1.25rem, calc((100% - 64rem) / 2)); color: white; pointer-events: none; }
+  .discovery-copy h1 { margin-top: .5rem; font-size: clamp(1.875rem, 4vw, 2.5rem); font-weight: 650; letter-spacing: -.04em; }
+  .discovery-copy > p:last-child { margin-top: .45rem; color: rgb(203 213 225); font-size: .925rem; }
+  .discovery-kicker { color: rgb(103 232 249); font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .discovery-speed-control { position: absolute; z-index: 5; right: clamp(1rem, 4vw, 3rem); top: 2.5rem; width: 10rem; border: 1px solid rgba(255,255,255,.14); border-radius: .85rem; background: rgba(8, 13, 35, .68); padding: .7rem .8rem; color: #e0f2fe; backdrop-filter: blur(14px); }
+  .discovery-speed-control span { display: flex; align-items: center; gap: .35rem; font-size: .72rem; white-space: nowrap; }
+  .discovery-speed-control b { margin-left: auto; color: #67e8f9; font-weight: 600; }
+  .discovery-speed-control input { margin-top: .65rem; width: 100%; accent-color: #67e8f9; }
+  .discovery-back { position: absolute; z-index: 5; left: clamp(1rem, 4vw, 3rem); bottom: 2rem; display: inline-flex; align-items: center; gap: .45rem; border: 1px solid rgba(255,255,255,.14); border-radius: .65rem; background: rgba(8,13,35,.68); padding: .55rem .75rem; color: #e0f2fe; font-size: .8rem; backdrop-filter: blur(14px); transition: border-color .2s ease, background .2s ease; }
+  .discovery-back:hover { border-color: rgba(103,232,249,.55); background: rgba(14, 27, 61, .85); }
+  .discovery-traveler { position: absolute; z-index: 2; left: 50%; top: 55%; cursor: grab; touch-action: none; animation: discovery-flyby calc(var(--flight-duration) * var(--travel-duration)) linear var(--travel-delay) infinite; will-change: transform, opacity; }
+  .discovery-traveler:active { cursor: grabbing; }
+  .discovery-traveler-avatar { display: flex; width: 3.5rem; height: 3.5rem; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,.72); border-radius: 999px; box-shadow: 0 0 24px rgba(103,232,249,.35); color: white; font-size: .85rem; font-weight: 700; }
+  .discovery-pilot { position: absolute; z-index: 4; left: 50%; bottom: 7%; display: flex; width: 10rem; cursor: grab; touch-action: none; transform: translate(calc(-50% + var(--pilot-drag-x)), var(--pilot-drag-y)); flex-direction: column; align-items: center; }
+  .discovery-pilot:active { cursor: grabbing; }
   .mesh-surface {
     --mesh-x: 50%;
     --mesh-y: 50%;
@@ -277,6 +299,24 @@
   }
 }
 
+@keyframes discovery-warp {
+  from { transform: scale(.5); opacity: .08; }
+  to { transform: scale(1.6); opacity: .65; }
+}
+
+
+@keyframes discovery-flyby {
+  0% { opacity: 0; transform: translate(-50%, -50%) translate3d(calc(var(--travel-start-x) + var(--travel-drag-x)), calc(var(--travel-start-y) + var(--travel-drag-y)), -650px) scale(.08); }
+  8% { opacity: .9; }
+  62% { opacity: 1; }
+  88% { opacity: .75; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate3d(calc(var(--travel-end-x) + var(--travel-drag-x)), calc(var(--travel-end-y) + var(--travel-drag-y)), 380px) scale(3.8); }
+}
+
+@keyframes discovery-mesh-forward {
+  to { background-position: 0 6.8rem; }
+}
+
 @keyframes mesh-drift-two {
   to {
     transform: translate3d(-24%, -18%, 0) rotate(-14deg) scale(1.12);
@@ -297,7 +337,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mesh-orb,
-  .mesh-waves {
+  .mesh-waves,
+  .discovery-traveler,
+  .discovery-forward-mesh::after {
     animation: none;
   }
 

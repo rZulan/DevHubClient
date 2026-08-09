@@ -3,7 +3,6 @@ import { Link } from "react-router-dom"
 
 const footerLinks = [
   { label: "Home", to: "/" },
-  { label: "About", to: "/about" },
   { label: "Account", to: "/account/profile" },
 ]
 

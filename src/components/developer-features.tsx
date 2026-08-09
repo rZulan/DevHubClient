@@ -1,5 +1,4 @@
 import {
-  ArrowUpRight,
   Activity,
   Boxes,
   Braces,
@@ -16,10 +15,8 @@ import {
   Users,
 } from "lucide-react"
 import type { ReactNode } from "react"
-import { Link } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ScrollAssemble } from "@/components/scroll-assemble"
 import { cn } from "@/lib/utils"
 
@@ -79,7 +76,6 @@ export function DeveloperFeatures() {
           <FeaturePanel
             eyebrow="Type-safe from end to end"
             title="Move from API contract to interface with confidence."
-            to="/about"
           >
             <CodePreview />
           </FeaturePanel>
@@ -89,7 +85,6 @@ export function DeveloperFeatures() {
           <FeaturePanel
             eyebrow="Authentication included"
             title="Keep sessions secure without slowing users down."
-            to="/account/account"
           >
             <AuthenticationPreview />
           </FeaturePanel>
@@ -99,7 +94,6 @@ export function DeveloperFeatures() {
           <FeaturePanel
           eyebrow="A stack that works together"
           title="Spend your time building features—not wiring tools."
-          to="/about"
         >
             <ToolchainPreview />
           </FeaturePanel>
@@ -157,13 +151,11 @@ function FeaturePanel({
   className,
   eyebrow,
   title,
-  to,
 }: {
   children: ReactNode
   className?: string
   eyebrow: string
   title: string
-  to: string
 }) {
   return (
     <article
@@ -179,15 +171,6 @@ function FeaturePanel({
             {title}
           </h3>
         </div>
-        <Button
-          asChild
-          className="mt-1 shrink-0 rounded-full transition-transform group-hover:rotate-12"
-          size="icon"
-        >
-          <Link aria-label={`Learn more: ${title}`} to={to}>
-            <ArrowUpRight />
-          </Link>
-        </Button>
       </div>
       {children}
     </article>
