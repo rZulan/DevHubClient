@@ -1,12 +1,12 @@
 import { useState } from "react"
 import { Eye, EyeOff, KeyRound, Link2 } from "lucide-react"
-import { useRouteLoaderData } from "react-router-dom"
 
+import { useAppSelector } from "@/app/hooks"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import type { AuthUser, ConnectedAccount } from "@/features/auth/auth-types"
+import type { ConnectedAccount } from "@/features/auth/auth-types"
 import {
   isOAuthEnabled,
   oauthApiBaseUrl,
@@ -16,18 +16,13 @@ import { useSignOut } from "@/features/auth/use-sign-out"
 import { useDisconnectExternalAccountMutation } from "@/services/api"
 
 export function AccountPage() {
-  const user = useRouteLoaderData("account") as AuthUser
+  const user = useAppSelector((state) => state.auth.user)
   const { isSigningOut, signOut } = useSignOut()
+
+  if (!user) return null
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Account</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage authentication, identity, and connected providers.
-        </p>
-      </div>
-
       <Card className="bg-card/85 backdrop-blur-xl dark:bg-card/80">
         <CardHeader className="flex-row items-center justify-between">
           <div>

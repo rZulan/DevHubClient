@@ -12,6 +12,7 @@ export type AuthUser = {
   lastName: string
   createdAtUtc?: string
   username?: string
+  dateOfBirth?: string | null
   avatarUrl?: string
   connectedAccounts?: ConnectedAccount[]
 }
@@ -22,6 +23,7 @@ export type AuthenticationResponse = {
   firstName: string
   lastName: string
   username?: string
+  dateOfBirth?: string | null
   avatarUrl?: string
   connectedAccounts?: ConnectedAccount[]
   accessToken: string
@@ -48,6 +50,7 @@ export type UpdateProfileRequest = {
   username: string
   firstName: string
   lastName: string
+  dateOfBirth: string | null
 }
 
 export type ApiProblemDetails = {

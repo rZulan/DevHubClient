@@ -34,6 +34,7 @@ const authSlice = createSlice({
         firstName: response.firstName,
         lastName: response.lastName,
         username: response.username,
+        dateOfBirth: response.dateOfBirth,
         avatarUrl: response.avatarUrl,
         connectedAccounts: response.connectedAccounts,
       }

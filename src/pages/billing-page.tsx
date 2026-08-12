@@ -13,13 +13,6 @@ const includedFeatures = [
 export function BillingPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Billing</h2>
-        <p className="text-sm text-muted-foreground">
-          Plans, invoices, and payment methods will live here.
-        </p>
-      </div>
-
       <Card className="bg-card/85 backdrop-blur-xl dark:bg-card/80">
         <CardHeader className="flex-row items-start justify-between">
           <div className="space-y-2">

@@ -1,9 +1,11 @@
 import {
   ChevronDown,
   CircleUserRound,
+  CreditCard,
   LogOut,
   Monitor,
   Moon,
+  Palette,
   ShieldCheck,
   Sun,
 } from "lucide-react"
@@ -74,6 +76,18 @@ export function UserMenu({ user }: { user: AuthUser }) {
           <Link to="/account/account">
             <ShieldCheck />
             Account
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="py-2">
+          <Link to="/account/display">
+            <Palette />
+            Display
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="py-2">
+          <Link to="/account/billing">
+            <CreditCard />
+            Billing
           </Link>
         </DropdownMenuItem>
 

@@ -76,8 +76,16 @@ async function requireUser(request: Request): Promise<AuthUser> {
 
   if (!user) {
     const url = new URL(request.url)
-    const requestedPath = `${url.pathname}${url.search}`
-    throw redirect(`/login?redirectTo=${encodeURIComponent(requestedPath)}`)
+    const loginSearch = new URLSearchParams({ redirectTo: url.pathname })
+    const oauthError = url.searchParams.get("oauthError")
+
+    if (oauthError) {
+      loginSearch.set("oauthError", oauthError)
+    } else {
+      loginSearch.set("redirectTo", `${url.pathname}${url.search}`)
+    }
+
+    throw redirect(`/login?${loginSearch}`)
   }
 
   return user

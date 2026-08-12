@@ -35,13 +35,6 @@ export function DisplayPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Display</h2>
-        <p className="text-sm text-muted-foreground">
-          Choose how DevHub looks on this device.
-        </p>
-      </div>
-
       <Card className="bg-card/85 backdrop-blur-xl dark:bg-card/80">
         <CardHeader>
           <CardTitle>Theme</CardTitle>

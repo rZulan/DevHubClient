@@ -10,8 +10,7 @@ A Vite + React + TypeScript application configured with:
 - Automatic rotating refresh-token handling in RTK Query
 - Nested user settings for profile, account connections, display, and billing
 
-Backend work required for profile editing and social authentication is documented in
-[`docs/backend-user-settings.md`](docs/backend-user-settings.md).
+Profile editing and social authentication are backed by the DevHub .NET API.
 
 ## Development
 
@@ -20,10 +19,12 @@ npm install
 npm run dev
 ```
 
-Create a local `.env` when the API does not use the default `/api` base path:
+Create a local `.env.local` to enable social authentication against the local API:
 
 ```bash
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE_URL=/api
+VITE_OAUTH_API_BASE_URL=https://localhost:7116/api
+VITE_OAUTH_ENABLED=true
 ```
 
 During local development, Vite proxies `/api` to `https://localhost:7116`. Start
