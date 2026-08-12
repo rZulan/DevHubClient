@@ -1,4 +1,5 @@
 import { Code2 } from "lucide-react"
+import { memo } from "react"
 import { Link } from "react-router-dom"
 
 const footerLinks = [
@@ -6,7 +7,7 @@ const footerLinks = [
   { label: "Account", to: "/account/profile" },
 ]
 
-export function AppFooter() {
+export const AppFooter = memo(function AppFooter() {
   return (
     <footer className="border-t bg-background/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
@@ -41,4 +42,4 @@ export function AppFooter() {
       </div>
     </footer>
   )
-}
+})

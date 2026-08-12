@@ -14,7 +14,7 @@ import {
   Terminal,
   Users,
 } from "lucide-react"
-import type { ReactNode } from "react"
+import { memo, type ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { ScrollAssemble } from "@/components/scroll-assemble"
@@ -53,7 +53,7 @@ const placeholderFeatures = [
   },
 ]
 
-export function DeveloperFeatures() {
+export const DeveloperFeatures = memo(function DeveloperFeatures() {
   return (
     <section aria-labelledby="developer-features" className="mt-20 space-y-8 pt-10 sm:pt-16">
       <ScrollAssemble>
@@ -144,7 +144,7 @@ export function DeveloperFeatures() {
       </div>
     </section>
   )
-}
+})
 
 function FeaturePanel({
   children,
