@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { flushSync } from "react-dom"
 
 export type Theme = "light" | "dark" | "system"
 
@@ -28,14 +29,19 @@ function getStoredTheme(): Theme {
   return "system"
 }
 
-function applyTheme(theme: Theme) {
-  const root = window.document.documentElement
-  const resolvedTheme =
+function resolveTheme(theme: Theme) {
+  return (
     theme === "system"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
       : theme
+  )
+}
+
+function applyTheme(theme: Theme) {
+  const root = window.document.documentElement
+  const resolvedTheme = resolveTheme(theme)
 
   root.classList.toggle("dark", resolvedTheme === "dark")
   root.style.colorScheme = resolvedTheme
@@ -66,7 +72,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // The selected theme still applies for the current page lifetime.
     }
 
-    setThemeState(nextTheme)
+    const root = window.document.documentElement
+    const currentTheme = root.classList.contains("dark") ? "dark" : "light"
+    const nextResolvedTheme = resolveTheme(nextTheme)
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    if (
+      currentTheme === nextResolvedTheme ||
+      reducedMotion ||
+      !window.document.startViewTransition
+    ) {
+      setThemeState(nextTheme)
+      return
+    }
+
+    window.document.startViewTransition(() => {
+      flushSync(() => {
+        applyTheme(nextTheme)
+        setThemeState(nextTheme)
+      })
+    })
   }
 
   return (

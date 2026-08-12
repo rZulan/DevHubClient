@@ -111,7 +111,87 @@
   }
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-circle-reveal 720ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
 @layer components {
+  .hyperspace-entry {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: #010208;
+    animation: hyperspace-curtain 1550ms cubic-bezier(.22, 1, .36, 1) forwards;
+    isolation: isolate;
+  }
+
+  .hyperspace-vortex {
+    position: absolute;
+    inset: -35%;
+    background:
+      repeating-radial-gradient(
+        circle at 50% 50%,
+        transparent 0 5.5vmin,
+        rgba(125, 211, 252, .1) 5.7vmin,
+        transparent 6vmin 11vmin
+      );
+    animation: hyperspace-vortex 1200ms cubic-bezier(.2, .7, .2, 1) both;
+  }
+
+  .hyperspace-streaks {
+    position: absolute;
+    inset: 0;
+    filter: drop-shadow(0 0 5px rgba(125, 211, 252, .9));
+  }
+
+  .hyperspace-streak {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--streak-length);
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(186, 230, 253, .85) 55%, #fff);
+    opacity: 0;
+    transform: rotate(var(--streak-angle)) translateX(var(--streak-distance)) scaleX(.025);
+    transform-origin: left center;
+    animation: hyperspace-streak 1050ms cubic-bezier(.12, .7, .2, 1) var(--streak-delay) both;
+    will-change: transform, opacity;
+  }
+
+  .hyperspace-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at 50% 50%,
+      #fff 0,
+      rgba(186, 230, 253, .96) 3%,
+      rgba(96, 165, 250, .38) 12%,
+      transparent 42%
+    );
+    opacity: 0;
+    transform: scale(.18);
+    animation: hyperspace-flash 1550ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .discovery-route-content {
+    animation: hyperspace-scene-reveal 1550ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .counter-card { contain: layout paint; isolation: isolate; }
   .discovery-flight { --flight-duration: 16s; position: relative; height: 100svh; min-height: 34rem; overflow: hidden; isolation: isolate; background: #03040d; perspective: 750px; }
   .discovery-stars { position: absolute; inset: 0; pointer-events: none; background: url("/discovery-stars.svg") center / cover no-repeat; opacity: .82; }
   .discovery-aurora { position: absolute; inset: 8% 15%; border-radius: 50%; background: radial-gradient(ellipse, rgba(43, 93, 209, .22), transparent 63%); filter: blur(30px); pointer-events: none; }
@@ -119,10 +199,6 @@
   .discovery-forward-mesh::before, .discovery-forward-mesh::after { position: absolute; inset: 0; content: ""; transform-origin: 50% 8%; }
   .discovery-forward-mesh::before { background: repeating-conic-gradient(from 180deg at 50% 8%, transparent 0deg 4.9deg, rgba(103,232,249,.2) 5deg 5.07deg, transparent 5.14deg 9.8deg); }
   .discovery-forward-mesh::after { background: repeating-linear-gradient(to bottom, transparent 0 3.4rem, rgba(103,232,249,.24) 3.4rem 3.58rem, transparent 3.58rem 6.8rem); animation: discovery-mesh-forward var(--flight-duration) linear infinite; }
-  .discovery-copy { position: relative; z-index: 4; padding: 2.5rem max(1.25rem, calc((100% - 64rem) / 2)); color: white; pointer-events: none; }
-  .discovery-copy h1 { margin-top: .5rem; font-size: clamp(1.875rem, 4vw, 2.5rem); font-weight: 650; letter-spacing: -.04em; }
-  .discovery-copy > p:last-child { margin-top: .45rem; color: rgb(203 213 225); font-size: .925rem; }
-  .discovery-kicker { color: rgb(103 232 249); font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
   .discovery-speed-control { position: absolute; z-index: 5; right: clamp(1rem, 4vw, 3rem); top: 2.5rem; width: 10rem; border: 1px solid rgba(255,255,255,.14); border-radius: .85rem; background: rgba(8, 13, 35, .68); padding: .7rem .8rem; color: #e0f2fe; backdrop-filter: blur(14px); }
   .discovery-speed-control span { display: flex; align-items: center; gap: .35rem; font-size: .72rem; white-space: nowrap; }
   .discovery-speed-control b { margin-left: auto; color: #67e8f9; font-weight: 600; }
@@ -130,10 +206,15 @@
   .discovery-back { position: absolute; z-index: 5; left: clamp(1rem, 4vw, 3rem); bottom: 2rem; display: inline-flex; align-items: center; gap: .45rem; border: 1px solid rgba(255,255,255,.14); border-radius: .65rem; background: rgba(8,13,35,.68); padding: .55rem .75rem; color: #e0f2fe; font-size: .8rem; backdrop-filter: blur(14px); transition: border-color .2s ease, background .2s ease; }
   .discovery-back:hover { border-color: rgba(103,232,249,.55); background: rgba(14, 27, 61, .85); }
   .discovery-traveler { position: absolute; z-index: 2; left: 50%; top: 55%; cursor: grab; touch-action: none; animation: discovery-flyby calc(var(--flight-duration) * var(--travel-duration)) linear var(--travel-delay) infinite; will-change: transform, opacity; }
+  .discovery-traveler:hover, .discovery-traveler[data-dragging="true"] { animation-play-state: paused; }
   .discovery-traveler:active { cursor: grabbing; }
-  .discovery-traveler-avatar { display: flex; width: 3.5rem; height: 3.5rem; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,.72); border-radius: 999px; box-shadow: 0 0 24px rgba(103,232,249,.35); color: white; font-size: .85rem; font-weight: 700; }
+  .discovery-traveler-avatar { display: block; width: 3.5rem; height: 3.5rem; border: 2px solid rgba(255,255,255,.72); border-radius: 999px; background: #172554; box-shadow: 0 0 24px rgba(103,232,249,.35); object-fit: cover; user-select: none; }
   .discovery-pilot { position: absolute; z-index: 4; left: 50%; bottom: 7%; display: flex; width: 10rem; cursor: grab; touch-action: none; transform: translate(calc(-50% + var(--pilot-drag-x)), var(--pilot-drag-y)); flex-direction: column; align-items: center; }
   .discovery-pilot:active { cursor: grabbing; }
+  .discovery-pilot-avatar { z-index: 0; isolation: isolate; }
+  .discovery-pilot-avatar::before,
+  .discovery-pilot-avatar::after { position: absolute; z-index: -1; inset: 0; border: 1.5px solid rgba(103,232,249,.78); border-radius: 999px; box-shadow: 0 0 22px rgba(103,232,249,.3); content: ""; pointer-events: none; animation: discovery-user-pulse 2.6s ease-out infinite; }
+  .discovery-pilot-avatar::after { border-color: rgba(216,180,254,.65); animation-delay: 1.3s; }
   .mesh-surface {
     --mesh-x: 50%;
     --mesh-y: 50%;
@@ -293,6 +374,11 @@
   }
 }
 
+@keyframes theme-circle-reveal {
+  from { clip-path: circle(0 at 100% 0); }
+  to { clip-path: circle(150vmax at 100% 0); }
+}
+
 @keyframes mesh-drift-one {
   to {
     transform: translate3d(30%, 22%, 0) rotate(18deg) scale(1.08);
@@ -317,6 +403,42 @@
   to { background-position: 0 6.8rem; }
 }
 
+@keyframes discovery-user-pulse {
+  0% { opacity: .85; transform: scale(.92); }
+  78%, 100% { opacity: 0; transform: scale(2.35); }
+}
+
+@keyframes hyperspace-curtain {
+  0%, 72% { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes hyperspace-vortex {
+  0% { opacity: 0; transform: scale(.22) rotate(0); }
+  28% { opacity: .65; }
+  82% { opacity: .2; }
+  100% { opacity: 0; transform: scale(2.4) rotate(9deg); }
+}
+
+@keyframes hyperspace-streak {
+  0% { opacity: 0; transform: rotate(var(--streak-angle)) translateX(var(--streak-distance)) scaleX(.025); }
+  16% { opacity: .95; }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--streak-angle)) translateX(72vmax) scaleX(2.2); }
+}
+
+@keyframes hyperspace-flash {
+  0%, 48% { opacity: 0; transform: scale(.18); }
+  66% { opacity: 1; transform: scale(1); }
+  82% { opacity: .72; transform: scale(3.6); }
+  100% { opacity: 0; transform: scale(5.5); }
+}
+
+@keyframes hyperspace-scene-reveal {
+  0%, 58% { opacity: 0; filter: blur(14px); transform: scale(1.12); }
+  100% { opacity: 1; filter: none; transform: scale(1); }
+}
+
 @keyframes mesh-drift-two {
   to {
     transform: translate3d(-24%, -18%, 0) rotate(-14deg) scale(1.12);
@@ -339,8 +461,19 @@
   .mesh-orb,
   .mesh-waves,
   .discovery-traveler,
-  .discovery-forward-mesh::after {
+  .discovery-forward-mesh::after,
+  .discovery-pilot-avatar::before,
+  .discovery-pilot-avatar::after,
+  .hyperspace-entry,
+  .hyperspace-vortex,
+  .hyperspace-streak,
+  .hyperspace-flash,
+  .discovery-route-content {
     animation: none;
+  }
+
+  .hyperspace-entry {
+    display: none;
   }
 
   .scroll-assemble-content {

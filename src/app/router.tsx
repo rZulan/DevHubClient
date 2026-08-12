@@ -8,56 +8,109 @@ import {
 } from "@/app/route-loaders"
 import { RouterFallback } from "@/components/router-fallback"
 import { ProtectedLayout } from "@/features/auth/protected-layout"
+import { AccountRootLayout } from "@/layouts/account-root-layout"
+import { DiscoveryLayout } from "@/layouts/discovery-layout"
 import { RootLayout } from "@/layouts/root-layout"
 import { AccountLayout } from "@/pages/account-layout"
-import { AccountPage } from "@/pages/account-page"
-import { BillingPage } from "@/pages/billing-page"
-import { DisplayPage } from "@/pages/display-page"
-import { DiscoveryPage } from "@/pages/discovery-page"
-import { HomePage } from "@/pages/home-page"
-import { LoginPage } from "@/pages/login-page"
-import { NotFoundPage } from "@/pages/not-found-page"
-import { ProfilePage } from "@/pages/profile-page"
-import { RegisterPage } from "@/pages/register-page"
 
 export const router = createBrowserRouter([
   {
     id: "root",
     path: "/",
     loader: rootLoader,
-    Component: RootLayout,
     HydrateFallback: RouterFallback,
     children: [
-      { index: true, Component: HomePage },
-      { path: "discovery", Component: DiscoveryPage },
       {
-        loader: anonymousOnlyLoader,
+        path: "discovery",
+        element: <DiscoveryLayout />,
         children: [
-          { path: "login", Component: LoginPage },
-          { path: "register", Component: RegisterPage },
+          {
+            index: true,
+            lazy: async () => ({
+              Component: (await import("@/pages/discovery-page")).DiscoveryPage,
+            }),
+          },
+        ],
+      },
+      {
+        element: <RootLayout />,
+        children: [
+          {
+            index: true,
+            lazy: async () => ({
+              Component: (await import("@/pages/home-page")).HomePage,
+            }),
+          },
+          {
+            loader: anonymousOnlyLoader,
+            children: [
+              {
+                path: "login",
+                lazy: async () => ({
+                  Component: (await import("@/pages/login-page")).LoginPage,
+                }),
+              },
+              {
+                path: "register",
+                lazy: async () => ({
+                  Component: (await import("@/pages/register-page")).RegisterPage,
+                }),
+              },
+            ],
+          },
+          {
+            path: "*",
+            lazy: async () => ({
+              Component: (await import("@/pages/not-found-page")).NotFoundPage,
+            }),
+          },
         ],
       },
       {
         id: "protected",
         loader: protectedLoader,
-        Component: ProtectedLayout,
+        element: <ProtectedLayout />,
         children: [
           {
-            id: "account",
-            path: "account",
-            loader: accountLoader,
-            Component: AccountLayout,
+            element: <AccountRootLayout />,
             children: [
-              { index: true, loader: () => redirect("/account/profile") },
-              { path: "profile", Component: ProfilePage },
-              { path: "account", Component: AccountPage },
-              { path: "display", Component: DisplayPage },
-              { path: "billing", Component: BillingPage },
+              {
+                id: "account",
+                path: "account",
+                loader: accountLoader,
+                element: <AccountLayout />,
+                children: [
+                  { index: true, loader: () => redirect("/account/profile") },
+                  {
+                    path: "profile",
+                    lazy: async () => ({
+                      Component: (await import("@/pages/profile-page")).ProfilePage,
+                    }),
+                  },
+                  {
+                    path: "account",
+                    lazy: async () => ({
+                      Component: (await import("@/pages/account-page")).AccountPage,
+                    }),
+                  },
+                  {
+                    path: "display",
+                    lazy: async () => ({
+                      Component: (await import("@/pages/display-page")).DisplayPage,
+                    }),
+                  },
+                  {
+                    path: "billing",
+                    lazy: async () => ({
+                      Component: (await import("@/pages/billing-page")).BillingPage,
+                    }),
+                  },
+                ],
+              },
             ],
           },
         ],
       },
-      { path: "*", Component: NotFoundPage },
     ],
   },
 ])
