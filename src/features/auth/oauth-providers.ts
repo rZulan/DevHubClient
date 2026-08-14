@@ -1,14 +1,15 @@
-import { Code2, Search } from "lucide-react"
+import type { ComponentType, SVGProps } from "react"
 
 import type { ExternalProvider } from "@/features/auth/auth-types"
+import { GitHubIcon, GoogleIcon } from "@/features/auth/oauth-provider-icons"
 
 export const oauthProviders = [
-  { id: "google", label: "Google", Icon: Search },
-  { id: "github", label: "GitHub", Icon: Code2 },
+  { id: "google", label: "Google", Icon: GoogleIcon },
+  { id: "github", label: "GitHub", Icon: GitHubIcon },
 ] satisfies Array<{
   id: ExternalProvider
   label: string
-  Icon: typeof Search
+  Icon: ComponentType<SVGProps<SVGSVGElement>>
 }>
 
 export const isOAuthEnabled = import.meta.env.VITE_OAUTH_ENABLED === "true"
