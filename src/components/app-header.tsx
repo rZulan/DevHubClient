@@ -9,8 +9,8 @@ import { UserMenu } from "@/components/user-menu"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { label: "Home", to: "/" },
-  { label: "Discovery", to: "/discovery" },
+  { label: "Home", requiresUser: false, to: "/" },
+  { label: "Discovery", requiresUser: true, to: "/discovery" },
 ]
 
 export const AppHeader = memo(function AppHeader() {
@@ -27,7 +27,7 @@ export const AppHeader = memo(function AppHeader() {
         </Link>
         <div className="flex items-center gap-2">
           <nav aria-label="Main navigation" className="hidden items-center gap-1 sm:flex">
-            {navItems.map((item) => (
+            {navItems.filter((item) => !item.requiresUser || user).map((item) => (
               <Button asChild key={item.to} size="sm" variant="ghost">
                 <NavLink
                   className={({ isActive }) =>

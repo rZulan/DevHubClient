@@ -21,18 +21,6 @@ export const router = createBrowserRouter([
     HydrateFallback: RouterFallback,
     children: [
       {
-        path: "discovery",
-        element: <DiscoveryLayout />,
-        children: [
-          {
-            index: true,
-            lazy: async () => ({
-              Component: (await import("@/pages/discovery-page")).DiscoveryPage,
-            }),
-          },
-        ],
-      },
-      {
         element: <RootLayout />,
         children: [
           {
@@ -71,6 +59,18 @@ export const router = createBrowserRouter([
         loader: protectedLoader,
         element: <ProtectedLayout />,
         children: [
+          {
+            path: "discovery",
+            element: <DiscoveryLayout />,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({
+                  Component: (await import("@/pages/discovery-page")).DiscoveryPage,
+                }),
+              },
+            ],
+          },
           {
             element: <AccountRootLayout />,
             children: [
