@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "Home", requiresUser: false, to: "/" },
+  { label: "Workshop", requiresUser: true, to: "/workshop" },
   { label: "Discovery", requiresUser: true, to: "/discovery" },
 ]
 

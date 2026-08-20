@@ -17,6 +17,12 @@ import type {
   UpdateProfileRequest,
   UserResponse,
 } from "@/features/auth/auth-types"
+import type {
+  ApiOrganization,
+  ApiProject,
+  ApiTeam,
+  SaveProjectInput,
+} from "@/features/workshop/workshop-types"
 
 type AuthRootState = {
   auth: {
@@ -99,7 +105,14 @@ function isAuthenticationRequest(args: string | FetchArgs) {
 export const api = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauthentication,
-  tagTypes: ["CurrentUser"],
+  tagTypes: [
+    "CurrentUser",
+    "Organizations",
+    "Teams",
+    "TeamMembers",
+    "OrganizationMembers",
+    "Projects",
+  ],
   endpoints: (builder) => ({
     login: builder.mutation<AuthenticationResponse, LoginRequest>({
       query: (credentials) => ({
@@ -150,6 +163,101 @@ export const api = createApi({
       }),
       invalidatesTags: ["CurrentUser"],
     }),
+    listOrganizations: builder.query<ApiOrganization[], void>({
+      query: () => "/organizations",
+      providesTags: ["Organizations"],
+    }),
+    createOrganization: builder.mutation<
+      ApiOrganization,
+      { name: string; description?: string }
+    >({
+      query: (organization) => ({
+        url: "/organizations",
+        method: "POST",
+        body: organization,
+      }),
+      invalidatesTags: ["Organizations"],
+    }),
+    listOrganizationMembers: builder.query<UserResponse[], string>({
+      query: (organizationId) => `/organizations/${organizationId}/members`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    listTeams: builder.query<ApiTeam[], string>({
+      query: (organizationId) => `/organizations/${organizationId}/teams`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "Teams", id: organizationId },
+      ],
+    }),
+    createTeam: builder.mutation<
+      ApiTeam,
+      { organizationId: string; name: string; description?: string; leaderUserId: string }
+    >({
+      query: ({ organizationId, ...team }) => ({
+        url: `/organizations/${organizationId}/teams`,
+        method: "POST",
+        body: team,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Teams", id: organizationId },
+        "Organizations",
+      ],
+    }),
+    addTeamMember: builder.mutation<
+      void,
+      { organizationId: string; teamId: string; userId: string }
+    >({
+      query: ({ organizationId, teamId, userId }) => ({
+        url: `/organizations/${organizationId}/teams/${teamId}/members/${userId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Teams", id: organizationId },
+      ],
+    }),
+    listTeamMembers: builder.query<
+      UserResponse[],
+      { organizationId: string; teamId: string }
+    >({
+      query: ({ organizationId, teamId }) =>
+        `/organizations/${organizationId}/teams/${teamId}/members`,
+      providesTags: (_result, _error, { teamId }) => [
+        { type: "TeamMembers", id: teamId },
+      ],
+    }),
+    listProjects: builder.query<ApiProject[], string>({
+      query: (organizationId) => `/organizations/${organizationId}/projects`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "Projects", id: organizationId },
+      ],
+    }),
+    createProject: builder.mutation<
+      ApiProject,
+      { organizationId: string; project: SaveProjectInput }
+    >({
+      query: ({ organizationId, project }) => ({
+        url: `/organizations/${organizationId}/projects`,
+        method: "POST",
+        body: project,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Projects", id: organizationId },
+      ],
+    }),
+    updateProject: builder.mutation<
+      ApiProject,
+      { organizationId: string; projectId: string; project: SaveProjectInput }
+    >({
+      query: ({ organizationId, projectId, project }) => ({
+        url: `/organizations/${organizationId}/projects/${projectId}`,
+        method: "PUT",
+        body: project,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Projects", id: organizationId },
+      ],
+    }),
   }),
 })
 
@@ -160,4 +268,14 @@ export const {
   useRegisterMutation,
   useUpdateCurrentUserMutation,
   useDisconnectExternalAccountMutation,
+  useListOrganizationsQuery,
+  useCreateOrganizationMutation,
+  useListOrganizationMembersQuery,
+  useListTeamsQuery,
+  useCreateTeamMutation,
+  useAddTeamMemberMutation,
+  useListTeamMembersQuery,
+  useListProjectsQuery,
+  useCreateProjectMutation,
+  useUpdateProjectMutation,
 } = api
