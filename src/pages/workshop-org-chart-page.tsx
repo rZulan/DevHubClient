@@ -25,7 +25,7 @@ export function WorkshopOrgChartPage() {
                 <div>
                   {members.map((member) => (
                     <article key={member.id}>
-                      <span>{member.initials}<i className={member.online ? "online" : ""} /></span>
+                      <span>{member.avatarUrl ? <img alt={member.name} referrerPolicy="no-referrer" src={member.avatarUrl} /> : member.initials}<i className={`presence-${member.presenceStatus ?? (member.online ? "online" : "offline")}`} /></span>
                       <div><strong>{member.name}</strong><small>@{member.username}</small></div>
                       <p>{member.teamIds.length ? member.teamIds.map((teamId) => organization.teams.find((team) => team.id === teamId)?.name).filter(Boolean).join(" · ") : "Organization-wide"}</p>
                     </article>

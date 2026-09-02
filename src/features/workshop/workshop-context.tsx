@@ -36,14 +36,17 @@ type WorkshopContextValue = {
   saveRoles: (organizationId: string, roles: WorkshopRole[]) => void
 }
 
-const localOrganizationsKey = "devhub.workshop.local-organizations"
 const WorkshopContext = createContext<WorkshopContextValue | null>(null)
+
+function getLocalOrganizationsKey(userId: string | undefined) {
+  return `devhub.workshop.local-organizations.${userId ?? "anonymous"}`
+}
 
 export function WorkshopProvider({ children }: { children: ReactNode }) {
   const user = useAppSelector((state) => state.auth.user)
   const { data, isLoading } = useListOrganizationsQuery()
   const [localOrganizations, setLocalOrganizations] = useState<WorkshopOrganization[]>(
-    readLocalOrganizations,
+    () => readLocalOrganizations(user?.id),
   )
   const [taskOverrides, setTaskOverrides] = useState<Record<string, WorkshopTask[]>>({})
   const [teamOverrides, setTeamOverrides] = useState<Record<string, WorkshopTeam[]>>({})
@@ -58,7 +61,7 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
   const organizations = useMemo(() => {
     const merged = new Map<string, WorkshopOrganization>()
 
-    for (const organization of [...apiOrganizations, ...localOrganizations]) {
+    for (const organization of [...localOrganizations, ...apiOrganizations]) {
       merged.set(organization.id, organization)
     }
 
@@ -75,7 +78,7 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     const created = createWorkshopOrganization(organization, user)
     setLocalOrganizations((current) => {
       const next = [...current.filter((candidate) => candidate.id !== created.id), created]
-      localStorage.setItem(localOrganizationsKey, JSON.stringify(next))
+      localStorage.setItem(getLocalOrganizationsKey(user?.id), JSON.stringify(next))
       return next
     })
     return created
@@ -180,9 +183,9 @@ export function useWorkshop() {
   return context
 }
 
-function readLocalOrganizations(): WorkshopOrganization[] {
+function readLocalOrganizations(userId: string | undefined): WorkshopOrganization[] {
   try {
-    const value = localStorage.getItem(localOrganizationsKey)
+    const value = localStorage.getItem(getLocalOrganizationsKey(userId))
     if (!value) return []
 
     return (JSON.parse(value) as WorkshopOrganization[]).map((organization) => ({

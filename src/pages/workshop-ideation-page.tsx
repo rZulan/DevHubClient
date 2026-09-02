@@ -36,8 +36,10 @@ import {
 } from "react"
 import { useOutletContext } from "react-router-dom"
 
+import { useAppSelector } from "@/app/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
 
 type DiagramShapeKind =
@@ -128,7 +130,8 @@ const initialItems: CanvasItem[] = [
 ]
 
 export function WorkshopIdeationPage() {
-  const { project } = useOutletContext<WorkshopOutletContext>()
+  const { organization, project } = useOutletContext<WorkshopOutletContext>()
+  const userId = useAppSelector((state) => state.auth.user?.id)
   const [items, setItems] = useState(initialItems)
   const [zoom, setZoom] = useState(0.85)
   const [pan, setPan] = useState({ x: 60, y: 30 })
@@ -137,6 +140,11 @@ export function WorkshopIdeationPage() {
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false)
   const [shapeSearch, setShapeSearch] = useState("")
   const panStart = useRef<{ pointerX: number; pointerY: number; panX: number; panY: number } | null>(null)
+  const canEditIdeation = hasWorkshopPermission(
+    organization,
+    userId ?? "current",
+    "Edit ideation",
+  )
 
   const setSafeZoom = useCallback((value: number) => {
     setZoom(Math.min(1.6, Math.max(0.35, value)))
@@ -250,9 +258,9 @@ export function WorkshopIdeationPage() {
         <Button aria-label="Select tool" className={tool === "select" ? "active" : ""} onClick={() => setTool("select")} size="icon" type="button" variant="ghost"><MousePointer2 /></Button>
         <Button aria-label="Hand tool" className={tool === "hand" ? "active" : ""} onClick={() => setTool("hand")} size="icon" type="button" variant="ghost"><Hand /></Button>
         <span />
-        <Button className="h-8" onClick={addNote} type="button" variant="ghost"><StickyNote /> <b>Add note</b></Button>
+        {canEditIdeation && <><Button className="h-8" onClick={addNote} type="button" variant="ghost"><StickyNote /> <b>Add note</b></Button>
         <span />
-        <Button className={isShapeMenuOpen ? "active h-8" : "h-8"} onClick={() => setIsShapeMenuOpen((current) => !current)} type="button" variant="ghost"><Shapes /> <b>Shapes</b></Button>
+        <Button className={isShapeMenuOpen ? "active h-8" : "h-8"} onClick={() => setIsShapeMenuOpen((current) => !current)} type="button" variant="ghost"><Shapes /> <b>Shapes</b></Button></>}
       </div>
 
       {isShapeMenuOpen && (
@@ -283,7 +291,7 @@ export function WorkshopIdeationPage() {
 
       <div className="workshop-canvas-world" aria-label="Infinite ideation canvas">
         {items.map((item) => (
-          <CanvasCard canDrag={tool === "select"} item={item} key={item.id} onMove={(x, y) => setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, x, y } : candidate))} zoom={zoom} />
+          <CanvasCard canDrag={canEditIdeation && tool === "select"} item={item} key={item.id} onMove={(x, y) => setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, x, y } : candidate))} zoom={zoom} />
         ))}
       </div>
 

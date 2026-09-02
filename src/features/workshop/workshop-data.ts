@@ -183,6 +183,8 @@ export function createWorkshopOrganization(
     teams: [],
     projects: [],
     tasks: [],
+    memberCount: organization.memberCount,
+    teamCount: organization.teamCount,
   }
 }
 

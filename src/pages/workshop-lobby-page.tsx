@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CreateTeamDialog } from "@/features/workshop/create-team-dialog"
+import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import type {
   ApiTeam,
   WorkshopMember,
@@ -37,8 +38,11 @@ export function WorkshopLobbyPage() {
   const user = useAppSelector((state) => state.auth.user)
   const [isCreatingTeam, setIsCreatingTeam] = useState(false)
   const isPersistedOrganization = guidPattern.test(organization.id)
-  const isOwner = organization.ownerUserId === user?.id
-    || (organization.ownerUserId === "current" && organization.id === "atlas-studio")
+  const canManageTeams = hasWorkshopPermission(
+    organization,
+    user?.id ?? "current",
+    "Manage teams",
+  )
   const { data: apiTeams } = useListTeamsQuery(organization.id, {
     skip: !isPersistedOrganization,
   })
@@ -49,15 +53,18 @@ export function WorkshopLobbyPage() {
   const members = useMemo<WorkshopMember[]>(() => {
     if (!apiMembers) return organization.members
     return apiMembers.map((member) => ({
+      ...organization.members.find((candidate) => candidate.id === member.id),
       id: member.id,
       name: `${member.firstName} ${member.lastName}`.trim(),
       username: member.username ?? member.email.split("@")[0],
       initials: `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`.toUpperCase(),
-      roleId: member.id === organization.ownerUserId ? "owner" : "member",
+      avatarUrl: member.avatarUrl,
+      roleId: organization.members.find((candidate) => candidate.id === member.id)?.roleId ?? "member",
       teamIds: [],
-      online: member.id === user?.id,
+      online: organization.members.find((candidate) => candidate.id === member.id)?.online ?? false,
+      presenceStatus: organization.members.find((candidate) => candidate.id === member.id)?.presenceStatus ?? "offline",
     }))
-  }, [apiMembers, organization.members, organization.ownerUserId, user?.id])
+  }, [apiMembers, organization.members])
 
   const teams = useMemo<WorkshopTeam[]>(() => {
     if (!apiTeams) return organization.teams
@@ -105,7 +112,7 @@ export function WorkshopLobbyPage() {
                   <ArrowRight />
                 </Link>
               ))}
-              {isOwner ? (
+              {canManageTeams ? (
                 <Button onClick={() => setIsCreatingTeam(true)} type="button" variant="outline">
                   <span><Users /></span>
                   <strong>Create a team</strong>

@@ -1,12 +1,14 @@
 export type WorkshopPermission =
+  | "Administrator"
   | "Manage organization"
   | "Manage roles"
-  | "Manage teams"
-  | "Manage projects"
   | "Manage members"
-  | "Edit ideation"
-  | "Manage tasks"
+  | "Create invites"
+  | "Manage teams"
   | "View all projects"
+  | "Manage projects"
+  | "Manage tasks"
+  | "Edit ideation"
 
 export type WorkshopRole = {
   id: string
@@ -14,16 +16,25 @@ export type WorkshopRole = {
   color: string
   order: number
   permissions: WorkshopPermission[]
+  isOwnerRole?: boolean
+  isDefaultRole?: boolean
+  memberCount?: number
 }
+
+export type WorkshopPresenceStatus = "online" | "away" | "dnd" | "invisible" | "offline"
 
 export type WorkshopMember = {
   id: string
   name: string
   username: string
   initials: string
+  avatarUrl?: string
   roleId: string
+  roleIds?: string[]
+  isOwner?: boolean
   teamIds: string[]
   online: boolean
+  presenceStatus?: WorkshopPresenceStatus
   status?: string
 }
 
@@ -89,6 +100,8 @@ export type WorkshopOrganization = {
   teams: WorkshopTeam[]
   projects: WorkshopProject[]
   tasks: WorkshopTask[]
+  memberCount?: number
+  teamCount?: number
 }
 
 export type ApiOrganization = {
@@ -100,6 +113,42 @@ export type ApiOrganization = {
   updatedAtUtc?: string | null
   memberCount: number
   teamCount: number
+}
+
+export type ApiOrganizationInvite = {
+  token: string
+  expiresAtUtc: string
+}
+
+export type ApiOrganizationRole = {
+  id: string
+  name: string
+  color: string
+  position: number
+  isOwnerRole: boolean
+  isDefaultRole: boolean
+  permissions: WorkshopPermission[]
+  memberCount: number
+}
+
+export type ApiOrganizationMember = {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  createdAtUtc: string
+  username?: string
+  dateOfBirth?: string | null
+  avatarUrl?: string
+  isOwner: boolean
+  roleIds: string[]
+}
+
+export type SaveOrganizationRoleInput = {
+  name: string
+  color: string
+  position: number
+  permissions: WorkshopPermission[]
 }
 
 export type ApiTeam = {

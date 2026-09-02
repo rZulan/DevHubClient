@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/features/auth/api-error"
+import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import { useWorkshop } from "@/features/workshop/workshop-context"
 import type {
   ProjectStatus,
@@ -75,13 +76,16 @@ export function WorkshopProjectsPage() {
   const [projectError, setProjectError] = useState("")
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation()
   const isPersistedOrganization = guidPattern.test(organization.id)
-  const isOwner = organization.ownerUserId === user?.id
-    || (organization.ownerUserId === "current" && organization.id === "atlas-studio")
+  const canManageProjects = hasWorkshopPermission(
+    organization,
+    user?.id ?? "current",
+    "Manage projects",
+  )
   const manageableTeams = useMemo(
     () => organization.teams.filter((team) =>
-      isOwner || team.leaderId === user?.id || team.leaderId === "current",
+      canManageProjects || team.leaderId === user?.id || team.leaderId === "current",
     ),
-    [isOwner, organization.teams, user?.id],
+    [canManageProjects, organization.teams, user?.id],
   )
   const selectedTeam = manageableTeams.find((team) => team.id === selectedTeamId)
   const { data: apiTeamMembers } = useListTeamMembersQuery(
@@ -94,15 +98,18 @@ export function WorkshopProjectsPage() {
     }
 
     return (apiTeamMembers ?? []).map((member) => ({
+      ...organization.members.find((candidate) => candidate.id === member.id),
       id: member.id,
       name: `${member.firstName} ${member.lastName}`.trim(),
       username: member.username ?? member.email.split("@")[0],
       initials: `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`.toUpperCase(),
-      roleId: member.id === organization.ownerUserId ? "owner" : "member",
+      avatarUrl: member.avatarUrl,
+      roleId: organization.members.find((candidate) => candidate.id === member.id)?.roleId ?? "member",
       teamIds: [selectedTeamId],
-      online: member.id === user?.id,
+      online: organization.members.find((candidate) => candidate.id === member.id)?.online ?? false,
+      presenceStatus: organization.members.find((candidate) => candidate.id === member.id)?.presenceStatus ?? "offline",
     }))
-  }, [apiTeamMembers, isPersistedOrganization, organization.members, organization.ownerUserId, selectedTeam?.memberIds, selectedTeamId, user?.id])
+  }, [apiTeamMembers, isPersistedOrganization, organization.members, selectedTeam?.memberIds, selectedTeamId])
 
   function openCreateProject() {
     const firstTeam = manageableTeams[0]

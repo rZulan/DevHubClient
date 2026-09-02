@@ -30,8 +30,11 @@ import {
   getSelectedOrganizationId,
   setSelectedOrganizationId,
 } from "@/features/workshop/workshop-storage"
-import type { ApiOrganization } from "@/features/workshop/workshop-types"
-import { useCreateOrganizationMutation } from "@/services/api"
+import type { WorkshopOrganization } from "@/features/workshop/workshop-types"
+import {
+  useAcceptOrganizationInviteMutation,
+  useCreateOrganizationMutation,
+} from "@/services/api"
 
 type SetupMode = "create" | "join" | null
 
@@ -41,10 +44,16 @@ export function WorkshopPage() {
   const { addLocalOrganization, isLoading, organizations } = useWorkshop()
   const [mode, setMode] = useState<SetupMode>(null)
   const [createOrganization, { isLoading: isCreating }] = useCreateOrganizationMutation()
+  const [acceptOrganizationInvite, { isLoading: isJoining }] = useAcceptOrganizationInviteMutation()
   const [error, setError] = useState("")
+  const inviteFromUrl = searchParams.get("invite") ?? ""
 
   useEffect(() => {
-    if (isLoading || searchParams.get("choose") === "1") return
+    if (inviteFromUrl) setMode("join")
+  }, [inviteFromUrl])
+
+  useEffect(() => {
+    if (isLoading || inviteFromUrl || searchParams.get("choose") === "1") return
 
     const selectedId = getSelectedOrganizationId()
     const exists = organizations.some((organization) => organization.id === selectedId)
@@ -53,7 +62,7 @@ export function WorkshopPage() {
     if (selectedId && exists) {
       navigate(`/workshop/${selectedId}/lobby`, { replace: true })
     }
-  }, [isLoading, navigate, organizations, searchParams])
+  }, [inviteFromUrl, isLoading, navigate, organizations, searchParams])
 
   function openOrganization(organizationId: string) {
     setSelectedOrganizationId(organizationId)
@@ -81,29 +90,25 @@ export function WorkshopPage() {
     }
   }
 
-  function handleJoin(event: FormEvent<HTMLFormElement>) {
+  async function handleJoin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
     const form = new FormData(event.currentTarget)
     const inviteLink = String(form.get("inviteLink") ?? "").trim()
 
-    if (!inviteLink || !inviteLink.includes("/invite/")) {
+    const inviteToken = extractInviteToken(inviteLink)
+    if (!inviteToken) {
       setError("Paste a valid Workshop invite link.")
       return
     }
 
-    const inviteCode = inviteLink.split("/").filter(Boolean).at(-1) ?? crypto.randomUUID()
-    const joined: ApiOrganization = {
-      id: `joined-${inviteCode}`,
-      ownerUserId: "invite-owner",
-      name: "Joined Workshop",
-      description: "Organization joined through an invite link. Invite verification will be connected to the backend next.",
-      createdAtUtc: new Date().toISOString(),
-      memberCount: 1,
-      teamCount: 0,
+    try {
+      const joined = await acceptOrganizationInvite(inviteToken).unwrap()
+      addLocalOrganization(joined)
+      openOrganization(joined.id)
+    } catch {
+      setError("This invite link is invalid or has expired.")
     }
-    addLocalOrganization(joined)
-    openOrganization(joined.id)
   }
 
   return (
@@ -143,7 +148,7 @@ export function WorkshopPage() {
                   <span className="workshop-org-avatar">{organization.initials}</span>
                   <span className="workshop-org-card-copy">
                     <strong>{organization.name}</strong>
-                    <small>{organization.members.length} member{organization.members.length === 1 ? "" : "s"} · {organization.teams.length} teams</small>
+                    <small>{memberCount(organization)} member{memberCount(organization) === 1 ? "" : "s"} · {teamCount(organization)} teams</small>
                   </span>
                   <ChevronRight />
                 </Button>
@@ -186,11 +191,11 @@ export function WorkshopPage() {
                   <Label>Description <span>Optional</span><Textarea maxLength={1000} name="description" placeholder="What are you building together?" rows={3} /></Label>
                 </>
               ) : (
-                <Label>Invite link<Input autoFocus name="inviteLink" placeholder="https://devhub.app/invite/…" /></Label>
+                <Label>Invite link<Input autoFocus defaultValue={inviteFromUrl ? `${window.location.origin}/workshop?invite=${inviteFromUrl}` : ""} name="inviteLink" placeholder="https://devhub.app/workshop?invite=…" /></Label>
               )}
               {error && <p className="workshop-form-error">{error}</p>}
-              <Button className="workshop-primary-action" disabled={isCreating} type="submit">
-                {isCreating ? <LoaderCircle className="animate-spin" /> : mode === "create" ? <Plus /> : <ArrowRight />}
+              <Button className="workshop-primary-action" disabled={isCreating || isJoining} type="submit">
+                {isCreating || isJoining ? <LoaderCircle className="animate-spin" /> : mode === "create" ? <Plus /> : <ArrowRight />}
                 {mode === "create" ? "Create workshop" : "Join organization"}
               </Button>
             </form>
@@ -199,4 +204,30 @@ export function WorkshopPage() {
       </Dialog>
     </main>
   )
+}
+
+function memberCount(organization: WorkshopOrganization) {
+  return organization.memberCount ?? organization.members.length
+}
+
+function teamCount(organization: WorkshopOrganization) {
+  return organization.teamCount ?? organization.teams.length
+}
+
+function extractInviteToken(value: string) {
+  const trimmed = value.trim()
+  if (/^[a-f0-9]{64}$/i.test(trimmed)) return trimmed
+
+  try {
+    const url = new URL(trimmed)
+    const queryToken = url.searchParams.get("invite")
+    if (queryToken && /^[a-f0-9]{64}$/i.test(queryToken)) return queryToken
+
+    const segments = url.pathname.split("/").filter(Boolean)
+    const inviteIndex = segments.indexOf("invite")
+    const pathToken = inviteIndex >= 0 ? segments[inviteIndex + 1] : undefined
+    return pathToken && /^[a-f0-9]{64}$/i.test(pathToken) ? pathToken : null
+  } catch {
+    return null
+  }
 }

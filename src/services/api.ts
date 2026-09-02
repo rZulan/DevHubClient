@@ -19,9 +19,13 @@ import type {
 } from "@/features/auth/auth-types"
 import type {
   ApiOrganization,
+  ApiOrganizationInvite,
+  ApiOrganizationMember,
+  ApiOrganizationRole,
   ApiProject,
   ApiTeam,
   SaveProjectInput,
+  SaveOrganizationRoleInput,
 } from "@/features/workshop/workshop-types"
 
 type AuthRootState = {
@@ -111,6 +115,7 @@ export const api = createApi({
     "Teams",
     "TeamMembers",
     "OrganizationMembers",
+    "OrganizationRoles",
     "Projects",
   ],
   endpoints: (builder) => ({
@@ -178,11 +183,121 @@ export const api = createApi({
       }),
       invalidatesTags: ["Organizations"],
     }),
-    listOrganizationMembers: builder.query<UserResponse[], string>({
+    updateOrganization: builder.mutation<
+      ApiOrganization,
+      { organizationId: string; name: string; description?: string }
+    >({
+      query: ({ organizationId, ...organization }) => ({
+        url: `/organizations/${organizationId}`,
+        method: "PUT",
+        body: organization,
+      }),
+      invalidatesTags: ["Organizations"],
+    }),
+    createOrganizationInvite: builder.mutation<ApiOrganizationInvite, string>({
+      query: (organizationId) => ({
+        url: `/organizations/${organizationId}/invites`,
+        method: "POST",
+      }),
+    }),
+    acceptOrganizationInvite: builder.mutation<ApiOrganization, string>({
+      query: (token) => ({
+        url: `/organizations/invites/${encodeURIComponent(token)}/accept`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Organizations"],
+    }),
+    listOrganizationMembers: builder.query<ApiOrganizationMember[], string>({
       query: (organizationId) => `/organizations/${organizationId}/members`,
       providesTags: (_result, _error, organizationId) => [
         { type: "OrganizationMembers", id: organizationId },
       ],
+    }),
+    removeOrganizationMember: builder.mutation<void, { organizationId: string; userId: string }>({
+      query: ({ organizationId, userId }) => ({
+        url: `/organizations/${organizationId}/members/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        "Organizations",
+        { type: "OrganizationMembers", id: organizationId },
+        { type: "OrganizationRoles", id: organizationId },
+        { type: "Teams", id: organizationId },
+      ],
+    }),
+    listOrganizationRoles: builder.query<ApiOrganizationRole[], string>({
+      query: (organizationId) => `/organizations/${organizationId}/roles`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "OrganizationRoles", id: organizationId },
+      ],
+    }),
+    createOrganizationRole: builder.mutation<
+      ApiOrganizationRole,
+      { organizationId: string; role: Omit<SaveOrganizationRoleInput, "position"> }
+    >({
+      query: ({ organizationId, role }) => ({
+        url: `/organizations/${organizationId}/roles`,
+        method: "POST",
+        body: role,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationRoles", id: organizationId },
+      ],
+    }),
+    updateOrganizationRole: builder.mutation<
+      ApiOrganizationRole,
+      { organizationId: string; roleId: string; role: SaveOrganizationRoleInput }
+    >({
+      query: ({ organizationId, roleId, role }) => ({
+        url: `/organizations/${organizationId}/roles/${roleId}`,
+        method: "PUT",
+        body: role,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationRoles", id: organizationId },
+        { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    deleteOrganizationRole: builder.mutation<void, { organizationId: string; roleId: string }>({
+      query: ({ organizationId, roleId }) => ({
+        url: `/organizations/${organizationId}/roles/${roleId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationRoles", id: organizationId },
+        { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    assignOrganizationRole: builder.mutation<
+      void,
+      { organizationId: string; roleId: string; userId: string; assigned: boolean }
+    >({
+      query: ({ organizationId, roleId, userId, assigned }) => ({
+        url: `/organizations/${organizationId}/roles/${roleId}/members/${userId}`,
+        method: assigned ? "PUT" : "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationRoles", id: organizationId },
+        { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    promoteOrganizationOwner: builder.mutation<void, { organizationId: string; userId: string }>({
+      query: ({ organizationId, userId }) => ({
+        url: `/organizations/${organizationId}/owners/${userId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        "Organizations",
+        { type: "OrganizationRoles", id: organizationId },
+        { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    leaveOrganization: builder.mutation<void, string>({
+      query: (organizationId) => ({
+        url: `/organizations/${organizationId}/members/me`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Organizations"],
     }),
     listTeams: builder.query<ApiTeam[], string>({
       query: (organizationId) => `/organizations/${organizationId}/teams`,
@@ -204,6 +319,29 @@ export const api = createApi({
         "Organizations",
       ],
     }),
+    updateTeam: builder.mutation<
+      ApiTeam,
+      { organizationId: string; teamId: string; name: string; description?: string; leaderUserId: string }
+    >({
+      query: ({ organizationId, teamId, ...team }) => ({
+        url: `/organizations/${organizationId}/teams/${teamId}`,
+        method: "PUT",
+        body: team,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Teams", id: organizationId },
+      ],
+    }),
+    deleteTeam: builder.mutation<void, { organizationId: string; teamId: string }>({
+      query: ({ organizationId, teamId }) => ({
+        url: `/organizations/${organizationId}/teams/${teamId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Teams", id: organizationId },
+        { type: "Projects", id: organizationId },
+      ],
+    }),
     addTeamMember: builder.mutation<
       void,
       { organizationId: string; teamId: string; userId: string }
@@ -214,6 +352,19 @@ export const api = createApi({
       }),
       invalidatesTags: (_result, _error, { organizationId }) => [
         { type: "Teams", id: organizationId },
+      ],
+    }),
+    removeTeamMember: builder.mutation<
+      void,
+      { organizationId: string; teamId: string; userId: string }
+    >({
+      query: ({ organizationId, teamId, userId }) => ({
+        url: `/organizations/${organizationId}/teams/${teamId}/members/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId, teamId }) => [
+        { type: "Teams", id: organizationId },
+        { type: "TeamMembers", id: teamId },
       ],
     }),
     listTeamMembers: builder.query<
@@ -270,10 +421,24 @@ export const {
   useDisconnectExternalAccountMutation,
   useListOrganizationsQuery,
   useCreateOrganizationMutation,
+  useUpdateOrganizationMutation,
+  useCreateOrganizationInviteMutation,
+  useAcceptOrganizationInviteMutation,
   useListOrganizationMembersQuery,
+  useRemoveOrganizationMemberMutation,
+  useListOrganizationRolesQuery,
+  useCreateOrganizationRoleMutation,
+  useUpdateOrganizationRoleMutation,
+  useDeleteOrganizationRoleMutation,
+  useAssignOrganizationRoleMutation,
+  usePromoteOrganizationOwnerMutation,
+  useLeaveOrganizationMutation,
   useListTeamsQuery,
   useCreateTeamMutation,
+  useUpdateTeamMutation,
+  useDeleteTeamMutation,
   useAddTeamMemberMutation,
+  useRemoveTeamMemberMutation,
   useListTeamMembersQuery,
   useListProjectsQuery,
   useCreateProjectMutation,
