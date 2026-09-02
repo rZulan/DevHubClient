@@ -95,7 +95,7 @@ export function LoginPage() {
           </Button>
           <p className="text-sm text-muted-foreground">
             New to DevHub?{" "}
-            <Link className="font-medium text-foreground underline underline-offset-4" to="/register">
+            <Link className="font-medium text-foreground underline underline-offset-4" to={`/register${location.search}`}>
               Create an account
             </Link>
           </p>

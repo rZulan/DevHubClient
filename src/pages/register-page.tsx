@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react"
 import { AlertCircle, LoaderCircle } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import { useAppDispatch } from "@/app/hooks"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -29,6 +29,7 @@ import { useRegisterMutation } from "@/services/api"
 
 export function RegisterPage() {
   const dispatch = useAppDispatch()
+  const location = useLocation()
   const navigate = useNavigate()
   const [register, { isLoading }] = useRegisterMutation()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -56,7 +57,7 @@ export function RegisterPage() {
       }).unwrap()
 
       acceptAuthentication(dispatch, response)
-      navigate("/account/profile", { replace: true })
+      navigate(getSafeRedirectPath(location.search), { replace: true })
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error))
     }
@@ -163,7 +164,7 @@ export function RegisterPage() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link className="font-medium text-foreground underline underline-offset-4" to="/login">
+            <Link className="font-medium text-foreground underline underline-offset-4" to={`/login${location.search}`}>
               Log in
             </Link>
           </p>
@@ -171,4 +172,12 @@ export function RegisterPage() {
       </form>
     </Card>
   )
+}
+
+function getSafeRedirectPath(search: string) {
+  const redirectTo = new URLSearchParams(search).get("redirectTo")
+
+  return redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
+    ? redirectTo
+    : "/account/profile"
 }
