@@ -12,6 +12,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: ['10.10.10.8.nip.io'],
     proxy: {
       '/api': {
         target: 'https://localhost:7116',
