@@ -23,6 +23,7 @@ import type {
   WorkshopTaskStatus,
 } from "@/features/workshop/workshop-types"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
+import { createClientId } from "@/lib/create-client-id"
 
 const columns: Array<{
   id: WorkshopTaskStatus
@@ -65,7 +66,7 @@ export function WorkshopTodoPage() {
     if (!title) return
 
     addTask(organization.id, {
-      id: crypto.randomUUID(),
+      id: createClientId(),
       projectId: project.id,
       title,
       description: String(form.get("description") ?? "").trim(),

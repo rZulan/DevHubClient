@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { getApiErrorMessage } from "@/features/auth/api-error"
 import { useWorkshop } from "@/features/workshop/workshop-context"
+import { createClientId } from "@/lib/create-client-id"
 import type {
   WorkshopMember,
   WorkshopOrganization,
@@ -100,7 +101,7 @@ export function CreateTeamDialog({
         )
       } else {
         addTeam(organization.id, {
-          id: crypto.randomUUID(),
+          id: createClientId(),
           name,
           description,
           color: teamColors[teams.length % teamColors.length],

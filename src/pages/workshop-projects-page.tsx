@@ -40,6 +40,7 @@ import type {
   WorkshopMember,
 } from "@/features/workshop/workshop-types"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
+import { createClientId } from "@/lib/create-client-id"
 import {
   useCreateProjectMutation,
   useListTeamMembersQuery,
@@ -158,7 +159,7 @@ export function WorkshopProjectsPage() {
         selectProject(created.id)
       } else {
         const created = {
-          id: crypto.randomUUID(),
+          id: createClientId(),
           name: project.name,
           summary: project.summary,
           status: project.status,
