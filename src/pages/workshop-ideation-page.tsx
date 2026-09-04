@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
+import { createClientId } from "@/lib/create-client-id"
 
 type DiagramShapeKind =
   | "process"
@@ -126,7 +127,7 @@ const initialItems: CanvasItem[] = [
   { id: "note-one", type: "note", title: "What if setup felt like a conversation?", body: "Keep the first-run experience focused: create a team, choose a project, invite one person.", x: 160, y: 125, width: 230, height: 180, color: "amber" },
   { id: "note-two", type: "note", title: "Permission principle", body: "Members see work from their teams. Leads can coordinate across projects only when explicitly tagged.", x: 670, y: 210, width: 245, height: 190, color: "violet" },
   { id: "frame-one", type: "frame", title: "Workshop navigation study", x: 320, y: 430, width: 490, height: 285, color: "slate" },
-  { id: "note-three", type: "note", title: "Project pulse", body: "The lobby should answer: what changed, what is blocked, and where can I help?", x: 930, y: 500, width: 230, height: 175, color: "cyan" },
+  { id: "note-three", type: "note", title: "Project pulse", body: "The dashboard should answer: what changed, what is blocked, and where can I help?", x: 930, y: 500, width: 230, height: 175, color: "cyan" },
 ]
 
 export function WorkshopIdeationPage() {
@@ -194,7 +195,7 @@ export function WorkshopIdeationPage() {
 
   function addNote() {
     setItems((current) => [...current, {
-      id: crypto.randomUUID(),
+      id: createClientId(),
       type: "note",
       title: "New idea",
       body: "Double-click text editing is coming with canvas persistence.",
@@ -208,7 +209,7 @@ export function WorkshopIdeationPage() {
 
   function addShape(shape: DiagramShapeDefinition) {
     setItems((current) => [...current, {
-      id: crypto.randomUUID(),
+      id: createClientId(),
       type: "diagram",
       shapeKind: shape.kind,
       title: shape.label,

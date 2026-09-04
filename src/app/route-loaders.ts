@@ -3,12 +3,21 @@ import { redirect, type LoaderFunctionArgs } from "react-router-dom"
 import { store } from "@/app/store"
 import { clearSession, setUser } from "@/features/auth/auth-slice"
 import type { AuthUser } from "@/features/auth/auth-types"
+import { getWorkshopResumePath } from "@/features/workshop/workshop-storage"
 import { api } from "@/services/api"
 
 let sessionRestoration: Promise<void> | undefined
 
-export async function rootLoader() {
+export async function rootLoader({ request }: LoaderFunctionArgs) {
   await ensureSessionRestored()
+
+  const user = store.getState().auth.user
+  const url = new URL(request.url)
+  if (user && url.pathname === "/" && !url.search) {
+    const workshopPath = getWorkshopResumePath(user.id)
+    if (workshopPath) throw redirect(workshopPath)
+  }
+
   return null
 }
 

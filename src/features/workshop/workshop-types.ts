@@ -201,3 +201,37 @@ export type SaveProjectInput = {
   startDate?: string
   targetDate?: string
 }
+
+export type DashboardWidgetType =
+  | "welcome"
+  | "quick-actions"
+  | "quick-action-project"
+  | "quick-action-tasks"
+  | "quick-action-idea"
+  | "quick-action-team"
+  | "assigned-tasks"
+  | "project-stats"
+  | "recent-activity"
+  | "online-members"
+  | "project-overview"
+  | "team-distribution"
+  | "text"
+
+export type DashboardWidgetSize = "full" | "two-thirds" | "half" | "third" | "sixth"
+export type DashboardWidgetWidth = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4
+export type DashboardWidgetHeight = 0.5 | 1 | 1.5 | 2
+
+export type DashboardWidget = {
+  id: string
+  type: DashboardWidgetType
+  sectionId?: string | null
+  size?: DashboardWidgetSize
+  width?: DashboardWidgetWidth
+  height?: DashboardWidgetHeight
+  content?: string | null
+}
+
+export type OrganizationDashboard = {
+  widgets: DashboardWidget[]
+  publishedAtUtc?: string | null
+}

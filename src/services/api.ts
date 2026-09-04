@@ -24,9 +24,12 @@ import type {
   ApiOrganizationRole,
   ApiProject,
   ApiTeam,
+  DashboardWidget,
+  OrganizationDashboard,
   SaveProjectInput,
   SaveOrganizationRoleInput,
 } from "@/features/workshop/workshop-types"
+import type { ChatConversation, ChatMessage } from "@/features/chat/chat-types"
 
 type AuthRootState = {
   auth: {
@@ -117,6 +120,9 @@ export const api = createApi({
     "OrganizationMembers",
     "OrganizationRoles",
     "Projects",
+    "Chats",
+    "ChatMessages",
+    "OrganizationDashboard",
   ],
   endpoints: (builder) => ({
     login: builder.mutation<AuthenticationResponse, LoginRequest>({
@@ -409,6 +415,115 @@ export const api = createApi({
         { type: "Projects", id: organizationId },
       ],
     }),
+    listChats: builder.query<ChatConversation[], string>({
+      query: (organizationId) => `/organizations/${organizationId}/chats`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
+    getOrganizationDashboard: builder.query<OrganizationDashboard, string>({
+      query: (organizationId) => `/organizations/${organizationId}/dashboard`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "OrganizationDashboard", id: organizationId },
+      ],
+    }),
+    publishOrganizationDashboard: builder.mutation<
+      OrganizationDashboard,
+      { organizationId: string; widgets: DashboardWidget[] }
+    >({
+      query: ({ organizationId, widgets }) => ({
+        url: `/organizations/${organizationId}/dashboard`,
+        method: "PUT",
+        body: { widgets },
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationDashboard", id: organizationId },
+      ],
+    }),
+    createDirectChat: builder.mutation<
+      ChatConversation,
+      { organizationId: string; userId: string }
+    >({
+      query: ({ organizationId, userId }) => ({
+        url: `/organizations/${organizationId}/chats/direct`,
+        method: "POST",
+        body: { userId },
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
+    createGroupChat: builder.mutation<
+      ChatConversation,
+      { organizationId: string; name: string; memberUserIds: string[] }
+    >({
+      query: ({ organizationId, ...body }) => ({
+        url: `/organizations/${organizationId}/chats/groups`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
+    listChatMessages: builder.query<
+      ChatMessage[],
+      { organizationId: string; conversationId: string; take: number; before?: string }
+    >({
+      query: ({ organizationId, conversationId, take, before }) => ({
+        url: `/organizations/${organizationId}/chats/${conversationId}/messages`,
+        params: { take, ...(before ? { before } : {}) },
+      }),
+      providesTags: (_result, _error, { conversationId }) => [
+        { type: "ChatMessages", id: conversationId },
+      ],
+    }),
+    markChatRead: builder.mutation<
+      ChatConversation,
+      { organizationId: string; conversationId: string }
+    >({
+      query: ({ organizationId, conversationId }) => ({
+        url: `/organizations/${organizationId}/chats/${conversationId}/read`,
+        method: "PUT",
+      }),
+    }),
+    addChatMember: builder.mutation<
+      ChatConversation,
+      { organizationId: string; conversationId: string; userId: string }
+    >({
+      query: ({ organizationId, conversationId, userId }) => ({
+        url: `/organizations/${organizationId}/chats/${conversationId}/members/${userId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
+    removeChatMember: builder.mutation<
+      ChatConversation,
+      { organizationId: string; conversationId: string; userId: string }
+    >({
+      query: ({ organizationId, conversationId, userId }) => ({
+        url: `/organizations/${organizationId}/chats/${conversationId}/members/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
+    setChatAdmin: builder.mutation<
+      ChatConversation,
+      { organizationId: string; conversationId: string; userId: string; isAdmin: boolean }
+    >({
+      query: ({ organizationId, conversationId, userId, isAdmin }) => ({
+        url: `/organizations/${organizationId}/chats/${conversationId}/members/${userId}/admin`,
+        method: "PUT",
+        body: { isAdmin },
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "Chats", id: organizationId },
+      ],
+    }),
   }),
 })
 
@@ -443,4 +558,14 @@ export const {
   useListProjectsQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,
+  useListChatsQuery,
+  useCreateDirectChatMutation,
+  useCreateGroupChatMutation,
+  useLazyListChatMessagesQuery,
+  useMarkChatReadMutation,
+  useAddChatMemberMutation,
+  useRemoveChatMemberMutation,
+  useSetChatAdminMutation,
+  useGetOrganizationDashboardQuery,
+  usePublishOrganizationDashboardMutation,
 } = api

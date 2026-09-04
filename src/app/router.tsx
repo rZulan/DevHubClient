@@ -87,13 +87,14 @@ export const router = createBrowserRouter([
                 path: ":organizationId",
                 element: <WorkshopLayout />,
                 children: [
-                  { index: true, loader: () => redirect("lobby") },
+                  { index: true, loader: () => redirect("dashboard") },
                   {
-                    path: "lobby",
+                    path: "dashboard",
                     lazy: async () => ({
                       Component: (await import("@/pages/workshop-lobby-page")).WorkshopLobbyPage,
                     }),
                   },
+                  { path: "lobby", loader: () => redirect("../dashboard") },
                   {
                     path: "todo",
                     lazy: async () => ({

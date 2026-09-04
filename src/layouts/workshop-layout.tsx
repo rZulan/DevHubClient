@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import {
   ArrowLeft,
+  Building2,
   Check,
   CheckSquare2,
   ChevronDown,
@@ -13,6 +14,7 @@ import {
   Network,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
   Search,
   ShieldCheck,
   Users,
@@ -28,6 +30,7 @@ import {
 } from "react-router-dom"
 
 import { useAppSelector } from "@/app/hooks"
+import { ChatDialog } from "@/features/chat/chat-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserAvatar } from "@/components/user-avatar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,6 +54,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { OrganizationSetupDialog } from "@/features/workshop/organization-setup-dialog"
+import { useCreateOrJoinOrganization } from "@/features/workshop/use-create-or-join-organization"
 import { useWorkshop } from "@/features/workshop/workshop-context"
 import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import { mapApiProject } from "@/features/workshop/workshop-data"
@@ -58,6 +63,7 @@ import { useWorkshopPresence } from "@/features/workshop/use-workshop-presence"
 import { useSignOut } from "@/features/auth/use-sign-out"
 import {
   getSelectedProjectId,
+  clearWorkshopResumePath,
   setSelectedOrganizationId,
   setSelectedProjectId,
 } from "@/features/workshop/workshop-storage"
@@ -93,7 +99,7 @@ const statusLabels: Record<Exclude<WorkshopPresenceStatus, "offline">, string> =
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const navigation = [
-  { label: "Lobby", icon: Home, path: "lobby" },
+  { label: "Dashboard", icon: Home, path: "dashboard" },
   { label: "TODO", icon: CheckSquare2, path: "todo" },
   { label: "Ideas", icon: Lightbulb, path: "ideation" },
   { label: "Projects", icon: FolderKanban, path: "projects" },
@@ -103,7 +109,7 @@ const navigation = [
 ]
 
 const pageTitles: Record<string, string> = {
-  lobby: "Lobby",
+  dashboard: "Dashboard",
   todo: "Project board",
   ideation: "Ideation canvas",
   projects: "Projects",
@@ -115,10 +121,16 @@ const pageTitles: Record<string, string> = {
 
 export function WorkshopLayout() {
   const { organizationId } = useParams()
-  const { organizationById, isLoading: areOrganizationsLoading } = useWorkshop()
+  const { organizationById, organizations, isLoading: areOrganizationsLoading } = useWorkshop()
   const location = useLocation()
   const navigate = useNavigate()
   const user = useAppSelector((state) => state.auth.user)
+  const setup = useCreateOrJoinOrganization(openOrganization)
+
+  function openOrganization(organizationId: string) {
+    setSelectedOrganizationId(organizationId)
+    navigate(`/workshop/${organizationId}/dashboard`)
+  }
   const [membersOpen, setMembersOpen] = useState(true)
   const [memberQuery, setMemberQuery] = useState("")
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -242,12 +254,12 @@ export function WorkshopLayout() {
     return <div className="workshop-loading min-h-svh"><LoaderCircle className="animate-spin" /> Loading workshop…</div>
   }
 
-  if (!organizationId || !organization) return <Navigate replace to="/workshop?choose=1" />
+  if (!organizationId || !organization) return <Navigate replace to="/workshop" />
 
   const activeOrganizationId = organization.id
   const activePath = location.pathname.includes("/projects/")
     ? "project-detail"
-    : location.pathname.split("/").at(-1) ?? "lobby"
+    : location.pathname.split("/").at(-1) ?? "dashboard"
   function selectProject(nextProjectId: string) {
     setProjectId(nextProjectId)
     setSelectedProjectId(activeOrganizationId, nextProjectId)
@@ -286,11 +298,31 @@ export function WorkshopLayout() {
   return (
     <div className={cn("workshop-shell", !membersOpen && "members-collapsed")}>
       <aside className="workshop-sidebar">
-        <Button className="workshop-org-switcher h-auto" onClick={() => navigate("/workshop?choose=1")} type="button" variant="ghost">
-          <span className="workshop-org-mark">{organization.initials}</span>
-          <span><strong>{organization.name}</strong><small>Switch organization</small></span>
-          <ChevronDown />
-        </Button>
+        <div className="workshop-org-header">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="workshop-org-switcher h-auto" type="button" variant="ghost">
+                <span className="workshop-org-mark">{organization.initials}</span>
+                <span><strong>{organization.name}</strong><small>Switch organization</small></span>
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="workshop-org-menu">
+              {organizations.map((candidate) => (
+                <DropdownMenuItem key={candidate.id} onSelect={() => openOrganization(candidate.id)}>
+                  <span className="workshop-org-mark">{candidate.initials}</span>
+                  <span>{candidate.name}</span>
+                  {candidate.id === activeOrganizationId && <Check className="ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => navigate("/workshop?choose=1")}><Building2 /> Organization Selector</DropdownMenuItem>
+              <DropdownMenuItem disabled={!canInvite} onSelect={() => void openInviteDialog()}><Link2 /> Invite members</DropdownMenuItem>
+              <DropdownMenuItem onSelect={setup.openCreate}><Plus /> Create an organization</DropdownMenuItem>
+              <DropdownMenuItem onSelect={setup.openJoin}><Link2 /> Join Org</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         <nav aria-label="Workshop navigation" className="workshop-nav">
           <p>Workspace</p>
@@ -302,7 +334,7 @@ export function WorkshopLayout() {
         </nav>
 
         <div className="workshop-sidebar-footer">
-          <Link to="/"><ArrowLeft /> Back to DevHub</Link>
+          <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft /> Back to DevHub</Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className={`workshop-sidebar-user status-${currentStatus} h-auto`} type="button" variant="ghost">
@@ -348,7 +380,6 @@ export function WorkshopLayout() {
             <h1>{pageTitles[activePath] ?? "Workshop"}</h1>
           </div>
           <div className="workshop-topbar-actions">
-            {canInvite && <Button className="workshop-invite-button" onClick={openInviteDialog} type="button" variant="outline"><Link2 /> Invite members</Button>}
             <div className="workshop-project-select">
               <span>Current project</span>
               <Select
@@ -356,7 +387,7 @@ export function WorkshopLayout() {
                 onValueChange={selectProject}
                 value={project?.id}
               >
-                <SelectTrigger aria-label="Current project"><SelectValue placeholder="No project yet" /></SelectTrigger>
+                <SelectTrigger aria-label="Current project" className="border-0 bg-secondary text-secondary-foreground dark:bg-secondary dark:hover:bg-secondary"><SelectValue placeholder="No project yet" /></SelectTrigger>
                 <SelectContent>
                   {visibleProjects.map((candidate) => <SelectItem key={candidate.id} value={candidate.id}>{candidate.name}</SelectItem>)}
                 </SelectContent>
@@ -376,6 +407,8 @@ export function WorkshopLayout() {
         </main>
       </section>
 
+      {isPersistedOrganization && <ChatDialog currentUserId={user?.id} members={organization.members} organizationId={activeOrganizationId} />}
+
       {membersOpen && (
         <aside className="workshop-members">
           <header>
@@ -385,7 +418,7 @@ export function WorkshopLayout() {
               </Button>
               <Users /><strong>Members</strong><span>{organization.members.length}</span>
             </div>
-            <label><Search /><Input aria-label="Search members" onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search" value={memberQuery} /></label>
+            <label><Search /><Input aria-label="Search members" className="border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent" onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search" value={memberQuery} /></label>
           </header>
           <div className="workshop-member-list">
             {[...organization.roles]
@@ -441,6 +474,15 @@ export function WorkshopLayout() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <OrganizationSetupDialog
+        busy={setup.isCreating || setup.isJoining}
+        error={setup.error}
+        mode={setup.mode}
+        onClose={setup.close}
+        onSubmitCreate={setup.handleCreate}
+        onSubmitJoin={setup.handleJoin}
+      />
     </div>
   )
 }

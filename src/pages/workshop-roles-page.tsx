@@ -125,7 +125,7 @@ export function WorkshopRolesPage() {
     try {
       await leaveOrganization(organization.id).unwrap()
       clearSelectedOrganizationId()
-      navigate("/workshop?choose=1", { replace: true })
+      navigate("/workshop", { replace: true })
     } catch (leaveError) {
       setError(getApiErrorMessage(leaveError))
     }

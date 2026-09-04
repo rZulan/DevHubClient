@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { HubConnectionBuilder, HubConnectionState } from "@microsoft/signalr"
 
-import { useAppSelector } from "@/app/hooks"
+import { useAppDispatch, useAppSelector } from "@/app/hooks"
+import { api } from "@/services/api"
 import {
   beforeSignOutEvent,
   type BeforeSignOutDetail,
@@ -12,7 +13,20 @@ type PublicPresenceStatus = Exclude<WorkshopPresenceStatus, "invisible">
 type PresenceMember = { userId: string; status: PublicPresenceStatus }
 
 const awayDelay = 15 * 60 * 1_000
+const fallbackHeartbeatDelay = 45_000
+const fallbackHeartbeatJitter = 5_000
+const reconnectBaseDelay = 2_000
+const reconnectMaxDelay = 30_000
 const statusChangedEvent = "devhub-workshop-status-changed"
+
+function getFallbackHeartbeatDelay() {
+  return fallbackHeartbeatDelay + (Math.random() * 2 - 1) * fallbackHeartbeatJitter
+}
+
+function getReconnectDelay(attempt: number) {
+  const delay = Math.min(reconnectBaseDelay * 2 ** attempt, reconnectMaxDelay)
+  return delay * (0.8 + Math.random() * 0.4)
+}
 
 function getStatusStorageKey(userId?: string) {
   return `devhub-workshop-status:${userId?.toLowerCase() ?? "guest"}`
@@ -28,6 +42,7 @@ function toPresenceMap(members: PresenceMember[]) {
 }
 
 export function useWorkshopPresence(organizationId: string, enabled: boolean) {
+  const dispatch = useAppDispatch()
   const accessToken = useAppSelector((state) => state.auth.accessToken)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
   const [manualStatus, setManualStatusState] = useState(() => readSavedStatus(currentUserId))
@@ -90,8 +105,10 @@ export function useWorkshopPresence(organizationId: string, enabled: boolean) {
     if (!enabled || !organizationId) return
 
     let disposed = false
+    let realtimeReady = false
+    let reconnectAttempt = 0
     let retryTimer: ReturnType<typeof setTimeout> | undefined
-    let heartbeatTimer: ReturnType<typeof setInterval> | undefined
+    let heartbeatTimer: ReturnType<typeof setTimeout> | undefined
 
     const connection = new HubConnectionBuilder()
       .withUrl("/hubs/workshop", {
@@ -116,6 +133,11 @@ export function useWorkshopPresence(organizationId: string, enabled: boolean) {
         return next
       })
     })
+    connection.on("DashboardPublished", (changedOrganizationId: string) => {
+      if (changedOrganizationId.toLowerCase() === organizationId.toLowerCase()) {
+        dispatch(api.util.invalidateTags([{ type: "OrganizationDashboard", id: organizationId }]))
+      }
+    })
 
     async function joinOrganization() {
       const members = await connection.invoke<PresenceMember[]>("JoinOrganization", organizationId, effectiveStatus)
@@ -128,9 +150,24 @@ export function useWorkshopPresence(organizationId: string, enabled: boolean) {
       try {
         await connection.start()
         await joinOrganization()
+        realtimeReady = true
+        reconnectAttempt = 0
+        clearTimeout(heartbeatTimer)
+        setHeartbeatPresence(new Map())
       } catch {
-        if (!disposed) retryTimer = setTimeout(startConnection, 2_000)
+        realtimeReady = false
+        startFallbackHeartbeat(true)
+        scheduleReconnect()
       }
+    }
+
+    function scheduleReconnect() {
+      clearTimeout(retryTimer)
+      if (disposed) return
+
+      const delay = getReconnectDelay(reconnectAttempt)
+      reconnectAttempt += 1
+      retryTimer = setTimeout(startConnection, delay)
     }
 
     async function sendHeartbeat() {
@@ -155,8 +192,25 @@ export function useWorkshopPresence(organizationId: string, enabled: boolean) {
       }
     }
 
+    function scheduleFallbackHeartbeat() {
+      clearTimeout(heartbeatTimer)
+      if (disposed || realtimeReady) return
+
+      heartbeatTimer = setTimeout(async () => {
+        await sendHeartbeat()
+        scheduleFallbackHeartbeat()
+      }, getFallbackHeartbeatDelay())
+    }
+
+    function startFallbackHeartbeat(sendImmediately = false) {
+      if (disposed) return
+      realtimeReady = false
+      if (sendImmediately) void sendHeartbeat()
+      scheduleFallbackHeartbeat()
+    }
+
     async function announceOffline() {
-      clearInterval(heartbeatTimer)
+      clearTimeout(heartbeatTimer)
 
       if (connection.state === HubConnectionState.Connected) {
         try {
@@ -186,27 +240,43 @@ export function useWorkshopPresence(organizationId: string, enabled: boolean) {
       detail.pending.push(announceOffline())
     }
 
-    connection.onreconnected(() => joinOrganization().catch(() => undefined))
-    connection.onclose(() => {
+    connection.onreconnecting(() => {
+      if (disposed) return
       setLivePresence(new Map())
-      if (!disposed) retryTimer = setTimeout(startConnection, 2_000)
+      startFallbackHeartbeat(true)
+    })
+    connection.onreconnected(async () => {
+      if (disposed) return
+      try {
+        await joinOrganization()
+        realtimeReady = true
+        reconnectAttempt = 0
+        clearTimeout(heartbeatTimer)
+        setHeartbeatPresence(new Map())
+      } catch {
+        startFallbackHeartbeat(true)
+      }
+    })
+    connection.onclose(() => {
+      if (disposed) return
+      setLivePresence(new Map())
+      startFallbackHeartbeat(true)
+      scheduleReconnect()
     })
     window.addEventListener(beforeSignOutEvent, handleBeforeSignOut)
 
     void startConnection()
-    void sendHeartbeat()
-    heartbeatTimer = setInterval(sendHeartbeat, 5_000)
 
     return () => {
       disposed = true
       clearTimeout(retryTimer)
-      clearInterval(heartbeatTimer)
+      clearTimeout(heartbeatTimer)
       window.removeEventListener(beforeSignOutEvent, handleBeforeSignOut)
       if (connection.state !== HubConnectionState.Disconnected) {
         void connection.stop()
       }
     }
-  }, [accessToken, effectiveStatus, enabled, organizationId])
+  }, [accessToken, dispatch, effectiveStatus, enabled, organizationId])
 
   const presenceByUserId = useMemo(() => {
     const result = new Map<string, WorkshopPresenceStatus>([
