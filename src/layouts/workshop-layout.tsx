@@ -174,15 +174,17 @@ export function WorkshopLayout() {
       }))
       : baseOrganization.roles
 
+    const rolesById = new Map(roles.map(role => [role.id, role]))
     return {
       ...baseOrganization,
       roles,
       members: apiMembers
         ? apiMembers.map((member): WorkshopMember => {
           const presenceStatus = presenceByUserId.get(member.id.toLowerCase()) ?? "offline"
-          const primaryRole = roles
-            .filter((role) => member.roleIds.includes(role.id))
-            .sort((left, right) => left.order - right.order)[0]
+          const primaryRole = member.roleIds.reduce<(typeof roles)[number] | undefined>((best, id) => {
+            const role = rolesById.get(id)
+            return role && (!best || role.order < best.order) ? role : best
+          }, undefined)
           return {
             id: member.id,
             name: `${member.firstName} ${member.lastName}`.trim(),
@@ -249,6 +251,21 @@ export function WorkshopLayout() {
     setSelectedOrganizationId(organization.id)
     setSelectedProjectId(organization.id, project.id)
   }, [organization, project, projectId])
+
+  const memberGroups = useMemo(() => {
+    if (!organization || !membersOpen) return []
+    const query = memberQuery.trim().toLowerCase()
+    const groups = new Map<string, WorkshopMember[]>()
+    for (const member of organization.members) {
+      if (query && !`${member.name} ${member.username}`.toLowerCase().includes(query)) continue
+      const group = groups.get(member.roleId)
+      if (group) group.push(member)
+      else groups.set(member.roleId, [member])
+    }
+    return [...organization.roles].sort((a, b) => a.order - b.order)
+      .map(role => ({ role, members: groups.get(role.id) ?? [] }))
+      .filter(group => group.members.length > 0)
+  }, [organization, membersOpen, memberQuery])
 
   if (isPersistedOrganization && areOrganizationsLoading) {
     return <div className="workshop-loading min-h-svh"><LoaderCircle className="animate-spin" /> Loading workshop…</div>
@@ -421,13 +438,7 @@ export function WorkshopLayout() {
             <label><Search /><Input aria-label="Search members" className="border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent" onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search" value={memberQuery} /></label>
           </header>
           <div className="workshop-member-list">
-            {[...organization.roles]
-              .sort((a, b) => a.order - b.order)
-              .map((role) => {
-                const members = organization.members.filter((member) =>
-                  member.roleId === role.id && `${member.name} ${member.username}`.toLowerCase().includes(memberQuery.toLowerCase()),
-                )
-                if (members.length === 0) return null
+            {memberGroups.map(({ role, members }) => {
                 return (
                   <section key={role.id}>
                     <h2 style={{ color: role.color }}>{role.name} — {members.length}</h2>

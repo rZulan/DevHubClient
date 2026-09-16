@@ -84,20 +84,22 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     return created
   }, [user])
 
-  const organizationById = useCallback((organizationId: string) => {
-    const organization = organizations.find((candidate) => candidate.id === organizationId)
-      ?? seedOrganizations.find((candidate) => candidate.id === organizationId)
-
-    if (!organization) return undefined
-
-    return {
-      ...organization,
-      tasks: taskOverrides[organization.id] ?? organization.tasks,
-      teams: teamOverrides[organization.id] ?? organization.teams,
-      projects: projectOverrides[organization.id] ?? organization.projects,
-      roles: roleOverrides[organization.id] ?? organization.roles,
+  const organizationsById = useMemo(() => {
+    const result = new Map(organizations.map(organization => [organization.id, organization]))
+    for (const organization of seedOrganizations) {
+      if (!result.has(organization.id)) result.set(organization.id, {
+        ...organization,
+        tasks: taskOverrides[organization.id] ?? organization.tasks,
+        teams: teamOverrides[organization.id] ?? organization.teams,
+        projects: projectOverrides[organization.id] ?? organization.projects,
+        roles: roleOverrides[organization.id] ?? organization.roles,
+      })
     }
+    return result
   }, [organizations, projectOverrides, roleOverrides, taskOverrides, teamOverrides])
+
+  const organizationById = useCallback((organizationId: string) =>
+    organizationsById.get(organizationId), [organizationsById])
 
   const moveTask = useCallback((organizationId: string, taskId: string, status: WorkshopTaskStatus) => {
     const organization = organizationById(organizationId)

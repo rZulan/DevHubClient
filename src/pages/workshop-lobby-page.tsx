@@ -16,15 +16,14 @@ import { CreateTeamDialog } from "@/features/workshop/create-team-dialog"
 import { getApiErrorMessage } from "@/features/auth/api-error"
 import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import type {
-  ApiTeam, DashboardWidget, DashboardWidgetHeight, DashboardWidgetSize, DashboardWidgetType, DashboardWidgetWidth,
+  DashboardWidget, DashboardWidgetHeight, DashboardWidgetSize, DashboardWidgetType, DashboardWidgetWidth,
   WorkshopMember, WorkshopTask, WorkshopTeam,
 } from "@/features/workshop/workshop-types"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
 import { createClientId } from "@/lib/create-client-id"
 import { cn } from "@/lib/utils"
 import {
-  useGetOrganizationDashboardQuery, useListOrganizationMembersQuery,
-  useListTeamsQuery, usePublishOrganizationDashboardMutation,
+  useGetOrganizationDashboardQuery, usePublishOrganizationDashboardMutation,
 } from "@/services/api"
 
 type WidgetCategory = "Quick Actions" | "Graphs" | "Info" | "Text"
@@ -52,7 +51,6 @@ type WidgetLayout = {
   slot?: { column: number; row: number; width: number; heightRows: number }
 }
 
-const teamColors = ["#a78bfa", "#38bdf8", "#fb7185", "#34d399", "#fbbf24"]
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const widgetCategories: WidgetCategory[] = ["Quick Actions", "Graphs", "Info", "Text"]
 const gridColumns = 8
@@ -278,8 +276,6 @@ export function WorkshopLobbyPage() {
   const isPersistedOrganization = guidPattern.test(organization.id)
   const canManageDashboard = isPersistedOrganization && hasWorkshopPermission(organization, user?.id ?? "current", "Manage organization")
   const canManageTeams = hasWorkshopPermission(organization, user?.id ?? "current", "Manage teams")
-  const { data: apiTeams } = useListTeamsQuery(organization.id, { skip: !isPersistedOrganization })
-  const { data: apiMembers } = useListOrganizationMembersQuery(organization.id, { skip: !isPersistedOrganization })
   const { data: dashboard, isLoading: dashboardLoading } = useGetOrganizationDashboardQuery(
     organization.id,
     { skip: !isPersistedOrganization },
@@ -291,25 +287,8 @@ export function WorkshopLobbyPage() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const members = useMemo<WorkshopMember[]>(() => {
-    if (!apiMembers) return organization.members
-    return apiMembers.map((member) => ({
-      ...organization.members.find((candidate) => candidate.id === member.id),
-      id: member.id,
-      name: `${member.firstName} ${member.lastName}`.trim(),
-      username: member.username ?? member.email.split("@")[0],
-      initials: `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`.toUpperCase(),
-      avatarUrl: member.avatarUrl,
-      roleId: organization.members.find((candidate) => candidate.id === member.id)?.roleId ?? "member",
-      teamIds: [],
-      online: organization.members.find((candidate) => candidate.id === member.id)?.online ?? false,
-      presenceStatus: organization.members.find((candidate) => candidate.id === member.id)?.presenceStatus ?? "offline",
-    }))
-  }, [apiMembers, organization.members])
-
-  const teams = useMemo<WorkshopTeam[]>(() => apiTeams
-    ? apiTeams.map((team, index) => mapApiTeam(team, index))
-    : organization.teams, [apiTeams, organization.teams])
+  const members = organization.members
+  const teams = organization.teams
   const currentUserId = user?.id ?? "current"
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : members.find((member) => member.id === currentUserId)?.name ?? "there"
   const projectTasks = organization.tasks.filter((task) => task.projectId === project?.id)
@@ -318,9 +297,13 @@ export function WorkshopLobbyPage() {
   const pendingTasks = projectTasks.filter((task) => task.status === "pending").length
   const activeTasks = projectTasks.filter((task) => task.status === "progress").length
   const onlineMembers = members.filter((member) => member.online)
-  const publishedWidgets = ensureWidgetSectionIds(expandLegacyQuickActions(dashboard?.publishedAtUtc ? dashboard.widgets : defaultDashboardWidgets))
-  const visibleWidgets = expandLegacyQuickActions(isEditing ? draftWidgets : publishedWidgets)
-  const widgetSections = buildWidgetSections(visibleWidgets)
+  const publishedWidgets = useMemo(() => ensureWidgetSectionIds(expandLegacyQuickActions(
+    dashboard?.publishedAtUtc ? dashboard.widgets : defaultDashboardWidgets,
+  )), [dashboard])
+  const visibleWidgets = useMemo(() => expandLegacyQuickActions(
+    isEditing ? draftWidgets : publishedWidgets,
+  ), [isEditing, draftWidgets, publishedWidgets])
+  const widgetSections = useMemo(() => buildWidgetSections(visibleWidgets), [visibleWidgets])
 
   function beginEditing() {
     setDraftWidgets(publishedWidgets.map(normalizeWidget))
@@ -557,4 +540,3 @@ function greeting(now: Date) { const hour = now.getHours(); return hour < 12 ? "
 function DashboardTaskRow({ task }: { task: WorkshopTask }) { const Icon = task.status === "done" ? CheckCircle2 : task.status === "progress" ? Clock3 : Circle; return <div><span><Icon /><strong>{task.title}</strong></span><Badge variant={task.status === "done" ? "secondary" : "outline"}>{task.status === "progress" ? "In progress" : task.status}</Badge></div> }
 function StatBar({ color, label, total, value }: { color: string; label: string; total: number; value: number }) { const height = total > 0 ? Math.max(18, Math.round((value / total) * 100)) : 18; return <div><span><i data-color={color} style={{ "--bar-height": `${height}%` } as CSSProperties} /></span><strong>{value}</strong><small>{label}</small></div> }
 function ActivityItem({ copy, name, time }: { copy: string; name: string; time: string }) { return <li><i /><p><strong>{name}</strong> {copy}<small>{time}</small></p></li> }
-function mapApiTeam(team: ApiTeam, index: number): WorkshopTeam { return { id: team.id, name: team.name, description: team.description ?? "", color: teamColors[index % teamColors.length], leaderId: team.leaderUserId, memberIds: [team.leaderUserId], memberCount: team.memberCount } }

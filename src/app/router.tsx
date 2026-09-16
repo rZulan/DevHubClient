@@ -11,8 +11,6 @@ import { ProtectedLayout } from "@/features/auth/protected-layout"
 import { AccountRootLayout } from "@/layouts/account-root-layout"
 import { DiscoveryLayout } from "@/layouts/discovery-layout"
 import { RootLayout } from "@/layouts/root-layout"
-import { WorkshopLayout } from "@/layouts/workshop-layout"
-import { WorkshopProviderLayout } from "@/layouts/workshop-provider-layout"
 import { AccountLayout } from "@/pages/account-layout"
 
 export const router = createBrowserRouter([
@@ -75,7 +73,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "workshop",
-            element: <WorkshopProviderLayout />,
+            lazy: async () => ({ Component: (await import("@/layouts/workshop-provider-layout")).WorkshopProviderLayout }),
             children: [
               {
                 index: true,
@@ -85,7 +83,7 @@ export const router = createBrowserRouter([
               },
               {
                 path: ":organizationId",
-                element: <WorkshopLayout />,
+                lazy: async () => ({ Component: (await import("@/layouts/workshop-layout")).WorkshopLayout }),
                 children: [
                   { index: true, loader: () => redirect("dashboard") },
                   {

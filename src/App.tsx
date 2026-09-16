@@ -10,8 +10,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <Provider store={store}>
-        <GlobalWorkshopPresence />
-        <RouterProvider router={router} />
+        <GlobalWorkshopPresence>
+          <RouterProvider router={router} />
+        </GlobalWorkshopPresence>
       </Provider>
     </ThemeProvider>
   )

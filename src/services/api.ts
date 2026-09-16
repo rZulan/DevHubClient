@@ -174,6 +174,14 @@ export const api = createApi({
       }),
       invalidatesTags: ["CurrentUser"],
     }),
+    updateWorkshopPresence: builder.mutation<
+      { userId: string; status: "online" | "away" | "dnd" | "offline" }[],
+      { organizationId: string; status: "online" | "away" | "dnd" | "invisible" }
+    >({
+      query: ({ organizationId, status }) => ({
+        url: `/organizations/${organizationId}/presence`, method: "POST", body: { status },
+      }),
+    }),
     listOrganizations: builder.query<ApiOrganization[], void>({
       query: () => "/organizations",
       providesTags: ["Organizations"],
