@@ -110,7 +110,7 @@ const navigation = [
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
-  todo: "Project board",
+  todo: "TODOs",
   ideation: "Ideation canvas",
   projects: "Projects",
   "project-detail": "Project details",
