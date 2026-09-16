@@ -10,7 +10,7 @@ export function WorkshopOrgChartPage() {
   return (
     <div className="workshop-page workshop-chart-page">
       <section className="workshop-page-heading compact">
-        <div><span className="workshop-page-kicker">Role-based structure</span><h2>Organization chart</h2><p>The chart follows role order. Change role placement to reshape the hierarchy.</p></div>
+        <div><h2>Organization chart</h2></div>
       </section>
       <div className="workshop-chart-canvas">
         <div className="workshop-chart-toolbar"><Network /> {sortedRoles.length} levels <span /> <Users /> {organization.members.length} people</div>

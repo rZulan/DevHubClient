@@ -24,10 +24,6 @@ export const WelcomeHero = memo(function WelcomeHero() {
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
           {user ? `Welcome back, ${user.firstName}.` : "Your frontend stack is ready."}
         </h1>
-        <p className="max-w-xl text-lg text-muted-foreground">
-          Secure cookie sessions, bearer JWTs, and rotating refresh tokens are now
-          connected to the DevHub .NET API.
-        </p>
       </div>
       <Button asChild size="lg">
         <Link to={user ? "/account/profile" : "/register"}>

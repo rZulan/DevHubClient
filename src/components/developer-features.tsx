@@ -64,10 +64,6 @@ export const DeveloperFeatures = memo(function DeveloperFeatures() {
           >
             Built for developers.
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Sensible defaults for shipping secure, maintainable products without
-            rebuilding the foundation every time.
-          </p>
         </div>
       </ScrollAssemble>
 

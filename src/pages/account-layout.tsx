@@ -17,22 +17,18 @@ const settingsNavigation = [
   { label: "Billing", to: "/account/billing", Icon: CreditCard },
 ]
 
-const accountSubpageHeaders: Record<string, { title: string; description: string }> = {
+const accountSubpageHeaders: Record<string, { title: string }> = {
   "/account/profile": {
     title: "Profile",
-    description: "Your public identity across DevHub.",
   },
   "/account/account": {
     title: "Account",
-    description: "Manage authentication, identity, and connected providers.",
   },
   "/account/display": {
     title: "Display",
-    description: "Choose how DevHub looks on this device.",
   },
   "/account/billing": {
     title: "Billing",
-    description: "Plans, invoices, and payment methods will live here.",
   },
 }
 
@@ -102,7 +98,6 @@ function AccountRouteContent() {
       {pageHeader && (
         <header>
           <h2 className="text-2xl font-semibold tracking-tight">{pageHeader.title}</h2>
-          <p className="text-sm text-muted-foreground">{pageHeader.description}</p>
         </header>
       )}
       <Outlet />

@@ -444,7 +444,7 @@ export function WorkshopLobbyPage() {
   return (
     <div className="workshop-page workshop-dashboard-page">
       <section className="workshop-dashboard-heading">
-        <div><span className="workshop-page-kicker">Organization dashboard</span><h2>{isEditing ? "Customize Dashboard" : "Dashboard"}</h2><p>{isEditing ? "Add, remove, resize, and drag widgets into position." : `Shared across everyone in ${organization.name}.`}</p></div>
+        <div><h2>{isEditing ? "Customize Dashboard" : "Dashboard"}</h2></div>
         <div className="workshop-dashboard-heading-actions">
           <Badge variant="outline"><i /> {onlineMembers.length} online</Badge>
           {canManageDashboard && !isEditing && <Button onClick={beginEditing} type="button" variant="outline"><Settings2 /> Manage Dashboard</Button>}

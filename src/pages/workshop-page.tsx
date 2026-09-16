@@ -66,7 +66,7 @@ export function WorkshopPage() {
           <>
             <div className="workshop-eyebrow"><Sparkles /> Build together, clearly</div>
             <h1>{organizations.length > 0 ? "Choose an organization." : "Your teams, projects, and ideas—under one roof."}</h1>
-            <p>{organizations.length > 0 ? "Select a workspace to continue, or create and join organizations below." : "Create a workspace for your team, or join one with an invite link."}</p>
+
 
             {organizations.length > 0 && (
               <div className="workshop-org-grid">

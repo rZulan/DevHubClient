@@ -83,9 +83,9 @@ export function WorkshopTeamsPage() {
     <div className="workshop-page workshop-teams-page">
       <section className="workshop-page-heading compact">
         <div>
-          <span className="workshop-page-kicker">Team directory</span>
+
           <h2>Teams & ownership</h2>
-          <p>See who leads each team, which projects they own, and where every member contributes.</p>
+
         </div>
         {canManageTeams && <Button className="workshop-page-action" onClick={() => setIsCreating(true)} type="button"><Plus /> Create team</Button>}
       </section>

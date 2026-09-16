@@ -175,9 +175,9 @@ export function WorkshopRolesPage() {
     <div className="workshop-page">
       <section className="workshop-page-heading compact">
         <div>
-          <span className="workshop-page-kicker">Workshop permissions</span>
+
           <h2>Roles & access</h2>
-          <p>Permissions combine across assigned roles. A member can only manage roles and people below their highest role.</p>
+
         </div>
         <div className="workshop-heading-actions">
           {canManageOrganization && <Button onClick={() => setSettingsOpen(true)} type="button" variant="outline"><Settings /> Organization settings</Button>}

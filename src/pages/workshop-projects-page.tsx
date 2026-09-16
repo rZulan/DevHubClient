@@ -215,9 +215,9 @@ export function WorkshopProjectsPage() {
     <div className="workshop-page">
       <section className="workshop-page-heading compact">
         <div>
-          <span className="workshop-page-kicker">Project directory</span>
+
           <h2>Everything your teams are building.</h2>
-          <p>Ownership, technical decisions, delivery dates, and essential links in one place.</p>
+
         </div>
         {manageableTeams.length ? (
           <Button className="workshop-page-action" onClick={openCreateProject} type="button"><Plus /> New project</Button>
