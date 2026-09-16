@@ -42,8 +42,7 @@ export function LoginPage() {
       }).unwrap()
 
       acceptAuthentication(dispatch, response)
-      const destination = getSafeRedirectPath(location.search)
-      navigate(destination, { replace: true })
+      navigate("/workshop", { replace: true })
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error))
     }
@@ -103,14 +102,6 @@ export function LoginPage() {
       </form>
     </Card>
   )
-}
-
-function getSafeRedirectPath(search: string) {
-  const redirectTo = new URLSearchParams(search).get("redirectTo")
-
-  return redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
-    ? redirectTo
-    : "/account/profile"
 }
 
 function getOAuthErrorMessage(search: string) {

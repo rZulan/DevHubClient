@@ -25,7 +25,7 @@ export async function anonymousOnlyLoader() {
   await ensureSessionRestored()
 
   if (store.getState().auth.user) {
-    throw redirect("/account/profile")
+    throw redirect("/workshop")
   }
 
   return null

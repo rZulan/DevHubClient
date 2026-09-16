@@ -17,7 +17,7 @@ export function OAuthProviderButtons({ intent }: { intent: "login" | "register" 
       </div>
       <div className="grid grid-cols-3 gap-2">
         {oauthProviders.map(({ id, label, Icon }) => {
-          const href = `${oauthApiBaseUrl}/auth/external/${id}?intent=${intent}&returnUrl=${encodeURIComponent("/account/profile")}`
+          const href = `${oauthApiBaseUrl}/auth/external/${id}?intent=${intent}&returnUrl=${encodeURIComponent(intent === "login" ? "/workshop" : "/account/profile")}`
 
           return isOAuthEnabled ? (
             <Button asChild key={id} variant="outline">
