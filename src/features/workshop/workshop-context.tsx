@@ -27,6 +27,7 @@ type WorkshopContextValue = {
   organizations: WorkshopOrganization[]
   isLoading: boolean
   addLocalOrganization: (organization: ApiOrganization) => WorkshopOrganization
+  removeLocalOrganization: (organizationId: string) => void
   organizationById: (organizationId: string) => WorkshopOrganization | undefined
   moveTask: (organizationId: string, taskId: string, status: WorkshopTaskStatus) => void
   addTask: (organizationId: string, task: WorkshopTask) => void
@@ -82,6 +83,18 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
       return next
     })
     return created
+  }, [user])
+
+  const removeLocalOrganization = useCallback((organizationId: string) => {
+    setLocalOrganizations((current) => {
+      const next = current.filter((candidate) => candidate.id !== organizationId)
+      try {
+        localStorage.setItem(getLocalOrganizationsKey(user?.id), JSON.stringify(next))
+      } catch {
+        // The API list remains authoritative when storage is unavailable.
+      }
+      return next
+    })
   }, [user])
 
   const organizationsById = useMemo(() => {
@@ -166,6 +179,7 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     organizations,
     isLoading,
     addLocalOrganization,
+    removeLocalOrganization,
     organizationById,
     moveTask,
     addTask,
@@ -173,7 +187,7 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     addProject,
     updateProject,
     saveRoles,
-  }), [addLocalOrganization, addProject, addTask, addTeam, isLoading, moveTask, organizationById, organizations, saveRoles, updateProject])
+  }), [addLocalOrganization, addProject, removeLocalOrganization, addTask, addTeam, isLoading, moveTask, organizationById, organizations, saveRoles, updateProject])
 
   return <WorkshopContext.Provider value={value}>{children}</WorkshopContext.Provider>
 }

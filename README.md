@@ -51,6 +51,7 @@ src/
 │   └── workshop/ # Organization selection, dashboard, todo, and ideation
 │       ├── organization/ # Teams, organization chart, and roles
 │       ├── projects/     # Project list and project details
+│       └── settings/     # Organization settings: general, appearance, members, roles
 └── services/     # RTK Query APIs
 ```
 

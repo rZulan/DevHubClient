@@ -129,11 +129,39 @@ export const router = createBrowserRouter([
                       Component: (await import("@/pages/workshop/organization/workshop-org-chart-page")).WorkshopOrgChartPage,
                     }),
                   },
+                  { path: "roles", loader: () => redirect("../settings/roles") },
                   {
-                    path: "roles",
+                    path: "settings",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop/organization/workshop-roles-page")).WorkshopRolesPage,
+                      Component: (await import("@/pages/workshop/settings/workshop-settings-layout")).WorkshopSettingsLayout,
                     }),
+                    children: [
+                      { index: true, loader: () => redirect("general") },
+                      {
+                        path: "general",
+                        lazy: async () => ({
+                          Component: (await import("@/pages/workshop/settings/general-settings-page")).GeneralSettingsPage,
+                        }),
+                      },
+                      {
+                        path: "appearance",
+                        lazy: async () => ({
+                          Component: (await import("@/pages/workshop/settings/appearance-settings-page")).AppearanceSettingsPage,
+                        }),
+                      },
+                      {
+                        path: "members",
+                        lazy: async () => ({
+                          Component: (await import("@/pages/workshop/settings/members-settings-page")).MembersSettingsPage,
+                        }),
+                      },
+                      {
+                        path: "roles",
+                        lazy: async () => ({
+                          Component: (await import("@/pages/workshop/organization/workshop-roles-page")).WorkshopRolesPage,
+                        }),
+                      },
+                    ],
                   },
                 ],
               },

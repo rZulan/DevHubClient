@@ -24,8 +24,11 @@ import type {
   ApiOrganizationRole,
   ApiProject,
   ApiTeam,
+  ColorScheme,
   DashboardWidget,
+  MemberAppearance,
   OrganizationDashboard,
+  SaveColorSchemeInput,
   SaveProjectInput,
   SaveOrganizationRoleInput,
 } from "@/features/workshop/workshop-types"
@@ -123,6 +126,7 @@ export const api = createApi({
     "Chats",
     "ChatMessages",
     "OrganizationDashboard",
+    "OrganizationAppearance",
   ],
   endpoints: (builder) => ({
     login: builder.mutation<AuthenticationResponse, LoginRequest>({
@@ -304,6 +308,75 @@ export const api = createApi({
         "Organizations",
         { type: "OrganizationRoles", id: organizationId },
         { type: "OrganizationMembers", id: organizationId },
+      ],
+    }),
+    deleteOrganization: builder.mutation<void, string>({
+      query: (organizationId) => ({
+        url: `/organizations/${organizationId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Organizations"],
+    }),
+    getOrganizationAppearance: builder.query<MemberAppearance, string>({
+      query: (organizationId) => `/organizations/${organizationId}/appearance`,
+      providesTags: (_result, _error, organizationId) => [
+        { type: "OrganizationAppearance", id: organizationId },
+      ],
+    }),
+    setActiveColorScheme: builder.mutation<
+      MemberAppearance,
+      { organizationId: string; schemeId: string }
+    >({
+      query: ({ organizationId, schemeId }) => ({
+        url: `/organizations/${organizationId}/appearance/active`,
+        method: "PUT",
+        body: { schemeId },
+      }),
+      // Repaint immediately; roll back if the server rejects the choice.
+      async onQueryStarted({ organizationId, schemeId }, { dispatch, queryFulfilled }) {
+        const patch = dispatch(api.util.updateQueryData("getOrganizationAppearance", organizationId, (draft) => {
+          draft.activeSchemeId = schemeId
+        }))
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
+    }),
+    createColorScheme: builder.mutation<
+      ColorScheme,
+      { organizationId: string; scheme: SaveColorSchemeInput }
+    >({
+      query: ({ organizationId, scheme }) => ({
+        url: `/organizations/${organizationId}/appearance/schemes`,
+        method: "POST",
+        body: scheme,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationAppearance", id: organizationId },
+      ],
+    }),
+    updateColorScheme: builder.mutation<
+      ColorScheme,
+      { organizationId: string; schemeId: string; scheme: SaveColorSchemeInput }
+    >({
+      query: ({ organizationId, schemeId, scheme }) => ({
+        url: `/organizations/${organizationId}/appearance/schemes/${schemeId}`,
+        method: "PUT",
+        body: scheme,
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationAppearance", id: organizationId },
+      ],
+    }),
+    deleteColorScheme: builder.mutation<void, { organizationId: string; schemeId: string }>({
+      query: ({ organizationId, schemeId }) => ({
+        url: `/organizations/${organizationId}/appearance/schemes/${schemeId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: "OrganizationAppearance", id: organizationId },
       ],
     }),
     leaveOrganization: builder.mutation<void, string>({
@@ -556,6 +629,12 @@ export const {
   useAssignOrganizationRoleMutation,
   usePromoteOrganizationOwnerMutation,
   useLeaveOrganizationMutation,
+  useDeleteOrganizationMutation,
+  useGetOrganizationAppearanceQuery,
+  useSetActiveColorSchemeMutation,
+  useCreateColorSchemeMutation,
+  useUpdateColorSchemeMutation,
+  useDeleteColorSchemeMutation,
   useListTeamsQuery,
   useCreateTeamMutation,
   useUpdateTeamMutation,

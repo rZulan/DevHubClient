@@ -4,17 +4,14 @@ import {
   ArrowUp,
   Check,
   Crown,
-  LogOut,
   LockKeyhole,
   Pencil,
   Plus,
-  Settings,
   ShieldCheck,
   Trash2,
-  UserMinus,
   Users,
 } from "lucide-react"
-import { useNavigate, useOutletContext } from "react-router-dom"
+import { useOutletContext } from "react-router-dom"
 
 import { useAppSelector } from "@/app/hooks"
 import { Button } from "@/components/ui/button"
@@ -34,7 +31,6 @@ import {
   canManageWorkshopRole,
   hasWorkshopPermission,
 } from "@/features/workshop/workshop-access"
-import { clearSelectedOrganizationId } from "@/features/workshop/workshop-storage"
 import type {
   WorkshopPermission,
   WorkshopRole,
@@ -44,10 +40,7 @@ import {
   useAssignOrganizationRoleMutation,
   useCreateOrganizationRoleMutation,
   useDeleteOrganizationRoleMutation,
-  useLeaveOrganizationMutation,
-  useRemoveOrganizationMemberMutation,
   usePromoteOrganizationOwnerMutation,
-  useUpdateOrganizationMutation,
   useUpdateOrganizationRoleMutation,
 } from "@/services/api"
 
@@ -66,7 +59,7 @@ const availablePermissions = [
 
 const permissionDescriptions: Record<WorkshopPermission, string> = {
   Administrator: "Grants every regular permission without bypassing role hierarchy.",
-  "Manage organization": "Edit the organization name, description, and settings.",
+  "Manage organization": "Edit the organization name, description, and dashboard.",
   "Manage roles": "Create and manage roles and assignments below this role.",
   "Manage members": "Remove organization members lower in the hierarchy.",
   "Create invites": "Create invitation links for new organization members.",
@@ -80,29 +73,19 @@ const permissionDescriptions: Record<WorkshopPermission, string> = {
 export function WorkshopRolesPage() {
   const { organization } = useOutletContext<WorkshopOutletContext>()
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
-  const navigate = useNavigate()
   const [editingRole, setEditingRole] = useState<WorkshopRole | null>(null)
   const [isCreating, setIsCreating] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [error, setError] = useState("")
   const [createRole, { isLoading: isCreatingRole }] = useCreateOrganizationRoleMutation()
   const [updateRole, { isLoading: isUpdatingRole }] = useUpdateOrganizationRoleMutation()
   const [deleteRole, { isLoading: isDeletingRole }] = useDeleteOrganizationRoleMutation()
   const [assignRole] = useAssignOrganizationRoleMutation()
   const [promoteOwner] = usePromoteOrganizationOwnerMutation()
-  const [leaveOrganization, { isLoading: isLeaving }] = useLeaveOrganizationMutation()
-  const [removeMember, { isLoading: isRemovingMember }] = useRemoveOrganizationMemberMutation()
-  const [updateOrganization, { isLoading: isUpdatingOrganization }] = useUpdateOrganizationMutation()
   const canCreateRoles = hasWorkshopPermission(organization, currentUserId, "Manage roles")
-  const canManageOrganization = hasWorkshopPermission(organization, currentUserId, "Manage organization")
-  const canManageMembers = hasWorkshopPermission(organization, currentUserId, "Manage members")
   const roles = useMemo(
     () => [...organization.roles].sort((left, right) => left.order - right.order),
     [organization.roles],
   )
-  const currentMember = organization.members.find((member) => member.id === currentUserId)
-  const ownerCount = organization.members.filter((member) => member.isOwner).length
-  const canLeave = !currentMember?.isOwner || ownerCount > 1
 
   async function moveRole(role: WorkshopRole, direction: -1 | 1) {
     const movableRoles = roles.filter((candidate) => !candidate.isOwnerRole && !candidate.isDefaultRole)
@@ -117,26 +100,6 @@ export function WorkshopRolesPage() {
       ])
     } catch (moveError) {
       setError(getApiErrorMessage(moveError))
-    }
-  }
-
-  async function leave() {
-    setError("")
-    try {
-      await leaveOrganization(organization.id).unwrap()
-      clearSelectedOrganizationId()
-      navigate("/workshop", { replace: true })
-    } catch (leaveError) {
-      setError(getApiErrorMessage(leaveError))
-    }
-  }
-
-  async function kickMember(memberId: string) {
-    setError("")
-    try {
-      await removeMember({ organizationId: organization.id, userId: memberId }).unwrap()
-    } catch (removeError) {
-      setError(getApiErrorMessage(removeError))
     }
   }
 
@@ -172,33 +135,20 @@ export function WorkshopRolesPage() {
   }
 
   return (
-    <div className="workshop-page">
-      <section className="workshop-page-heading compact">
+    <div className="workshop-settings-page">
+      <header className="workshop-settings-heading with-actions">
         <div>
-
           <h2>Roles & access</h2>
-
+          <p>Roles grant permissions and set the hierarchy for managing members.</p>
         </div>
-        <div className="workshop-heading-actions">
-          {canManageOrganization && <Button onClick={() => setSettingsOpen(true)} type="button" variant="outline"><Settings /> Organization settings</Button>}
-          {canCreateRoles && <Button className="workshop-page-action" onClick={() => { setError(""); setIsCreating(true) }} type="button"><Plus /> Create role</Button>}
-        </div>
-      </section>
+        {canCreateRoles && <Button onClick={() => { setError(""); setIsCreating(true) }} type="button"><Plus /> Create role</Button>}
+      </header>
 
       <div className="workshop-role-summary">
         <div><ShieldCheck /><span><strong>{roles.length}</strong><small>Organization roles</small></span></div>
         <div><Users /><span><strong>{organization.members.length}</strong><small>Assigned members</small></span></div>
         <div><LockKeyhole /><span><strong>{availablePermissions.length}</strong><small>Available permissions</small></span></div>
       </div>
-
-      {canManageMembers && <section className="workshop-role-member-management">
-        <h3>Member management</h3>
-        <p>Only members below your highest role can be removed.</p>
-        <div>{organization.members.map((member) => {
-          const canRemove = canManageWorkshopMember(organization, currentUserId, member.id)
-          return <article key={member.id}><span>{member.avatarUrl ? <img alt={member.name} referrerPolicy="no-referrer" src={member.avatarUrl} /> : member.initials}</span><div><strong>{member.name}</strong><small>@{member.username}{member.isOwner ? " · Owner" : ""}</small></div>{canRemove && <Button aria-label={`Remove ${member.name}`} disabled={isRemovingMember} onClick={() => void kickMember(member.id)} size="sm" type="button" variant="ghost"><UserMinus /> Remove</Button>}</article>
-        })}</div>
-      </section>}
 
       <p className="workshop-role-drag-hint"><LockKeyhole /> The Org Owner role is always highest. Custom roles follow their displayed hierarchy.</p>
       {error && <p className="workshop-form-error">{error}</p>}
@@ -238,11 +188,6 @@ export function WorkshopRolesPage() {
           )
         })}
       </div>
-
-      <section className="workshop-role-leave">
-        <div><LogOut /><span><strong>Leave organization</strong><small>{currentMember?.isOwner && !canLeave ? "Promote at least one other owner before leaving." : "Your roles and team access will be removed."}</small></span></div>
-        <Button disabled={!canLeave || isLeaving} onClick={() => void leave()} type="button" variant="destructive"><LogOut /> Leave</Button>
-      </section>
 
       <RoleDialog
         busy={isCreatingRole}
@@ -291,27 +236,6 @@ export function WorkshopRolesPage() {
         role={editingRole ?? undefined}
       />
 
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        {settingsOpen && <DialogContent className="workshop-modal sm:max-w-lg">
-          <span className="workshop-modal-icon"><Settings /></span>
-          <DialogHeader><DialogTitle>Organization settings</DialogTitle><DialogDescription>Update the name and description shown to every member.</DialogDescription></DialogHeader>
-          <form onSubmit={async (event) => {
-            event.preventDefault()
-            const form = new FormData(event.currentTarget)
-            setError("")
-            try {
-              await updateOrganization({ organizationId: organization.id, name: String(form.get("name") ?? "").trim(), description: String(form.get("description") ?? "").trim() }).unwrap()
-              setSettingsOpen(false)
-            } catch (updateError) {
-              setError(getApiErrorMessage(updateError))
-            }
-          }}>
-            <Label>Organization name<Input autoFocus defaultValue={organization.name} maxLength={150} name="name" required /></Label>
-            <Label>Description <span>Optional</span><Input defaultValue={organization.description} maxLength={1000} name="description" /></Label>
-            <Button className="workshop-primary-action" disabled={isUpdatingOrganization} type="submit"><Check /> Save changes</Button>
-          </form>
-        </DialogContent>}
-      </Dialog>
     </div>
   )
 }

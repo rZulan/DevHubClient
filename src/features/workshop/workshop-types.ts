@@ -32,6 +32,7 @@ export type WorkshopMember = {
   roleId: string
   roleIds?: string[]
   isOwner?: boolean
+  joinedAtUtc?: string
   teamIds: string[]
   online: boolean
   presenceStatus?: WorkshopPresenceStatus
@@ -142,6 +143,40 @@ export type ApiOrganizationMember = {
   avatarUrl?: string
   isOwner: boolean
   roleIds: string[]
+  joinedAtUtc?: string
+}
+
+export type ColorSchemeMode = "light" | "dark"
+
+export type ColorSchemePalette = {
+  accent: string
+  background: string
+  surface: string
+  sidebar: string
+  text: string
+}
+
+export type ColorScheme = {
+  id: string
+  name: string
+  isPreset: boolean
+  light: ColorSchemePalette
+  dark: ColorSchemePalette
+  updatedAtUtc?: string | null
+}
+
+/** The signed-in member's own workshop colors; other members never see them. */
+export type MemberAppearance = {
+  activeSchemeId: string
+  maxCustomSchemes: number
+  presets: ColorScheme[]
+  customSchemes: ColorScheme[]
+}
+
+export type SaveColorSchemeInput = {
+  name: string
+  light: ColorSchemePalette
+  dark: ColorSchemePalette
 }
 
 export type SaveOrganizationRoleInput = {

@@ -16,7 +16,7 @@ import {
   PanelRightOpen,
   Plus,
   Search,
-  ShieldCheck,
+  Settings,
   Users,
 } from "lucide-react"
 import {
@@ -54,6 +54,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useOrganizationColorScheme } from "@/features/workshop/appearance/use-organization-color-scheme"
 import { OrganizationSetupDialog } from "@/features/workshop/organization-setup-dialog"
 import { useCreateOrJoinOrganization } from "@/features/workshop/use-create-or-join-organization"
 import { useWorkshop } from "@/features/workshop/workshop-context"
@@ -68,6 +69,7 @@ import {
   setSelectedProjectId,
 } from "@/features/workshop/workshop-storage"
 import type {
+  ColorScheme,
   WorkshopMember,
   WorkshopOrganization,
   WorkshopPresenceStatus,
@@ -87,6 +89,11 @@ export type WorkshopOutletContext = {
   organization: WorkshopOrganization
   project?: WorkshopProject
   selectProject: (projectId: string) => void
+  isPersistedOrganization: boolean
+  canInvite: boolean
+  openInviteDialog: () => void
+  /** Previews a color scheme without saving it; pass nothing to restore the saved one. */
+  previewColorScheme: (scheme?: ColorScheme) => void
 }
 
 const teamColors = ["#a78bfa", "#38bdf8", "#fb7185", "#34d399", "#fbbf24"]
@@ -105,7 +112,6 @@ const navigation = [
   { label: "Projects", icon: FolderKanban, path: "projects" },
   { label: "Teams", icon: Users, path: "teams" },
   { label: "Org chart", icon: Network, path: "org-chart" },
-  { label: "Roles & access", icon: ShieldCheck, path: "roles" },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -116,7 +122,7 @@ const pageTitles: Record<string, string> = {
   "project-detail": "Project details",
   teams: "Teams",
   "org-chart": "Organization chart",
-  roles: "Roles & access",
+  settings: "Organization settings",
 }
 
 export function WorkshopLayout() {
@@ -158,6 +164,7 @@ export function WorkshopLayout() {
     organizationId ?? "",
     isPersistedOrganization,
   )
+  const { previewColorScheme } = useOrganizationColorScheme(organizationId ?? "", isPersistedOrganization)
   const organization = useMemo(() => {
     if (!baseOrganization) return undefined
 
@@ -194,6 +201,7 @@ export function WorkshopLayout() {
             roleId: primaryRole?.id ?? roles.at(-1)?.id ?? "member",
             roleIds: member.roleIds,
             isOwner: member.isOwner,
+            joinedAtUtc: member.joinedAtUtc,
             teamIds: [],
             online: presenceStatus !== "offline" && presenceStatus !== "invisible",
             presenceStatus,
@@ -276,7 +284,9 @@ export function WorkshopLayout() {
   const activeOrganizationId = organization.id
   const activePath = location.pathname.includes("/projects/")
     ? "project-detail"
-    : location.pathname.split("/").at(-1) ?? "dashboard"
+    : location.pathname.includes("/settings")
+      ? "settings"
+      : location.pathname.split("/").at(-1) ?? "dashboard"
   function selectProject(nextProjectId: string) {
     setProjectId(nextProjectId)
     setSelectedProjectId(activeOrganizationId, nextProjectId)
@@ -310,7 +320,15 @@ export function WorkshopLayout() {
     }
   }
 
-  const outletContext: WorkshopOutletContext = { organization, project, selectProject }
+  const outletContext: WorkshopOutletContext = {
+    organization,
+    project,
+    selectProject,
+    isPersistedOrganization,
+    canInvite,
+    openInviteDialog: () => void openInviteDialog(),
+    previewColorScheme,
+  }
 
   return (
     <div className={cn("workshop-shell", !membersOpen && "members-collapsed")}>
@@ -333,6 +351,7 @@ export function WorkshopLayout() {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => navigate(`/workshop/${activeOrganizationId}/settings`)}><Settings /> Organization settings</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => navigate("/workshop?choose=1")}><Building2 /> Organization Selector</DropdownMenuItem>
               <DropdownMenuItem disabled={!canInvite} onSelect={() => void openInviteDialog()}><Link2 /> Invite members</DropdownMenuItem>
               <DropdownMenuItem onSelect={setup.openCreate}><Plus /> Create an organization</DropdownMenuItem>
