@@ -653,6 +653,18 @@
   .workshop-ideation.hand-tool { cursor: var(--workshop-grab-cursor); }
   .workshop-ideation.hand-tool .workshop-canvas-note, .workshop-ideation.hand-tool .workshop-canvas-frame, .workshop-ideation.hand-tool .workshop-diagram-node, .workshop-ideation.hand-tool .workshop-canvas-line { cursor: var(--workshop-grab-cursor); }
   .workshop-ideation.panning, .workshop-ideation.panning * { cursor: var(--workshop-grabbing-cursor) !important; }
+  .workshop-canvas-context-menu { position: absolute; z-index: 20; display: flex; width: 13.5rem; flex-direction: column; gap: .12rem; padding: .35rem; border: 1px solid var(--border); border-radius: .65rem; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 18px 48px #0007; cursor: default; user-select: none; }
+  .workshop-canvas-context-menu button { display: flex; min-height: 2rem; align-items: center; justify-content: space-between; gap: .75rem; border-radius: .38rem; padding: .35rem .5rem; color: inherit; font-size: .7rem; text-align: left; }
+  .workshop-canvas-context-menu button > span { display: flex; min-width: 0; align-items: center; gap: .5rem; }
+  .workshop-canvas-context-menu button svg { width: .85rem; height: .85rem; color: var(--muted-foreground); }
+  .workshop-canvas-context-menu button:hover:not(:disabled), .workshop-canvas-context-menu button:focus-visible { background: var(--accent); color: var(--accent-foreground); outline: none; }
+  .workshop-canvas-context-menu button:disabled { opacity: .38; }
+  .workshop-canvas-context-menu button.destructive { color: var(--destructive); }
+  .workshop-canvas-context-menu button.destructive svg { color: currentColor; }
+  .workshop-canvas-context-menu kbd { color: var(--muted-foreground); font-family: inherit; font-size: .58rem; }
+  .workshop-canvas-context-separator { height: 1px; margin: .25rem .2rem; background: var(--border); }
+  .workshop-mixed-color { display: inline-grid; overflow: hidden; width: 2rem; height: 2rem; place-items: center; border: 1px solid var(--border); border-radius: .35rem; background: var(--background); }
+  .workshop-mixed-color input { width: 100%; height: 100%; opacity: 0; cursor: pointer; }
   .workshop-canvas-world { position: absolute; top: 0; left: 0; width: 1600px; height: 1100px; transform: translate(var(--canvas-pan-x), var(--canvas-pan-y)) scale(var(--canvas-zoom)); transform-origin: 0 0; }
   .workshop-canvas-meta { position: absolute; z-index: 5; top: .8rem; left: .8rem; display: flex; align-items: center; gap: .55rem; border: 1px solid #303745; border-radius: .55rem; background: rgba(10,13,18,.9); padding: .4rem .55rem; box-shadow: 0 10px 28px rgba(0,0,0,.25); backdrop-filter: blur(12px); }
   .workshop-canvas-meta > span { display: grid; width: 1.85rem; height: 1.85rem; place-items: center; border-radius: .45rem; background: rgba(245,158,11,.12); color: #fbbf24; }
@@ -721,6 +733,68 @@
   .workshop-wireframe main > div i { height: 4.7rem; border: 1px solid #35404e; border-radius: .25rem; background: linear-gradient(145deg, #272e39, #1b2028); }
   .workshop-wireframe main > b { display: block; height: 2.5rem; margin-top: .7rem; border: 1px solid #35404e; border-radius: .25rem; background: #202630; }
   .workshop-diagram-node { z-index: 1; display: grid; place-items: center; border: 2px solid rgba(167,139,250,.72); border-radius: .32rem; background: rgba(51,39,83,.92); color: #ddd6fe; box-shadow: 0 10px 28px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.05); }
+  .workshop-shape-properties { position: absolute; z-index: 8; top: 4rem; right: .8rem; display: flex; flex-direction: column; gap: .75rem; width: min(17rem, calc(100% - 1.6rem)); max-height: calc(100% - 8rem); overflow-y: auto; padding: .85rem; border: 1px solid var(--border); border-radius: .7rem; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 12px 32px #0003; cursor: default; }
+  .workshop-shape-properties > strong { font-size: .8rem; }
+  .workshop-property-section { border-top: 1px solid var(--border); padding-top: .75rem; }
+  .workshop-property-section > summary { display: flex; align-items: center; gap: .35rem; color: var(--muted-foreground); font-size: .72rem; font-weight: 600; cursor: pointer; list-style: none; user-select: none; }
+  .workshop-property-section > summary::-webkit-details-marker { display: none; }
+  .workshop-property-section > summary svg { width: .85rem; height: .85rem; transition: transform 140ms ease; }
+  .workshop-property-section[open] > summary svg { transform: rotate(90deg); }
+  .workshop-property-section > summary:focus-visible { border-radius: .25rem; outline: 2px solid var(--ring); outline-offset: 3px; }
+  .workshop-property-content { display: flex; flex-direction: column; gap: .65rem; padding-top: .65rem; }
+  .workshop-property-field, .workshop-shape-color { display: grid; grid-template-columns: 6rem minmax(0, 1fr); align-items: center; gap: .6rem; font-size: .75rem; }
+  .workshop-property-field input, .workshop-property-field select { width: 100%; min-width: 0; height: 2rem; padding: .25rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: var(--background); color: var(--foreground); }
+  .workshop-property-field input:focus-visible, .workshop-property-field select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .workshop-shape-outline { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+  .workshop-shape-text { position: absolute; inset: 0; display: flex; flex-direction: column; border-radius: inherit; overflow: hidden; pointer-events: none; font-size: 16px; line-height: 1.4; }
+  .workshop-shape-text > span { display: block; flex-shrink: 0; width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .workshop-note-content { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; gap: .65rem; overflow: hidden; padding: 1rem; pointer-events: none; text-align: left; }
+  .workshop-note-content strong { flex: 0 0 auto; border-bottom: 1px solid currentColor; padding-bottom: .55rem; font-size: 1.05rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .workshop-note-content p { margin: 0; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.5; opacity: .82; }
+  .workshop-shape-text > span, .workshop-note-content > strong, .workshop-note-content > p { pointer-events: auto; }
+  .workshop-diagram-node [contenteditable="true"] { min-width: 1ch; outline: none; cursor: text; caret-color: currentColor; user-select: text; }
+  .workshop-diagram-node.editing-text { cursor: text; }
+  .workshop-inline-text-toolbar { position: absolute; z-index: 6; bottom: calc(100% + .45rem); left: 50%; display: flex; gap: .2rem; transform: translateX(-50%) scale(var(--canvas-ui-scale)); transform-origin: center bottom; padding: .25rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 24px #0004; cursor: default; }
+  .workshop-inline-text-toolbar button { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 0; border-radius: .3rem; background: transparent; color: inherit; cursor: pointer; }
+  .workshop-inline-text-toolbar button:hover, .workshop-inline-text-toolbar button:focus-visible { background: var(--accent); outline: none; }
+  .workshop-inline-text-toolbar svg { width: .9rem; height: .9rem; }
+  .workshop-remote-selectors { position: absolute; z-index: 7; right: 0; bottom: calc(100% + .35rem); display: flex; align-items: center; gap: .25rem; transform: scale(var(--canvas-ui-scale)); transform-origin: right bottom; pointer-events: none; }
+  .workshop-remote-selectors span { max-width: 10rem; overflow: hidden; padding: .2rem .45rem; border-radius: .35rem; background: #6366f1; color: white; box-shadow: 0 4px 12px #0004; font-size: .68rem; font-weight: 650; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+  .workshop-property-field textarea { width: 100%; min-width: 0; min-height: 5rem; resize: vertical; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: var(--background); color: var(--foreground); user-select: text; }
+  .workshop-property-field textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .workshop-text-buttons { display: flex; align-items: center; gap: 2px; min-width: 0; }
+  .workshop-text-buttons > button { flex: 1; min-width: 0; }
+  .workshop-shape-style-options, .workshop-shape-layer-options { display: flex; gap: .4rem; }
+  .workshop-shape-style-options > button, .workshop-shape-layer-options > button { flex: 1; }
+  .workshop-color-value { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+  .workshop-shape-style-options { gap: .15rem; min-width: 0; }
+  .workshop-shape-style-options > button { min-width: 0; padding-inline: .3rem; font-size: .7rem; }
+  .workshop-shape-color input { width: 2rem; height: 2rem; padding: 2px; border: 1px solid var(--border); border-radius: .3rem; background: transparent; cursor: pointer; }
+  .workshop-color-value > span { color: var(--muted-foreground); font-size: .7rem; }
+  .workshop-canvas-world { isolation: isolate; }
+  .workshop-snap-guide { position: absolute; display: block; background: #ec4899; pointer-events: none; }
+  .workshop-selection-marquee { position: absolute; display: block; border: 1px solid #818cf8; background: #818cf826; pointer-events: none; }
+  .workshop-hotkeys-dialog { gap: 1rem; }
+  .workshop-hotkeys-list { display: flex; max-height: min(25rem, 55vh); flex-direction: column; gap: .15rem; overflow-y: auto; padding-right: .75rem; scrollbar-gutter: stable; }
+  .workshop-hotkeys-list > div { display: flex; min-height: 2.2rem; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding: .35rem 0; font-size: .78rem; }
+  .workshop-hotkeys-list > div > span:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem; }
+  .workshop-hotkeys-list kbd { min-width: 1.65rem; padding: .2rem .4rem; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: .3rem; background: var(--muted); color: var(--foreground); font-family: inherit; font-size: .68rem; line-height: 1; text-align: center; white-space: nowrap; }
+  .workshop-hotkeys-tip { margin: 0; color: var(--muted-foreground); font-size: .72rem; line-height: 1.5; }
+  .workshop-group-member-picker { border: 1px solid var(--border); border-radius: .45rem; background: color-mix(in oklab, var(--muted) 45%, transparent); padding: .55rem; }
+  .workshop-ideas-save-notice { position: absolute; z-index: 10; top: 4rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .75rem; width: min(36rem, calc(100% - 2rem)); padding: .75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--popover); color: var(--popover-foreground); font-size: .75rem; }
+  .workshop-group-bounds { pointer-events: none; }
+  .workshop-group-bounds .workshop-resize-handle { pointer-events: auto; }
+  .workshop-resize-handle { position: absolute; z-index: 3; width: 12px; height: 12px; padding: 0; border: 2px solid var(--primary); border-radius: 50%; background: var(--background); touch-action: none; transform: translate(-50%, -50%) scale(var(--canvas-ui-scale)); }
+  .workshop-resize-handle:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  .workshop-resize-handle[data-direction="n"] { left: 50%; top: 0; cursor: ns-resize; }
+  .workshop-resize-handle[data-direction="s"] { left: 50%; top: 100%; cursor: ns-resize; }
+  .workshop-resize-handle[data-direction="e"] { left: 100%; top: 50%; cursor: ew-resize; }
+  .workshop-resize-handle[data-direction="w"] { left: 0; top: 50%; cursor: ew-resize; }
+  .workshop-resize-handle[data-direction="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+  .workshop-resize-handle[data-direction="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+  .workshop-resize-handle[data-direction="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
+  .workshop-resize-handle[data-direction="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+  .workshop-resize-size { position: absolute; top: calc(100% + 16px); left: 50%; transform: translateX(-50%) scale(var(--canvas-ui-scale)); transform-origin: center top; padding: 3px 7px; border-radius: 4px; background: var(--foreground); color: var(--background); font-size: 12px; white-space: nowrap; pointer-events: none; }
   .workshop-node-content { position: relative; z-index: 1; display: flex; max-width: 82%; align-items: center; flex-direction: column; gap: .38rem; text-align: center; }
   .workshop-node-content svg { width: 1.05rem; height: 1.05rem; opacity: .7; }
   .workshop-node-content b { font-size: .62rem; font-weight: 620; }
@@ -756,6 +830,7 @@
   .workshop-canvas-minimap i { position: absolute; display: block; border: 1px solid #7c3aed; background: rgba(124,58,237,.2); }
   .workshop-canvas-minimap > span { display: flex; height: 1.55rem; align-items: center; gap: .3rem; border-top: 1px solid #303745; padding: 0 .45rem; color: #596579; font-size: .45rem; }
   .workshop-canvas-minimap svg { width: .55rem; }
+  .workshop-canvas-minimap .workshop-minimap-map { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--background); cursor: crosshair; touch-action: none; }
 
   /* Lobby dashboard follows the supplied three-column Workshop layout. */
   .workshop-dashboard-page { width: min(92rem, 100%); padding: clamp(1.5rem, 3vw, 3rem); }

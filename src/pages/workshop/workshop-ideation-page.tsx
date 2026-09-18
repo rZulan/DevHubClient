@@ -1,36 +1,12 @@
+import { Lightbulb } from "lucide-react"
 import {
-  ArrowRight,
-  Box,
-  Braces,
-  Circle,
-  Cloud,
-  Database,
-  Diamond,
-  FileText,
-  Focus,
-  Hand,
-  Layers3,
-  Lightbulb,
-  Maximize2,
-  Minus,
-  MousePointer2,
-  Network,
-  Plus,
-  Search,
-  Server,
-  Shapes,
-  Square,
-  StickyNote,
-  UserRound,
-  Webhook,
-  X,
-  type LucideIcon,
-} from "lucide-react"
-import {
-  useCallback,
+  useLayoutEffect,
+  useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent,
 } from "react"
@@ -38,122 +14,171 @@ import { useOutletContext } from "react-router-dom"
 
 import { useAppSelector } from "@/app/hooks"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { hasWorkshopPermission } from "@/features/workshop/workshop-access"
 import type { WorkshopOutletContext } from "@/layouts/workshop-layout"
 import { createClientId } from "@/lib/create-client-id"
+import type { ResizeDirection } from "@/features/workshop/resize-rectangle"
+import { snapShape, type SnapGuide } from "@/features/workshop/snap-shape"
+import { combinedBounds, fitBounds, zoomAt } from "@/features/workshop/canvas-view"
+import { resizeSelection } from "@/features/workshop/resize-selection"
+import { useIdeasDocument } from "@/features/workshop/use-ideas-document"
+import { useIdeasCollaboration } from "@/features/workshop/use-ideas-collaboration"
+import { expandGroupedIds, groupShapes, ungroupShapes } from "@/features/workshop/shape-groups"
+import { CanvasCard, type TextSelection, type TextStyleCommand } from "@/features/workshop/ideas/canvas-card"
+import { CanvasToolbar, ShapeSelector, ZoomControls } from "@/features/workshop/ideas/canvas-controls"
+import { CanvasMinimap } from "@/features/workshop/ideas/canvas-minimap"
+import { IdeasShortcutsDialog } from "@/features/workshop/ideas/shortcuts-dialog"
+import { CanvasContextMenu, type CanvasContextAction } from "@/features/workshop/ideas/canvas-context-menu"
+import { ShapePropertiesPanel, type ShapeStyleChanges } from "@/features/workshop/ideas/shape-properties-panel"
+import { selectedCharacterStyle, type CharacterStyleChanges } from "@/features/workshop/ideas/rich-text"
 
-type DiagramShapeKind =
-  | "process"
-  | "decision"
-  | "terminator"
-  | "data"
-  | "document"
-  | "database"
-  | "service"
-  | "server"
-  | "api"
-  | "queue"
-  | "cloud"
-  | "user"
-  | "container"
-  | "line"
-  | "arrow"
-  | "dashed-line"
-
-type DiagramShapeDefinition = {
-  kind: DiagramShapeKind
-  label: string
-  icon: LucideIcon
-  width: number
-  height: number
-}
-
-const diagramShapeGroups: { label: string; shapes: DiagramShapeDefinition[] }[] = [
-  {
-    label: "Flowchart",
-    shapes: [
-      { kind: "process", label: "Process", icon: Square, width: 190, height: 105 },
-      { kind: "decision", label: "Decision", icon: Diamond, width: 145, height: 145 },
-      { kind: "terminator", label: "Start / End", icon: Circle, width: 190, height: 85 },
-      { kind: "data", label: "Input / Output", icon: Braces, width: 190, height: 105 },
-      { kind: "document", label: "Document", icon: FileText, width: 180, height: 120 },
-      { kind: "database", label: "Database", icon: Database, width: 145, height: 130 },
-    ],
-  },
-  {
-    label: "Architecture",
-    shapes: [
-      { kind: "service", label: "Service", icon: Box, width: 180, height: 110 },
-      { kind: "server", label: "Server", icon: Server, width: 170, height: 120 },
-      { kind: "api", label: "API", icon: Webhook, width: 170, height: 105 },
-      { kind: "queue", label: "Queue", icon: Layers3, width: 180, height: 105 },
-      { kind: "cloud", label: "Cloud", icon: Cloud, width: 175, height: 105 },
-      { kind: "user", label: "User", icon: UserRound, width: 120, height: 130 },
-    ],
-  },
-  {
-    label: "Layout",
-    shapes: [
-      { kind: "container", label: "Container", icon: Maximize2, width: 310, height: 220 },
-    ],
-  },
-  {
-    label: "Connectors",
-    shapes: [
-      { kind: "line", label: "Line", icon: Minus, width: 240, height: 90 },
-      { kind: "arrow", label: "Arrow", icon: ArrowRight, width: 240, height: 90 },
-      { kind: "dashed-line", label: "Dashed", icon: Network, width: 240, height: 90 },
-    ],
-  },
-]
-
-const diagramShapeDefinitions = diagramShapeGroups.flatMap((group) => group.shapes)
-
-type CanvasItem = {
-  id: string
-  type: "note" | "frame" | "diagram"
-  shapeKind?: DiagramShapeKind
-  title: string
-  body?: string
-  x: number
-  y: number
-  width: number
-  height: number
-  color: "amber" | "violet" | "cyan" | "slate"
-}
-
-const initialItems: CanvasItem[] = [
-  { id: "note-one", type: "note", title: "What if setup felt like a conversation?", body: "Keep the first-run experience focused: create a team, choose a project, invite one person.", x: 160, y: 125, width: 230, height: 180, color: "amber" },
-  { id: "note-two", type: "note", title: "Permission principle", body: "Members see work from their teams. Leads can coordinate across projects only when explicitly tagged.", x: 670, y: 210, width: 245, height: 190, color: "violet" },
-  { id: "frame-one", type: "frame", title: "Workshop navigation study", x: 320, y: 430, width: 490, height: 285, color: "slate" },
-  { id: "note-three", type: "note", title: "Project pulse", body: "The dashboard should answer: what changed, what is blocked, and where can I help?", x: 930, y: 500, width: 230, height: 175, color: "cyan" },
-]
+import { defaultTextStyle, cloneShapes, decodeShapes, encodeShapes, normalizeCanvasItem, type CanvasItem } from "@/features/workshop/shape-clipboard"
 
 export function WorkshopIdeationPage() {
   const { organization, project } = useOutletContext<WorkshopOutletContext>()
   const userId = useAppSelector((state) => state.auth.user?.id)
-  const [items, setItems] = useState(initialItems)
+  if (!project) return <section className="workshop-empty-panel"><Lightbulb /><h3>No project canvas yet</h3><p>Select or create a project to start capturing ideas.</p></section>
+  return <IdeasCanvas key={`${userId}:${organization.id}:${project.id}`} />
+}
+
+function IdeasCanvas() {
+  const { organization, project } = useOutletContext<WorkshopOutletContext>()
+  const userId = useAppSelector((state) => state.auth.user?.id)
+  const hasEditPermission = hasWorkshopPermission(organization, userId ?? "current", "Edit ideation")
+  const ideasKey = { organizationId: organization.id, projectId: project!.id }
+  const { items, setItems, status: saveStatus, applyRemote, save, retry, reload } = useIdeasDocument(ideasKey, userId ?? "current", hasEditPermission)
+  const manualSave = useRef(save)
+  manualSave.current = save
+  useEffect(() => {
+    function saveShortcut(event: globalThis.KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return
+      event.preventDefault()
+      if (!event.repeat && hasEditPermission) manualSave.current()
+    }
+    window.addEventListener("keydown", saveShortcut, true)
+    return () => window.removeEventListener("keydown", saveShortcut, true)
+  }, [hasEditPermission])
   const [zoom, setZoom] = useState(0.85)
   const [pan, setPan] = useState({ x: 60, y: 30 })
   const [tool, setTool] = useState<"select" | "hand">("select")
+  const [spacePanning, setSpacePanning] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false)
-  const [shapeSearch, setShapeSearch] = useState("")
+  const [isHotkeysOpen, setIsHotkeysOpen] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; target: "canvas" | "selection" }>()
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [activeTextSelection, setActiveTextSelection] = useState<TextSelection>()
+  const [textStyleCommand, setTextStyleCommand] = useState<TextStyleCommand>()
+  const textStyleCommandId = useRef(0)
+  const { selectorsByShape } = useIdeasCollaboration(ideasKey, selectedIds, applyRemote)
+  const [snapping, setSnapping] = useState(true)
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([])
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  useEffect(() => {
+    const available = new Set(items.map(item => item.id))
+    setSelectedIds(current => {
+      const next = current.filter(id => available.has(id))
+      return next.length === current.length ? current : next
+    })
+  }, [items])
+  const selectedItems = useMemo(() => items.filter((item) => selectedIdSet.has(item.id)), [items, selectedIdSet])
+  const selectedGroupId = useMemo(() => selectedItems.length > 1 && selectedItems[0].groupId && selectedItems.every((item) => item.groupId === selectedItems[0].groupId)
+    ? selectedItems[0].groupId
+    : undefined, [selectedItems])
+  const [propertyItemId, setPropertyItemId] = useState<string>()
+  useEffect(() => {
+    if (!selectedItems.some((item) => item.id === propertyItemId)) setPropertyItemId(selectedItems[0]?.id)
+  }, [propertyItemId, selectedItems])
+  const selectedItem = selectedItems.find((item) => item.id === propertyItemId) ?? selectedItems[0]
+  const selectedTextStyle = useMemo(() => selectedItem && activeTextSelection?.itemId === selectedItem.id
+    ? selectedCharacterStyle(selectedItem, activeTextSelection.part, activeTextSelection.start, activeTextSelection.end)
+    : undefined, [activeTextSelection, selectedItem])
+  const propertyItems = useMemo(() => selectedGroupId && selectedItem ? [selectedItem] : selectedItems, [selectedGroupId, selectedItem, selectedItems])
+  const propertyTargetIds = useMemo(() => new Set(propertyItems.map((item) => item.id)), [propertyItems])
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const lastPaste = useRef({ text: "", count: 0 })
+  const contextClipboard = useRef<CanvasItem[]>([])
+  const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 })
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const observer = new ResizeObserver(() => setViewportSize({ width: canvas.clientWidth, height: canvas.clientHeight }))
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [project?.id])
+  const selectionStart = useRef<{ pointerId: number; x: number; y: number; base: string[] } | null>(null)
+  const groupStart = useRef<CanvasItem[]>([])
+  const [marquee, setMarquee] = useState<{ x: number; y: number; width: number; height: number }>()
   const panStart = useRef<{ pointerX: number; pointerY: number; panX: number; panY: number } | null>(null)
-  const canEditIdeation = hasWorkshopPermission(
-    organization,
-    userId ?? "current",
-    "Edit ideation",
-  )
+  const canEditIdeation = hasEditPermission && !["loading", "load-error", "conflict"].includes(saveStatus)
+  const panningMode = tool === "hand" || spacePanning
 
-  const setSafeZoom = useCallback((value: number) => {
-    setZoom(Math.min(1.6, Math.max(0.35, value)))
-  }, [])
+  useEffect(() => {
+    function keyDown(event: globalThis.KeyboardEvent) {
+      if (event.code !== "Space" || event.repeat || isHotkeysOpen || isEditingText(event.target)) return
+      event.preventDefault()
+      setSpacePanning(true)
+    }
+    function releaseSpace(event: globalThis.KeyboardEvent) {
+      if (event.code === "Space") setSpacePanning(false)
+    }
+    function releaseOnBlur() { setSpacePanning(false) }
+    window.addEventListener("keydown", keyDown, true)
+    window.addEventListener("keyup", releaseSpace, true)
+    window.addEventListener("blur", releaseOnBlur)
+    return () => {
+      window.removeEventListener("keydown", keyDown, true)
+      window.removeEventListener("keyup", releaseSpace, true)
+      window.removeEventListener("blur", releaseOnBlur)
+    }
+  }, [isHotkeysOpen])
+
+  useEffect(() => {
+    if (!contextMenu) return
+    function close(event: globalThis.PointerEvent) {
+      if (event.target instanceof Element && event.target.closest(".workshop-canvas-context-menu")) return
+      setContextMenu(undefined)
+    }
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      setContextMenu(undefined)
+    }
+    function closeOnBlur() { setContextMenu(undefined) }
+    window.addEventListener("pointerdown", close, true)
+    window.addEventListener("keydown", closeOnEscape, true)
+    window.addEventListener("blur", closeOnBlur)
+    return () => {
+      window.removeEventListener("pointerdown", close, true)
+      window.removeEventListener("keydown", closeOnEscape, true)
+      window.removeEventListener("blur", closeOnBlur)
+    }
+  }, [contextMenu])
+
+  function setViewZoom(value: number, anchor = { x: viewportSize.width / 2, y: viewportSize.height / 2 }) {
+    // Guard numerical overflow only; there are no product-level zoom limits.
+    if (!Number.isFinite(value) || value <= 0) return
+    const nextPan = zoomAt(zoom, pan, value, anchor)
+    if (!Number.isFinite(nextPan.x) || !Number.isFinite(nextPan.y) || !Number.isFinite(viewportSize.width / value)) return
+    setPan(nextPan)
+    setZoom(value)
+  }
 
   function beginPan(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary) return
+    event.currentTarget.focus({ preventScroll: true })
+    if (event.button === 0 && !panningMode) {
+      event.preventDefault()
+      const bounds = event.currentTarget.getBoundingClientRect()
+      const base = event.shiftKey || event.ctrlKey || event.metaKey ? selectedIds : []
+      selectionStart.current = { pointerId: event.pointerId, x: (event.clientX - bounds.left - pan.x) / zoom, y: (event.clientY - bounds.top - pan.y) / zoom, base }
+      setSelectedIds(base)
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
     const isMiddleMouse = event.button === 1
-    const isPrimaryPan = event.button === 0 && tool === "hand"
+    const isPrimaryPan = event.button === 0 && panningMode
     if (!isMiddleMouse && !isPrimaryPan) return
 
     event.preventDefault()
@@ -163,6 +188,17 @@ export function WorkshopIdeationPage() {
   }
 
   function movePan(event: ReactPointerEvent<HTMLDivElement>) {
+    const start = selectionStart.current
+    if (start && start.pointerId === event.pointerId) {
+      const bounds = event.currentTarget.getBoundingClientRect()
+      const x = (event.clientX - bounds.left - pan.x) / zoom
+      const y = (event.clientY - bounds.top - pan.y) / zoom
+      const box = { x: Math.min(x, start.x), y: Math.min(y, start.y), width: Math.abs(x - start.x), height: Math.abs(y - start.y) }
+      setMarquee(box)
+      const hits = items.filter((item) => item.x <= box.x + box.width && item.x + item.width >= box.x && item.y <= box.y + box.height && item.y + item.height >= box.y).map((item) => item.id)
+      setSelectedIds(expandGroupedIds(items, [...new Set([...start.base, ...hits])]))
+      return
+    }
     if (!panStart.current) return
     setPan({
       x: panStart.current.panX + event.clientX - panStart.current.pointerX,
@@ -172,59 +208,218 @@ export function WorkshopIdeationPage() {
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
     event.preventDefault()
-    const nextZoom = Math.min(1.6, Math.max(0.35, zoom * Math.exp(-event.deltaY * 0.0015)))
+    if (selectionStart.current || groupStart.current.length) return
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewportSize.height : 1)
+    const nextZoom = zoom * Math.exp(-delta * 0.0015)
     if (nextZoom === zoom) return
 
     const bounds = event.currentTarget.getBoundingClientRect()
     const pointerX = event.clientX - bounds.left
     const pointerY = event.clientY - bounds.top
-    const worldX = (pointerX - pan.x) / zoom
-    const worldY = (pointerY - pan.y) / zoom
-
-    setPan({
-      x: pointerX - worldX * nextZoom,
-      y: pointerY - worldY * nextZoom,
-    })
-    setZoom(nextZoom)
+    setViewZoom(nextZoom, { x: pointerX, y: pointerY })
   }
 
   function endPan() {
+    selectionStart.current = null
+    setMarquee(undefined)
     panStart.current = null
     setIsPanning(false)
   }
 
-  function addNote() {
-    setItems((current) => [...current, {
-      id: createClientId(),
-      type: "note",
-      title: "New idea",
-      body: "Double-click text editing is coming with canvas persistence.",
-      x: (240 - pan.x) / zoom,
-      y: (180 - pan.y) / zoom,
-      width: 220,
-      height: 170,
-      color: "amber",
-    }])
+  function addRectangle(at?: { x: number; y: number }) {
+    const id = createClientId()
+    setItems((current) => [...current, normalizeCanvasItem({
+      id,
+      kind: "rectangle",
+      x: at?.x ?? (520 - pan.x) / zoom + (current.length % 4) * 18,
+      y: at?.y ?? (280 - pan.y) / zoom + (current.length % 4) * 18,
+      width: 190,
+      height: 105,
+      appearance: "outlined",
+      fillColor: "#a78bfa",
+      outlineColor: "#a78bfa",
+      ...defaultTextStyle,
+      text: "",
+      noteHeader: "",
+      noteBody: "",
+      textAlign: "center",
+      verticalAlign: "center",
+      cornerRadius: 0,
+      outlineWidth: 2,
+      outlineStyle: "solid",
+    })])
+    setTool("select")
+    setSelectedIds([id])
+    setIsShapeMenuOpen(false)
   }
 
-  function addShape(shape: DiagramShapeDefinition) {
-    setItems((current) => [...current, {
-      id: createClientId(),
-      type: "diagram",
-      shapeKind: shape.kind,
-      title: shape.label,
-      x: (520 - pan.x) / zoom + (current.length % 4) * 18,
-      y: (280 - pan.y) / zoom + (current.length % 4) * 18,
-      width: shape.width,
-      height: shape.height,
-      color: "violet",
-    }])
+  function addNote(at?: { x: number; y: number }) {
+    const id = createClientId()
+    setItems((current) => [...current, normalizeCanvasItem({
+      id,
+      kind: "note",
+      x: at?.x ?? (520 - pan.x) / zoom + (current.length % 4) * 18,
+      y: at?.y ?? (280 - pan.y) / zoom + (current.length % 4) * 18,
+      width: 240,
+      height: 180,
+      appearance: "fill",
+      fillColor: "#fef3c7",
+      outlineColor: "#f59e0b",
+      ...defaultTextStyle,
+      text: "",
+      noteHeader: "New note",
+      noteBody: "Add your idea here.",
+      textAlign: "left",
+      verticalAlign: "top",
+      cornerRadius: 12,
+      outlineWidth: 1,
+      outlineStyle: "solid",
+    })])
     setTool("select")
+    setSelectedIds([id])
+    setIsShapeMenuOpen(false)
   }
 
   function resetView() {
-    setZoom(0.85)
-    setPan({ x: 60, y: 30 })
+    if (!items.length) {
+      setZoom(1)
+      setPan({ x: viewportSize.width / 2, y: viewportSize.height / 2 })
+      return
+    }
+    const view = fitBounds(combinedBounds(items), viewportSize, selectedItem && tool === "select" && viewportSize.width > 600 ? 300 : 0)
+    setZoom(view.zoom)
+    setPan(view.pan)
+  }
+
+  function updateShapeStyle(changes: ShapeStyleChanges) {
+    setItems((current) => current.map((item) => propertyTargetIds.has(item.id) ? { ...item, ...changes } : item))
+  }
+
+  function updateSelectedTextStyle(changes: CharacterStyleChanges) {
+    if (!activeTextSelection) return
+    setTextStyleCommand({ ...activeTextSelection, changes, id: ++textStyleCommandId.current })
+  }
+
+  function changeShapeOrder(position: "front" | "back") {
+    setItems((current) => {
+      const selected = current.filter((item) => selectedIds.includes(item.id))
+      if (!selected) return current
+      const others = current.filter((item) => !selectedIds.includes(item.id))
+      return position === "front" ? [...others, ...selected] : [...selected, ...others]
+    })
+  }
+
+  function groupSelection() {
+    if (selectedItems.length < 2) return
+    const groupId = createClientId()
+    setItems((current) => groupShapes(current, selectedIds, groupId))
+    setSelectedIds(expandGroupedIds(items.map((item) => selectedIds.includes(item.id) ? { ...item, groupId } : item), selectedIds))
+  }
+
+  function ungroupSelection() {
+    if (!selectedItems.some((item) => item.groupId)) return
+    setItems((current) => ungroupShapes(current, selectedIds))
+  }
+
+  function insertCopies(source: CanvasItem[], offset: number) {
+    if (!source.length) return
+    const copies = cloneShapes(source, offset, createClientId)
+    setItems((current) => [...current, ...copies])
+    setSelectedIds(copies.map((item) => item.id))
+    setSnapGuides([])
+  }
+
+  async function copySelection(source = selectedItems) {
+    if (!source.length) return
+    const text = encodeShapes(source)
+    contextClipboard.current = source.map((item) => ({ ...item }))
+    lastPaste.current = { text, count: 0 }
+    try { await navigator.clipboard.writeText(text) } catch { /* The internal canvas clipboard remains available. */ }
+  }
+
+  async function pasteFromClipboard(at?: { x: number; y: number }) {
+    let text = ""
+    try { text = await navigator.clipboard.readText() } catch { /* Fall back to the internal canvas clipboard. */ }
+    const decoded = decodeShapes(text)
+    const source = decoded.length ? decoded : contextClipboard.current
+    if (!source.length) return
+    if (at) {
+      const copies = cloneShapes(source, 0, createClientId)
+      const bounds = combinedBounds(copies)
+      const positioned = copies.map((item) => ({ ...item, x: item.x + at.x - bounds.x, y: item.y + at.y - bounds.y }))
+      setItems((current) => [...current, ...positioned])
+      setSelectedIds(positioned.map((item) => item.id))
+      return
+    }
+    const encoded = text || encodeShapes(source)
+    const count = lastPaste.current.text === encoded ? lastPaste.current.count + 1 : 1
+    lastPaste.current = { text: encoded, count }
+    insertCopies(source, 24 * count / zoom)
+  }
+
+  function deleteSelection() {
+    setItems((current) => current.filter((item) => !selectedIds.includes(item.id)))
+    setSelectedIds([])
+  }
+
+  function openContextMenu(event: ReactMouseEvent<HTMLDivElement>) {
+    if (isEditingText(event.target) || event.target instanceof Element && event.target.closest(".workshop-shape-properties, .workshop-canvas-toolbar, .workshop-shape-menu, .workshop-zoom-control, .workshop-canvas-minimap, .workshop-canvas-meta, [role=dialog]")) return
+    event.preventDefault()
+    const canvas = event.currentTarget
+    const bounds = canvas.getBoundingClientRect()
+    const shapeElement = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-canvas-item-id]") : null
+    const selectionBounds = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-canvas-selection]") : null
+    const shapeId = shapeElement?.dataset.canvasItemId
+    if (shapeId) {
+      const shape = items.find((item) => item.id === shapeId)
+      if (shape && !selectedIdSet.has(shapeId)) {
+        const ids = shape.groupId ? items.filter((item) => item.groupId === shape.groupId).map((item) => item.id) : [shapeId]
+        setSelectedIds(ids)
+        setPropertyItemId(shapeId)
+      }
+    }
+    const x = Math.max(8, Math.min(event.clientX - bounds.left, canvas.clientWidth - 228))
+    const selectionTarget = !!shapeId || !!selectionBounds
+    const y = Math.max(8, Math.min(event.clientY - bounds.top, canvas.clientHeight - (selectionTarget ? 390 : 220)))
+    setContextMenu({ x, y, worldX: (event.clientX - bounds.left - pan.x) / zoom, worldY: (event.clientY - bounds.top - pan.y) / zoom, target: selectionTarget ? "selection" : "canvas" })
+    setIsShapeMenuOpen(false)
+  }
+
+  async function runContextAction(action: CanvasContextAction) {
+    const menu = contextMenu
+    setContextMenu(undefined)
+    if (!menu) return
+    if (action === "copy") await copySelection()
+    else if (action === "cut") { await copySelection(); deleteSelection() }
+    else if (action === "paste") await pasteFromClipboard({ x: menu.worldX, y: menu.worldY })
+    else if (action === "duplicate") insertCopies(selectedItems, 24 / zoom)
+    else if (action === "delete") deleteSelection()
+    else if (action === "group") groupSelection()
+    else if (action === "ungroup") ungroupSelection()
+    else if (action === "front") changeShapeOrder("front")
+    else if (action === "back") changeShapeOrder("back")
+    else if (action === "select-all") setSelectedIds(items.map((item) => item.id))
+    else if (action === "fit") resetView()
+    else if (action === "add-rectangle") addRectangle({ x: menu.worldX, y: menu.worldY })
+    else if (action === "add-note") addNote({ x: menu.worldX, y: menu.worldY })
+  }
+
+  function isEditingText(target: EventTarget | null) {
+    return target instanceof HTMLElement && !!target.closest("input, select, textarea, [contenteditable]:not([contenteditable=false])")
+  }
+
+  function changeSelectionSize(next: CanvasItem, direction?: ResizeDirection, bypass = true, keyboard = false) {
+    const source = keyboard ? selectedItems : groupStart.current
+    if (source.length < 2) return
+    const original = combinedBounds(source)
+    const constrained = resizeSelection(source, original, next)
+    const targets = items.filter((item) => !source.some((member) => member.id === item.id))
+    const snapped = snapping && !bypass ? snapShape({ ...next, ...constrained.bounds }, targets, zoom, direction) : { shape: { ...next, ...constrained.bounds }, guides: [] }
+    const resized = resizeSelection(source, original, snapped.shape)
+    setSnapGuides(snapped.guides.filter((guide) => guide.axis === "x"
+      ? resized.bounds.x === snapped.shape.x && resized.bounds.width === snapped.shape.width
+      : resized.bounds.y === snapped.shape.y && resized.bounds.height === snapped.shape.height))
+    setItems((current) => current.map((item) => resized.items.find((member) => member.id === item.id) ?? item))
   }
 
   if (!project) {
@@ -233,7 +428,65 @@ export function WorkshopIdeationPage() {
 
   return (
     <div
-      className={`workshop-ideation${tool === "hand" ? " hand-tool" : ""}${isPanning ? " panning" : ""}`}
+      ref={canvasRef}
+      tabIndex={0}
+      aria-label="Ideas canvas"
+      onCopy={(event) => {
+        if (isEditingText(event.target) || tool !== "select" || !canEditIdeation || !selectedItems.length || groupStart.current.length) return
+        event.preventDefault()
+        const text = encodeShapes(selectedItems)
+        event.clipboardData.setData("text/plain", text)
+        lastPaste.current = { text, count: 0 }
+        contextClipboard.current = selectedItems.map((item) => ({ ...item }))
+      }}
+      onCut={(event) => {
+        if (isEditingText(event.target) || tool !== "select" || !canEditIdeation || !selectedItems.length || groupStart.current.length) return
+        event.preventDefault()
+        const text = encodeShapes(selectedItems)
+        event.clipboardData.setData("text/plain", text)
+        lastPaste.current = { text, count: 0 }
+        contextClipboard.current = selectedItems.map((item) => ({ ...item }))
+        deleteSelection()
+      }}
+      onPaste={(event) => {
+        if (isEditingText(event.target) || tool !== "select" || !canEditIdeation || groupStart.current.length || selectionStart.current) return
+        const text = event.clipboardData.getData("text/plain")
+        const source = decodeShapes(text)
+        if (!source.length) return
+        event.preventDefault()
+        const count = lastPaste.current.text === text ? lastPaste.current.count + 1 : 1
+        lastPaste.current = { text, count }
+        insertCopies(source, 24 * count / zoom)
+        canvasRef.current?.focus({ preventScroll: true })
+      }}
+      onKeyDown={(event) => {
+        if (!isEditingText(event.target) && tool === "select" && canEditIdeation && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
+          event.preventDefault()
+          if (!event.repeat && !groupStart.current.length && !selectionStart.current) insertCopies(selectedItems, 24 / zoom)
+          return
+        }
+        if (!isEditingText(event.target) && tool === "select" && canEditIdeation && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g") {
+          event.preventDefault()
+          if (!event.repeat) {
+            if (event.shiftKey) ungroupSelection()
+            else groupSelection()
+          }
+          return
+        }
+        if ((event.target as HTMLElement).closest("input, select, textarea, button, [contenteditable=true]")) return
+        if (event.key === "Escape") { setSelectedIds([]); setSnapGuides([]); setIsShapeMenuOpen(false); return }
+        if (tool !== "select" || !canEditIdeation) return
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+          event.preventDefault(); setSelectedIds(items.map((item) => item.id))
+        } else if (event.key === "Delete" || event.key === "Backspace") {
+          event.preventDefault(); setItems((current) => current.filter((item) => !selectedIds.includes(item.id))); setSelectedIds([])
+        } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+          event.preventDefault()
+          const step = event.shiftKey ? 10 : 1
+          setItems((current) => current.map((item) => selectedIds.includes(item.id) ? { ...item, x: item.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0), y: item.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0) } : item))
+        }
+      }}
+      className={`workshop-ideation${panningMode ? " hand-tool" : ""}${isPanning ? " panning" : ""}`}
       onAuxClick={(event) => {
         if (event.button === 1) event.preventDefault()
       }}
@@ -242,6 +495,7 @@ export function WorkshopIdeationPage() {
       onLostPointerCapture={endPan}
       onPointerMove={movePan}
       onPointerUp={endPan}
+      onContextMenu={openContextMenu}
       onWheel={handleWheel}
       style={{
         "--canvas-pan-x": `${pan.x}px`,
@@ -251,166 +505,103 @@ export function WorkshopIdeationPage() {
     >
       <div className="workshop-canvas-meta" onPointerDown={(event) => event.stopPropagation()}>
         <span><Lightbulb /></span>
-        <div><small>{project.name}</small><strong>Product direction · v1</strong></div>
-        <i>Saved locally</i>
+        <div><small>{project.name}</small><strong>Ideas</strong></div>
+        <small role="status">{({ loading: "Loading…", saved: "Saved", unsaved: "Unsaved changes", saving: "Saving…", error: "Save failed", conflict: "Save conflict", "load-error": "Could not load" })[saveStatus]}</small>
       </div>
+      {["error", "load-error", "conflict"].includes(saveStatus) && <div className="workshop-ideas-save-notice" role="alert" onPointerDown={(event) => event.stopPropagation()}>
+        <span>{saveStatus === "conflict" ? "Another session changed this canvas. Your draft is kept locally. Reloading replaces it with the saved version." : saveStatus === "load-error" ? "The canvas could not be loaded. Editing is disabled until it loads." : "Changes could not be saved. Your draft is kept locally; retry when connected."}</span>
+        {saveStatus === "conflict" ? <Button size="sm" type="button" onClick={() => { if (window.confirm("Replace your local draft with the latest saved canvas?")) { setSelectedIds([]); reload() } }}>Reload saved version</Button> : <Button size="sm" type="button" onClick={retry}>Retry</Button>}
+      </div>}
 
-      <div className="workshop-canvas-toolbar" onPointerDown={(event) => event.stopPropagation()}>
-        <Button aria-label="Select tool" className={tool === "select" ? "active" : ""} onClick={() => setTool("select")} size="icon" type="button" variant="ghost"><MousePointer2 /></Button>
-        <Button aria-label="Hand tool" className={tool === "hand" ? "active" : ""} onClick={() => setTool("hand")} size="icon" type="button" variant="ghost"><Hand /></Button>
-        <span />
-        {canEditIdeation && <><Button className="h-8" onClick={addNote} type="button" variant="ghost"><StickyNote /> <b>Add note</b></Button>
-        <span />
-        <Button className={isShapeMenuOpen ? "active h-8" : "h-8"} onClick={() => setIsShapeMenuOpen((current) => !current)} type="button" variant="ghost"><Shapes /> <b>Shapes</b></Button></>}
-      </div>
-
-      {isShapeMenuOpen && (
-        <aside aria-label="Diagram shape library" className="workshop-shape-menu" onPointerDown={(event) => event.stopPropagation()}>
-          <header><div><Shapes /><span><strong>Shapes</strong><small>Diagram library</small></span></div><Button aria-label="Close shapes" onClick={() => setIsShapeMenuOpen(false)} size="icon-sm" type="button" variant="ghost"><X /></Button></header>
-          <label><Search /><Input autoFocus onChange={(event) => setShapeSearch(event.target.value)} placeholder="Search shapes" value={shapeSearch} /></label>
-          <div className="workshop-shape-sections">
-            {diagramShapeGroups.map((group) => {
-              const matchingShapes = group.shapes.filter((shape) => shape.label.toLocaleLowerCase().includes(shapeSearch.trim().toLocaleLowerCase()))
-              if (matchingShapes.length === 0) return null
-              return (
-                <section key={group.label}>
-                  <h3>{group.label}</h3>
-                  <div>
-                    {matchingShapes.map(({ icon: Icon, ...shape }) => (
-                      <Button className="h-auto" key={shape.kind} onClick={() => addShape({ ...shape, icon: Icon })} title={`Add ${shape.label}`} type="button" variant="ghost">
-                        <span data-preview={shape.kind}><Icon /></span>
-                        <small>{shape.label}</small>
-                      </Button>
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
-          </div>
-        </aside>
+      <CanvasToolbar
+        canEdit={canEditIdeation}
+        tool={tool}
+        shapeMenuOpen={isShapeMenuOpen}
+        snapping={snapping}
+        onSelectTool={() => { setTool("select"); canvasRef.current?.focus({ preventScroll: true }) }}
+        onHandTool={() => setTool("hand")}
+        onToggleShapes={() => setIsShapeMenuOpen((current) => !current)}
+        onToggleSnapping={() => { setSnapping((current) => !current); setSnapGuides([]) }}
+        onShowShortcuts={() => setIsHotkeysOpen(true)}
+      />
+      <IdeasShortcutsDialog open={isHotkeysOpen} onOpenChange={setIsHotkeysOpen} />
+      {contextMenu && <CanvasContextMenu canEdit={canEditIdeation} hasClipboard={contextClipboard.current.length > 0} hasGroupedItems={selectedItems.some((item) => item.groupId)} selectionCount={selectedItems.length} target={contextMenu.target} x={contextMenu.x} y={contextMenu.y} onAction={runContextAction} />}
+      {canEditIdeation && isShapeMenuOpen && <ShapeSelector onAddRectangle={addRectangle} onAddNote={addNote} onClose={() => setIsShapeMenuOpen(false)} />}
+      {canEditIdeation && tool === "select" && selectedItem && (
+        <ShapePropertiesPanel
+          key={selectedItem.id}
+          allItemsCount={items.length}
+          selectedGroupId={selectedGroupId}
+          selectedIds={selectedIds}
+          selectedItem={selectedItem}
+          selectedItems={selectedItems}
+          propertyItems={propertyItems}
+          onPropertyItemChange={setPropertyItemId}
+          onUpdate={updateShapeStyle}
+          activeTextPart={activeTextSelection?.itemId === selectedItem.id ? activeTextSelection.part : undefined}
+          selectedTextStyle={selectedTextStyle}
+          onTextStyleUpdate={updateSelectedTextStyle}
+          onChangeOrder={changeShapeOrder}
+          onGroup={groupSelection}
+          onUngroup={ungroupSelection}
+        />
       )}
-
       <div className="workshop-canvas-world" aria-label="Infinite ideation canvas">
-        {items.map((item) => (
-          <CanvasCard canDrag={canEditIdeation && tool === "select"} item={item} key={item.id} onMove={(x, y) => setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, x, y } : candidate))} zoom={zoom} />
+        {items.map((item, index) => (
+          <CanvasCard canDrag={canEditIdeation && tool === "select" && !spacePanning} showResizeHandles={selectedItems.length < 2} item={item} layer={index + 1} key={item.id} remoteSelectors={selectorsByShape.get(item.id)} selected={selectedIdSet.has(item.id)} textStyleCommand={textStyleCommand} onTextSelectionChange={(selection) => {
+            setActiveTextSelection(selection)
+            if (selection) setPropertyItemId(selection.itemId)
+          }} onSelect={(toggle, resizing) => {
+            canvasRef.current?.focus({ preventScroll: true })
+            const itemIds = item.groupId ? items.filter((candidate) => candidate.groupId === item.groupId).map((candidate) => candidate.id) : [item.id]
+            const groupSelected = itemIds.every((id) => selectedIds.includes(id))
+            const ids = toggle
+              ? groupSelected ? selectedIds.filter((id) => !itemIds.includes(id)) : expandGroupedIds(items, [...selectedIds, ...itemIds])
+              : groupSelected ? selectedIds : itemIds
+            setSelectedIds(ids)
+            groupStart.current = items.filter((candidate) => resizing ? candidate.id === item.id : ids.includes(candidate.id))
+            if (toggle) { groupStart.current = []; return false }
+            return true
+          }} onChange={(next) => setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, ...next } : candidate))} onDragChange={(next, direction, bypass) => {
+            const moving = groupStart.current
+            const targets = items.filter((candidate) => !moving.some((member) => member.id === candidate.id))
+            const snapped = snapping && !bypass ? snapShape(next, targets, zoom, direction) : { shape: next, guides: [] }
+            setSnapGuides(snapped.guides)
+            const origin = moving.find((member) => member.id === item.id)
+            setItems((current) => current.map((candidate) => {
+              if (direction) return candidate.id === item.id ? snapped.shape : candidate
+              const start = moving.find((member) => member.id === candidate.id)
+              return start && origin ? { ...candidate, x: start.x + snapped.shape.x - origin.x, y: start.y + snapped.shape.y - origin.y } : candidate
+            }))
+          }} onDragEnd={() => { setSnapGuides([]); groupStart.current = [] }} zoom={zoom} />
         ))}
+        {canEditIdeation && tool === "select" && selectedItems.length > 1 && selectedItem && (
+          <CanvasCard
+            selectionBox
+            canDrag={!spacePanning}
+            selected
+            item={{ ...selectedItem, ...combinedBounds(selectedItems), id: "selection-bounds", appearance: "outlined", outlineStyle: "dashed", outlineWidth: 1 / zoom, outlineColor: "#818cf8", cornerRadius: 0 }}
+            layer={items.length + 2}
+            zoom={zoom}
+            onSelect={() => { groupStart.current = selectedItems.map((item) => ({ ...item })); canvasRef.current?.focus({ preventScroll: true }); return true }}
+            onChange={(next) => changeSelectionSize(next, undefined, true, true)}
+            onDragChange={changeSelectionSize}
+            onDragEnd={() => { groupStart.current = []; setSnapGuides([]) }}
+          />
+        )}
+        {marquee && <i className="workshop-selection-marquee" aria-hidden="true" style={{ left: marquee.x, top: marquee.y, width: marquee.width, height: marquee.height, borderWidth: 1 / zoom, zIndex: items.length + 2 }} />}
+        {snapGuides.map((guide) => <i aria-hidden="true" className="workshop-snap-guide" key={guide.axis} style={{
+          left: guide.axis === "x" ? guide.position : guide.start - 12 / zoom,
+          top: guide.axis === "y" ? guide.position : guide.start - 12 / zoom,
+          width: guide.axis === "x" ? 1 / zoom : guide.end - guide.start + 24 / zoom,
+          height: guide.axis === "y" ? 1 / zoom : guide.end - guide.start + 24 / zoom,
+          zIndex: items.length + 1,
+        }} />)}
       </div>
 
-      <div className="workshop-zoom-control" onPointerDown={(event) => event.stopPropagation()}>
-        <Button aria-label="Zoom out" onClick={() => setSafeZoom(zoom - 0.1)} size="icon-sm" type="button" variant="ghost"><Minus /></Button>
-        <Button onClick={resetView} size="sm" type="button" variant="ghost">{Math.round(zoom * 100)}%</Button>
-        <Button aria-label="Zoom in" onClick={() => setSafeZoom(zoom + 0.1)} size="icon-sm" type="button" variant="ghost"><Plus /></Button>
-        <span />
-        <Button aria-label="Fit to screen" onClick={resetView} size="icon-sm" type="button" variant="ghost"><Focus /></Button>
-      </div>
+      <ZoomControls zoom={zoom} onZoom={setViewZoom} onFit={resetView} />
 
-      <div className="workshop-canvas-minimap" onPointerDown={(event) => event.stopPropagation()}>
-        <div>{items.map((item) => <i key={item.id} style={{ left: `${8 + item.x / 14}px`, top: `${8 + item.y / 14}px`, width: `${Math.max(8, item.width / 14)}px`, height: `${Math.max(6, item.height / 14)}px` }} />)}</div>
-        <span><Maximize2 /> Canvas overview</span>
-      </div>
+      <CanvasMinimap items={items} viewport={{ x: -pan.x / zoom, y: -pan.y / zoom, width: viewportSize.width / zoom, height: viewportSize.height / zoom }} onNavigate={(x, y) => setPan({ x: viewportSize.width / 2 - x * zoom, y: viewportSize.height / 2 - y * zoom })} />
     </div>
-  )
-}
-
-function CanvasCard({
-  canDrag,
-  item,
-  onMove,
-  zoom,
-}: {
-  canDrag: boolean
-  item: CanvasItem
-  onMove: (x: number, y: number) => void
-  zoom: number
-}) {
-  const dragStart = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null)
-
-  function beginDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (event.button !== 0 || !canDrag) return
-    event.stopPropagation()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    dragStart.current = { pointerX: event.clientX, pointerY: event.clientY, x: item.x, y: item.y }
-  }
-
-  function moveDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (!dragStart.current) return
-    event.stopPropagation()
-    onMove(
-      dragStart.current.x + (event.clientX - dragStart.current.pointerX) / zoom,
-      dragStart.current.y + (event.clientY - dragStart.current.pointerY) / zoom,
-    )
-  }
-
-  const style = {
-    left: item.x,
-    top: item.y,
-    width: item.width,
-    height: item.height,
-  }
-
-  function endDrag() {
-    dragStart.current = null
-  }
-
-  const dragHandlers = {
-    onLostPointerCapture: endDrag,
-    onPointerCancel: endDrag,
-    onPointerDown: beginDrag,
-    onPointerMove: moveDrag,
-    onPointerUp: endDrag,
-  }
-
-  const shapeDefinition = item.shapeKind
-    ? diagramShapeDefinitions.find((shape) => shape.kind === item.shapeKind)
-    : undefined
-  const isConnector = item.shapeKind === "line" || item.shapeKind === "arrow" || item.shapeKind === "dashed-line"
-
-  if (item.type === "diagram" && isConnector) {
-    const markerId = `arrow-${item.id}`
-    return (
-      <section aria-label={`${item.title} connector`} className="workshop-canvas-line" {...dragHandlers} style={style}>
-        <svg aria-hidden="true" height="100%" preserveAspectRatio="none" viewBox={`0 0 ${item.width} ${item.height}`} width="100%">
-          {item.shapeKind === "arrow" && <defs><marker id={markerId} markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5"><path d="M0,0 L7,3.5 L0,7 Z" /></marker></defs>}
-          <line className="hit-area" x1="5" x2={item.width - 5} y1={item.height - 5} y2="5" />
-          <line className={item.shapeKind === "dashed-line" ? "visible dashed" : "visible"} markerEnd={item.shapeKind === "arrow" ? `url(#${markerId})` : undefined} x1="5" x2={item.width - 8} y1={item.height - 5} y2="8" />
-          <circle cx="5" cy={item.height - 5} r="4" />
-          {item.shapeKind !== "arrow" && <circle cx={item.width - 5} cy="5" r="4" />}
-        </svg>
-      </section>
-    )
-  }
-
-  if (item.type === "diagram" && item.shapeKind) {
-    const ShapeIcon = shapeDefinition?.icon
-    return (
-      <section aria-label={`${item.title} shape`} className="workshop-diagram-node" data-shape={item.shapeKind} {...dragHandlers} style={style}>
-        <span className="workshop-node-content">
-          {ShapeIcon && <ShapeIcon />}
-          <b>{item.title}</b>
-        </span>
-      </section>
-    )
-  }
-
-  if (item.type === "frame") {
-    return (
-      <section className="workshop-canvas-frame" data-color={item.color} {...dragHandlers} style={style}>
-        <header><span /> {item.title}</header>
-        <div className="workshop-wireframe">
-          <aside><i /><i /><i /><i /></aside>
-          <main><span /><div><i /><i /></div><b /></main>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <article className="workshop-canvas-note" data-color={item.color} {...dragHandlers} style={style}>
-      <span className="workshop-note-pin" />
-      <small>Idea</small>
-      <h3>{item.title}</h3>
-      <p>{item.body}</p>
-      <footer><b>YO</b><span>Just now</span></footer>
-    </article>
   )
 }
