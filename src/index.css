@@ -211,7 +211,12 @@
   .workshop-sidebar-user.status-dnd small { color: #ef4444; }
   .workshop-sidebar-user.status-invisible small { color: #94a3b8; }
   .workshop-sidebar-user-avatar { position: relative; display: grid; flex: none; }
-  .workshop-sidebar-user-avatar > i { position: absolute; right: -.12rem; bottom: -.04rem; width: .68rem; height: .68rem; border: 2px solid #11151d; border-radius: 999px; }
+  /* Cut out the avatar beneath the badge so its gap reveals the actual surface. */
+  .workshop-sidebar-user-avatar > [data-slot="avatar"],
+  .workshop-sidebar-user-avatar > .workshop-user-fallback {
+    mask-image: radial-gradient(circle at calc(100% - .22rem) calc(100% - .3rem), transparent calc(.34rem - .5px), black .34rem);
+  }
+  .workshop-sidebar-user-avatar > i { position: absolute; right: -.12rem; bottom: -.04rem; width: .68rem; height: .68rem; border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }
   .workshop-status-chevron { margin-left: auto; color: #64748b; }
   .workshop-presence-menu { min-width: 12rem; padding: .35rem; }
   .workshop-presence-menu [data-slot="dropdown-menu-radio-item"] { min-height: 2.3rem; gap: .55rem; }
@@ -246,7 +251,7 @@
   .workshop-invite-copy-row button { display: inline-flex; flex: none; align-items: center; gap: .35rem; background: #7c3aed; color: white; }
   .workshop-invite-copy-row button:hover { background: #8b5cf6; }
   .workshop-invite-copy-row button svg { width: .8rem; height: .8rem; }
-  .workshop-project-select { display: grid; grid-template-columns: auto minmax(8rem, 12rem); align-items: center; gap: .6rem; border: 1px solid #2c3240; border-radius: .55rem; background: #0b0e14; padding: .26rem .32rem .26rem .65rem; }
+  .workshop-project-select { display: grid; grid-template-columns: auto minmax(10rem, 15rem); align-items: center; gap: .6rem; background: #0b0e14; padding: .26rem .32rem .26rem .65rem; }
   .workshop-project-select > span { color: #5d6879; font-size: .58rem; white-space: nowrap; }
   .workshop-project-select [data-slot="select-trigger"] { width: 100%; height: auto; border: 0; border-radius: .36rem; background: #171c26; padding: .42rem .55rem; color: #dbe4f0; font-size: .68rem; outline: none; }
   .workshop-icon-button { display: grid; width: 2.3rem; height: 2.3rem; place-items: center; border: 1px solid #2c3240; border-radius: .55rem; background: #0b0e14; color: #718096; }

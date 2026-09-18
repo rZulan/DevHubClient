@@ -423,9 +423,19 @@ export function WorkshopLayout() {
                 onValueChange={selectProject}
                 value={project?.id}
               >
-                <SelectTrigger aria-label="Current project" className="border-0 bg-secondary text-secondary-foreground dark:bg-secondary dark:hover:bg-secondary"><SelectValue placeholder="No project yet" /></SelectTrigger>
-                <SelectContent>
-                  {visibleProjects.map((candidate) => <SelectItem key={candidate.id} value={candidate.id}>{candidate.name}</SelectItem>)}
+                <SelectTrigger
+                  aria-label="Current project"
+                  className="w-full min-w-0 border-0 bg-secondary text-secondary-foreground dark:bg-secondary dark:hover:bg-secondary [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:text-left"
+                  title={project?.name}
+                >
+                  <SelectValue placeholder="No project yet" />
+                </SelectTrigger>
+                <SelectContent position="popper" align="start" className="w-(--radix-select-trigger-width) min-w-0 p-1">
+                  {visibleProjects.map((candidate) => (
+                    <SelectItem className="py-2 [&>span:last-child]:min-w-0" key={candidate.id} value={candidate.id}>
+                      <span className="truncate" title={candidate.name}>{candidate.name}</span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
