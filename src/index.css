@@ -2343,8 +2343,10 @@
 }
 
 /* Workshop chat */
-.workshop-messages-button { position: fixed; z-index: 40; right: 18.25rem; bottom: 1.25rem; width: 3rem; height: 3rem; border: 1px solid color-mix(in oklab, var(--primary) 55%, var(--border)); border-radius: 999px; background: var(--primary); color: var(--primary-foreground); box-shadow: 0 7px 18px color-mix(in oklab, var(--primary) 14%, transparent); cursor: pointer; }
-.workshop-messages-button:hover { background: color-mix(in oklab, var(--primary) 88%, var(--foreground)); cursor: pointer; transform: translateY(-1px); }
+.workshop-messages-button { position: fixed; z-index: 40; right: 18.25rem; bottom: 1.25rem; width: 3rem; height: 3rem; border: 1px solid color-mix(in oklab, var(--primary) 55%, var(--border)); border-radius: 999px; background: var(--primary); color: var(--primary-foreground); box-shadow: 0 7px 18px color-mix(in oklab, var(--primary) 14%, transparent); cursor: grab; touch-action: none; user-select: none; transition: background-color .15s, box-shadow .15s; }
+.workshop-messages-button:hover { background: color-mix(in oklab, var(--primary) 88%, var(--foreground)); }
+.workshop-messages-button:active { translate: none; }
+.workshop-messages-button[data-dragging="true"] { cursor: grabbing; }
 .workshop-messages-button svg { width: 1.15rem; height: 1.15rem; }
 .workshop-shell.members-collapsed .workshop-messages-button { right: 1.25rem; }
 .chat-unread-total { position: absolute; top: -.55rem; right: -.55rem; min-width: 1.25rem; height: 1.25rem; justify-content: center; border: 2px solid var(--background); padding: 0 .25rem; font-size: .58rem; }

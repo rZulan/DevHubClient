@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { ChatConversation, ChatKind, ChatMessage } from "@/features/chat/chat-types"
 import { useChatConnection } from "@/features/chat/use-chat-connection"
+import { useChatLauncherPosition } from "@/features/chat/use-chat-launcher-position"
 import type { WorkshopMember } from "@/features/workshop/workshop-types"
 import {
   useAddChatMemberMutation,
@@ -93,6 +94,7 @@ function ConversationIcon({ kind }: { kind: ChatKind }) {
 }
 
 export function ChatDialog({ organizationId, currentUserId, members }: ChatDialogProps) {
+  const launcherPosition = useChatLauncherPosition()
   const [open, setOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string>()
   const [composeMode, setComposeMode] = useState<ComposeMode>(null)
@@ -150,11 +152,12 @@ export function ChatDialog({ organizationId, currentUserId, members }: ChatDialo
   return (
     <>
       <Button
+        {...launcherPosition}
         aria-label="Open messages"
         className="workshop-messages-button"
         onClick={() => { setOpen(true); void refetch() }}
         size="icon"
-        title="Messages"
+        title="Messages (drag to move)"
         type="button"
       >
         <MessageCircle />
