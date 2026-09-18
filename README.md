@@ -43,7 +43,14 @@ src/
 ├── components/   # Shared components; shadcn components live in ui/
 ├── features/     # Domain Redux slices and feature code
 ├── layouts/      # Route layouts
-├── pages/        # Route-level screens
+├── pages/        # Route-level screens grouped by related functionality
+│   ├── account/  # Account layout, profile, connections, display, and billing
+│   ├── auth/     # Login and registration
+│   ├── discovery/ # Discovery screen
+│   ├── general/  # Home and not-found screens
+│   └── workshop/ # Organization selection, dashboard, todo, and ideation
+│       ├── organization/ # Teams, organization chart, and roles
+│       ├── projects/     # Project list and project details
 └── services/     # RTK Query APIs
 ```
 

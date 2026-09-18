@@ -11,7 +11,7 @@ import { ProtectedLayout } from "@/features/auth/protected-layout"
 import { AccountRootLayout } from "@/layouts/account-root-layout"
 import { DiscoveryLayout } from "@/layouts/discovery-layout"
 import { RootLayout } from "@/layouts/root-layout"
-import { AccountLayout } from "@/pages/account-layout"
+import { AccountLayout } from "@/pages/account/account-layout"
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
           {
             index: true,
             lazy: async () => ({
-              Component: (await import("@/pages/home-page")).HomePage,
+              Component: (await import("@/pages/general/home-page")).HomePage,
             }),
           },
           {
@@ -35,13 +35,13 @@ export const router = createBrowserRouter([
               {
                 path: "login",
                 lazy: async () => ({
-                  Component: (await import("@/pages/login-page")).LoginPage,
+                  Component: (await import("@/pages/auth/login-page")).LoginPage,
                 }),
               },
               {
                 path: "register",
                 lazy: async () => ({
-                  Component: (await import("@/pages/register-page")).RegisterPage,
+                  Component: (await import("@/pages/auth/register-page")).RegisterPage,
                 }),
               },
             ],
@@ -49,7 +49,7 @@ export const router = createBrowserRouter([
           {
             path: "*",
             lazy: async () => ({
-              Component: (await import("@/pages/not-found-page")).NotFoundPage,
+              Component: (await import("@/pages/general/not-found-page")).NotFoundPage,
             }),
           },
         ],
@@ -66,7 +66,7 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import("@/pages/discovery-page")).DiscoveryPage,
+                  Component: (await import("@/pages/discovery/discovery-page")).DiscoveryPage,
                 }),
               },
             ],
@@ -78,7 +78,7 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import("@/pages/workshop-page")).WorkshopPage,
+                  Component: (await import("@/pages/workshop/workshop-page")).WorkshopPage,
                 }),
               },
               {
@@ -89,50 +89,50 @@ export const router = createBrowserRouter([
                   {
                     path: "dashboard",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-lobby-page")).WorkshopLobbyPage,
+                      Component: (await import("@/pages/workshop/workshop-lobby-page")).WorkshopLobbyPage,
                     }),
                   },
                   { path: "lobby", loader: () => redirect("../dashboard") },
                   {
                     path: "todo",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-todo-page")).WorkshopTodoPage,
+                      Component: (await import("@/pages/workshop/workshop-todo-page")).WorkshopTodoPage,
                     }),
                   },
                   {
                     path: "ideation",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-ideation-page")).WorkshopIdeationPage,
+                      Component: (await import("@/pages/workshop/workshop-ideation-page")).WorkshopIdeationPage,
                     }),
                   },
                   {
                     path: "projects",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-projects-page")).WorkshopProjectsPage,
+                      Component: (await import("@/pages/workshop/projects/workshop-projects-page")).WorkshopProjectsPage,
                     }),
                   },
                   {
                     path: "projects/:projectId",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-project-detail-page")).WorkshopProjectDetailPage,
+                      Component: (await import("@/pages/workshop/projects/workshop-project-detail-page")).WorkshopProjectDetailPage,
                     }),
                   },
                   {
                     path: "teams",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-teams-page")).WorkshopTeamsPage,
+                      Component: (await import("@/pages/workshop/organization/workshop-teams-page")).WorkshopTeamsPage,
                     }),
                   },
                   {
                     path: "org-chart",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-org-chart-page")).WorkshopOrgChartPage,
+                      Component: (await import("@/pages/workshop/organization/workshop-org-chart-page")).WorkshopOrgChartPage,
                     }),
                   },
                   {
                     path: "roles",
                     lazy: async () => ({
-                      Component: (await import("@/pages/workshop-roles-page")).WorkshopRolesPage,
+                      Component: (await import("@/pages/workshop/organization/workshop-roles-page")).WorkshopRolesPage,
                     }),
                   },
                 ],
@@ -152,25 +152,25 @@ export const router = createBrowserRouter([
                   {
                     path: "profile",
                     lazy: async () => ({
-                      Component: (await import("@/pages/profile-page")).ProfilePage,
+                      Component: (await import("@/pages/account/profile-page")).ProfilePage,
                     }),
                   },
                   {
                     path: "account",
                     lazy: async () => ({
-                      Component: (await import("@/pages/account-page")).AccountPage,
+                      Component: (await import("@/pages/account/account-page")).AccountPage,
                     }),
                   },
                   {
                     path: "display",
                     lazy: async () => ({
-                      Component: (await import("@/pages/display-page")).DisplayPage,
+                      Component: (await import("@/pages/account/display-page")).DisplayPage,
                     }),
                   },
                   {
                     path: "billing",
                     lazy: async () => ({
-                      Component: (await import("@/pages/billing-page")).BillingPage,
+                      Component: (await import("@/pages/account/billing-page")).BillingPage,
                     }),
                   },
                 ],
