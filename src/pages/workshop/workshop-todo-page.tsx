@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type DragEvent, type FormEvent } from "react"
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronsLeft, ChevronsRight, Circle, Clock3, GripHorizontal, Plus } from "lucide-react"
 import { useOutletContext, useSearchParams } from "react-router-dom"
 import { useAppSelector } from "@/app/hooks"
@@ -102,6 +102,55 @@ function TodoPageContent({ organization, project }: WorkshopOutletContext & { pr
   const [error, setError] = useState("")
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dropColumn, setDropColumn] = useState<WorkshopTaskStatus | null>(null)
+  const dragPreviewCleanup = useRef<(() => void) | null>(null)
+  useEffect(() => () => dragPreviewCleanup.current?.(), [])
+
+  function startDrag(event: DragEvent<HTMLDivElement>, taskId: string) {
+    dragPreviewCleanup.current?.()
+    const card = event.currentTarget
+    const bounds = card.getBoundingClientRect()
+    const offsetX = event.clientX - bounds.left
+    const offsetY = event.clientY - bounds.top
+    const preview = card.cloneNode(true) as HTMLElement
+    preview.classList.remove("workshop-task-dragging")
+    preview.classList.add("workshop-task-drag-preview")
+    preview.inert = true
+    preview.setAttribute("aria-hidden", "true")
+    preview.removeAttribute("draggable")
+    preview.style.width = bounds.width + "px"
+    preview.style.height = bounds.height + "px"
+    preview.style.left = bounds.left + "px"
+    preview.style.top = bounds.top + "px"
+    document.body.appendChild(preview)
+    const blank = document.createElement("canvas")
+    blank.width = blank.height = 1
+    event.dataTransfer.setDragImage(blank, 0, 0)
+    event.dataTransfer.setData("text/plain", taskId)
+    event.dataTransfer.effectAllowed = "move"
+    let lastX = event.clientX
+    const move = (pointer: globalThis.DragEvent) => {
+      preview.style.left = pointer.clientX - offsetX + "px"
+      preview.style.top = pointer.clientY - offsetY + "px"
+      const delta = pointer.clientX - lastX
+      if (Math.abs(delta) >= 2) {
+        preview.style.setProperty("--drag-tilt", delta > 0 ? "2deg" : "-2deg")
+        lastX = pointer.clientX
+      }
+    }
+    const cleanup = () => {
+      preview.remove()
+      document.removeEventListener("dragover", move)
+      document.removeEventListener("drop", cleanup)
+      document.removeEventListener("dragend", cleanup)
+      dragPreviewCleanup.current = null
+    }
+    document.addEventListener("dragover", move)
+    document.addEventListener("drop", cleanup)
+    document.addEventListener("dragend", cleanup)
+    dragPreviewCleanup.current = cleanup
+    setDraggedId(taskId)
+  }
+
   const saving = useRef(false)
   const canManage = hasWorkshopPermission(organization, userId ?? "current", "Manage tasks")
   const busy = creatingTodo || creatingTask || movingTask
@@ -183,7 +232,7 @@ function TodoPageContent({ organization, project }: WorkshopOutletContext & { pr
                 onDrop={event => { event.preventDefault(); setDropColumn(null); if (draggedId) void changeStatus(draggedId, id) }}>
                 <header><span><Icon /><strong>{label}</strong><b>{tasks.length}</b></span></header>
                 <div className="workshop-task-list">
-                  {tasks.map(task => <Card className={`workshop-task${draggedId === task.id ? " workshop-task-dragging" : ""}`} key={task.id} draggable={canManage && !busy} onDragStart={event => { event.dataTransfer.setData("text/plain", task.id); event.dataTransfer.effectAllowed = "move"; setDraggedId(task.id) }} onDragEnd={() => { setDraggedId(null); setDropColumn(null) }}>
+                  {tasks.map(task => <Card className={`workshop-task${draggedId === task.id ? " workshop-task-dragging" : ""}`} key={task.id} draggable={canManage && !busy} onDragStart={event => startDrag(event, task.id)} onDragEnd={() => { setDraggedId(null); setDropColumn(null) }}>
                     <h3>{task.title}</h3>
                     {task.description && <p>{task.description}</p>}
                     {canManage && <>
@@ -198,7 +247,7 @@ function TodoPageContent({ organization, project }: WorkshopOutletContext & { pr
             })}
           </div>
         ) : todos.length ? (
-          <div className="workshop-todo-grid" aria-busy={isFetching} style={{ gridTemplateColumns: `repeat(${columnCount ?? 1}, minmax(0, 1fr))` }}>
+          <div className="workshop-todo-grid" aria-busy={isFetching}>
             {todos.map(todo => {
               const completed = todo.tasks.filter(task => task.status === "done").length
               return <button className="workshop-todo-card" key={todo.id} onClick={() => openTodo(todo.id)}>
