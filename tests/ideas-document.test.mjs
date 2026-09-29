@@ -78,6 +78,35 @@ test('manual save flushes pending edits immediately', async () => {
   assert.equal(h.value.status, 'saved')
 })
 
+test('retry resubmits a rejected new shape and clears the error after success', async () => {
+  const h = harness(); await h.settle()
+  const diamond = normalizeCanvasItem({ ...shape, kind: 'diamond' })
+  h.value.setItems([diamond]); h.tick()
+  h.saves[0].reject({ status: 400 }); await h.settle()
+  assert.equal(h.value.status, 'error')
+  assert.match(h.value.saveError, /server rejected/)
+  assert.equal(h.storage.size, 1)
+  h.value.retry()
+  assert.equal(h.value.status, 'saving')
+  assert.equal(h.saves.length, 2)
+  assert.equal(h.saves[1].items[0].kind, 'diamond')
+  h.value.retry()
+  assert.equal(h.saves.length, 2)
+  h.saves[1].resolve({ revision: 1, items: [diamond] }); await h.settle()
+  assert.equal(h.value.status, 'saved')
+  assert.equal(h.value.saveError, undefined)
+  assert.equal(h.storage.size, 0)
+})
+
+test('network failures preserve the draft and show a connection-specific message', async () => {
+  const h = harness(); await h.settle()
+  h.value.setItems([shape]); h.tick()
+  h.saves[0].reject({ status: 'FETCH_ERROR' }); await h.settle()
+  assert.match(h.value.saveError, /Could not connect/)
+  assert.equal(h.storage.size, 1)
+  assert.equal(h.value.items[0].text, 'hello')
+})
+
 test('conflicts preserve the draft and block further writes', async () => {
   const h = harness(); await h.settle()
   h.value.setItems([shape]); h.tick()
