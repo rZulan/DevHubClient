@@ -37,3 +37,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Shared, non-secret environment profiles
+!.env.development
+!.env.production

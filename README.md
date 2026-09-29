@@ -67,3 +67,13 @@ npx shadcn@latest add <component>
 npm run lint
 npm run build
 ```
+
+## Environment switch
+
+- Local development: `npm run dev:local` (also the default `npm run dev`). Start the API with its Local profile.
+- Production-mode development: `npm run dev:production`. Start the API with its Production profile. This runs locally; it does not deploy.
+- Production build: `npm run build`. Local build: `npm run build:local`.
+
+Shared public settings live in `.env.development` and `.env.production`. Use `.env.development.local` for private local overrides; avoid environment-specific values in `.env.local` because Vite reads it in every mode. Shell variables take precedence. In client code use `import.meta.env.MODE === "development"` to check the selected profile (Vite's DEV flag describes the dev server, not the selected mode). Production uses same-origin /api; the local Vite server proxies API and realtime traffic to https://localhost:7116.
+
+Local Google login starts at https://localhost:7116/api and returns to http://localhost:5173. Provider credentials stay in API user-secrets.
