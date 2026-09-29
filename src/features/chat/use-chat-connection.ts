@@ -1,106 +1,109 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  HubConnectionBuilder,
-  HubConnectionState,
-  type HubConnection,
-} from "@microsoft/signalr"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {type HubConnection, HubConnectionBuilder, HubConnectionState,} from "@microsoft/signalr"
 
-import { useAppDispatch, useAppSelector } from "@/app/hooks"
-import { api } from "@/services/api"
-import type { ChatMessage } from "@/features/chat/chat-types"
+import {useAppDispatch, useAppSelector} from "@/app/hooks"
+import {api} from "@/services/api"
+import type {ChatMessage} from "@/features/chat/chat-types"
 
 export function useChatConnection(
-  organizationId: string,
-  enabled: boolean,
-  onMessage: (message: ChatMessage) => void,
+    organizationId: string,
+    enabled: boolean,
+    onMessage: (message: ChatMessage) => void,
 ) {
-  const dispatch = useAppDispatch()
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const connectionRef = useRef<HubConnection | null>(null)
-  const onMessageRef = useRef(onMessage)
-  const [connected, setConnected] = useState(false)
+    const dispatch = useAppDispatch()
+    const accessToken = useAppSelector((state) => state.auth.accessToken)
+    const connectionRef = useRef<HubConnection | null>(null)
+    const onMessageRef = useRef(onMessage)
+    const [connected, setConnected] = useState(false)
 
-  onMessageRef.current = onMessage
+    onMessageRef.current = onMessage
 
-  useEffect(() => {
-    if (!enabled || !organizationId) return
-
-    let disposed = false
-    let retryTimer: ReturnType<typeof setTimeout> | undefined
-    const connection = new HubConnectionBuilder()
-      .withUrl("/hubs/chat", {
-        accessTokenFactory: () => accessToken ?? "",
-        withCredentials: true,
-      })
-      .withAutomaticReconnect()
-      .build()
-    connectionRef.current = connection
-
-    connection.on("MessageReceived", (message: ChatMessage) => {
-      onMessageRef.current(message)
-    })
-    connection.on("ConversationsChanged", (changedOrganizationId: string) => {
-      if (changedOrganizationId.toLowerCase() === organizationId.toLowerCase()) {
-        dispatch(api.util.invalidateTags([{ type: "Chats", id: organizationId }]))
-      }
-    })
-
-    function scheduleConnect() {
-      clearTimeout(retryTimer)
-      if (!disposed) retryTimer = setTimeout(connect, 2_000)
-    }
-
-    async function connect() {
-      if (disposed || connection.state !== HubConnectionState.Disconnected) return
-      try {
-        await connection.start()
-        if (!disposed) setConnected(true)
-      } catch {
+    useEffect(() => {
         setConnected(false)
-        if (connection.state !== HubConnectionState.Disconnected) {
-          try {
-            await connection.stop()
-          } catch {
-            // The retry below handles partially opened transports too.
-          }
+        if (!enabled || !organizationId) return
+
+        let disposed = false
+        let retryTimer: ReturnType<typeof setTimeout> | undefined
+        const connection = new HubConnectionBuilder()
+            .withUrl("/hubs/chat", {
+                accessTokenFactory: () => accessToken ?? "",
+                withCredentials: true,
+            })
+            .withAutomaticReconnect()
+            .build()
+        connectionRef.current = connection
+
+        connection.on("MessageReceived", (message: ChatMessage, changedOrganizationId: string) => {
+            if (!disposed && changedOrganizationId?.toLowerCase() === organizationId.toLowerCase()) onMessageRef.current(message)
+        })
+        connection.on("ConversationsChanged", (changedOrganizationId: string) => {
+            if (changedOrganizationId.toLowerCase() === organizationId.toLowerCase()) {
+                dispatch(api.util.invalidateTags([{type: "Chats", id: organizationId}]))
+            }
+        })
+
+        function refreshAfterConnect() {
+            if (disposed) return
+            setConnected(true)
+            dispatch(api.util.invalidateTags([{type: "Chats", id: organizationId}, "ChatMessages"]))
         }
-        scheduleConnect()
-      }
-    }
 
-    connection.onreconnecting(() => setConnected(false))
-    connection.onreconnected(() => setConnected(true))
-    connection.onclose(() => {
-      setConnected(false)
-      scheduleConnect()
-    })
-    void connect()
+        function scheduleConnect() {
+            clearTimeout(retryTimer)
+            if (!disposed) retryTimer = setTimeout(connect, 2_000)
+        }
 
-    return () => {
-      disposed = true
-      clearTimeout(retryTimer)
-      connectionRef.current = null
-      if (connection.state !== HubConnectionState.Disconnected) void connection.stop()
-    }
-  }, [accessToken, dispatch, enabled, organizationId])
+        async function connect() {
+            if (disposed || connection.state !== HubConnectionState.Disconnected) return
+            try {
+                await connection.start()
+                refreshAfterConnect()
+            } catch {
+                setConnected(false)
+                if (connection.state !== HubConnectionState.Disconnected) {
+                    try {
+                        await connection.stop()
+                    } catch {
+                        // The retry below handles partially opened transports too.
+                    }
+                }
+                scheduleConnect()
+            }
+        }
 
-  const sendMessage = useCallback(async (
-    conversationId: string,
-    body: string,
-    clientMessageId: string,
-  ) => {
-    const connection = connectionRef.current
-    if (!connection || connection.state !== HubConnectionState.Connected) {
-      throw new Error("Chat is reconnecting. Please try again in a moment.")
-    }
-    return connection.invoke<ChatMessage>(
-      "SendMessage",
-      organizationId,
-      conversationId,
-      clientMessageId,
-      body,
-    )
-  }, [organizationId])
+        connection.onreconnecting(() => setConnected(false))
+        connection.onreconnected(refreshAfterConnect)
+        connection.onclose(() => {
+            setConnected(false)
+            scheduleConnect()
+        })
+        void connect()
 
-  return { connected, sendMessage }
+        return () => {
+            disposed = true
+            clearTimeout(retryTimer)
+            connectionRef.current = null
+            if (connection.state !== HubConnectionState.Disconnected) void connection.stop()
+        }
+    }, [accessToken, dispatch, enabled, organizationId])
+
+    const sendMessage = useCallback(async (
+        conversationId: string,
+        body: string,
+        clientMessageId: string,
+    ) => {
+        const connection = connectionRef.current
+        if (!connection || connection.state !== HubConnectionState.Connected) {
+            throw new Error("Chat is reconnecting. Please try again in a moment.")
+        }
+        return connection.invoke<ChatMessage>(
+            "SendMessage",
+            organizationId,
+            conversationId,
+            clientMessageId,
+            body,
+        )
+    }, [organizationId])
+
+    return {connected, sendMessage}
 }
