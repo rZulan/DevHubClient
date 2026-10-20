@@ -34,6 +34,16 @@ test('schemes emit light and dark rules scoped to the workshop attribute', () =>
   assert.ok(css.includes('--muted-foreground:color-mix(in oklab, #0f172a 57%, #f8fafc);'))
   assert.equal(css.split('{').length - 1, 2)
 })
+test('sidebar states stay neutral when the workspace accent changes', () => {
+  for (const [palette, mode] of [[light, 'light'], [dark, 'dark']]) {
+    const first = paletteTokens(palette, mode)
+    const second = paletteTokens({ ...palette, accent: '#ef4444' }, mode)
+    for (const key of ['--sidebar-primary', '--sidebar-primary-foreground', '--sidebar-accent', '--sidebar-accent-foreground', '--sidebar-ring']) {
+      assert.equal(first[key], second[key], `${key} is independent of the accent`)
+    }
+    assert.notEqual(first['--primary'], second['--primary'])
+  }
+})
 
 test('the default scheme and unsafe palettes keep stylesheet defaults', () => {
   assert.equal(buildColorSchemeCss({ ...ocean, id: 'default' }), '')

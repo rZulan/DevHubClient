@@ -1,0 +1,12 @@
+CREATE TABLE authors (
+    id UUID PRIMARY KEY,
+    name VARCHAR(150) NOT NULL
+);
+
+CREATE TABLE books (
+    id UUID PRIMARY KEY,
+    author_id UUID,
+    title VARCHAR(255) NOT NULL,
+    published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE SET NULL
+);

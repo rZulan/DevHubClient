@@ -66,7 +66,10 @@ npx shadcn@latest add <component>
 ```bash
 npm run lint
 npm run build
+node --test tests/*.test.mjs
 ```
+
+See [CHANGELOG.md](CHANGELOG.md) for categorized workshop, project tools, Notes, ERD, canvas, and branding changes.
 
 ## Environment switch
 

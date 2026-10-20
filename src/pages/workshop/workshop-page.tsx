@@ -1,8 +1,9 @@
 import {useEffect} from "react"
-import {ArrowRight, Building2, ChevronRight, Link2, LoaderCircle, Plus, Sparkles} from "lucide-react"
+import {ArrowRight, ChevronRight, Link2, LoaderCircle, Plus, Sparkles} from "lucide-react"
 import {Link, useNavigate, useSearchParams} from "react-router-dom"
 
 import {ThemeToggle} from "@/components/theme-toggle"
+import {BrandMark} from "@/components/brand-mark"
 import {Button} from "@/components/ui/button"
 import {Card} from "@/components/ui/card"
 import {OrganizationSetupDialog} from "@/features/workshop/organization-setup-dialog"
@@ -50,7 +51,7 @@ export function WorkshopPage() {
             <div className="workshop-welcome-glow" aria-hidden="true"/>
             <header className="workshop-welcome-header">
                 <Link className="workshop-brand" onClick={clearWorkshopResumePath} to="/">
-                    <span><Building2/></span>
+                    <span><BrandMark/></span>
                     <span>DevHub <b>Workshop</b></span>
                 </Link>
                 <div className="workshop-welcome-header-actions">

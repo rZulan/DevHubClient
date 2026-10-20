@@ -27,7 +27,8 @@ type WorkshopContextValue = {
     saveRoles: (organizationId: string, roles: WorkshopRole[]) => void
 }
 
-const WorkshopContext = createContext<WorkshopContextValue | null>(null)
+// oxlint-disable-next-line react/only-export-components -- exported for isolated workshop previews and tests.
+export const WorkshopContext = createContext<WorkshopContextValue | null>(null)
 
 export function WorkshopProvider({children}: { children: ReactNode }) {
     const dispatch = useAppDispatch()

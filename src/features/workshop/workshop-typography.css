@@ -1,0 +1,89 @@
+@import "@fontsource-variable/manrope";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+
+:root {
+    --workshop-font-ui: "Geist Variable", "Segoe UI", sans-serif;
+    --workshop-font-heading: "Manrope Variable", "Geist Variable", sans-serif;
+    --workshop-font-code: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+/* Interface text stays consistent across the workspace and its portalled panels. */
+.workshop-shell,
+.workshop-welcome,
+.workshop-modal,
+.workshop-task-edit-dialog,
+.workshop-drawer,
+.workshop-hotkeys-dialog,
+.project-tools-menu,
+.workshop-org-menu,
+.workshop-presence-menu,
+.chat-modal {
+    font-family: var(--workshop-font-ui);
+}
+
+/* Use the display face for product headings, rather than user-designed canvas elements. */
+.workshop-topbar h1,
+.workshop-welcome h1,
+.workshop-welcome h2,
+.workshop-org-card-copy strong,
+.workshop-page-heading h2,
+.workshop-dashboard-heading h2,
+.workshop-settings-heading h2,
+.workshop-project-detail-title h2,
+.workshop-welcome-widget h3,
+.workshop-quick-action-copy > h3,
+.workshop-featured-copy h3,
+.workshop-project-grid h3,
+.workshop-team-card h3,
+.workshop-task h3,
+.workshop-settings-card > header h3,
+.workshop-page [data-slot="card-title"],
+.workshop-dashboard-section > header h3,
+.workshop-dashboard-activity > header strong,
+.project-tool-header strong,
+.erd-panel-heading strong,
+.tool-inspector > header strong,
+.tool-section-heading strong,
+.sdlc-universe-heading h2,
+.sdlc-phase-star strong,
+.workshop-modal [data-slot="dialog-title"],
+.workshop-task-edit-dialog [data-slot="dialog-title"],
+.workshop-hotkeys-dialog [data-slot="dialog-title"],
+.workshop-drawer-title,
+.chat-modal [data-slot="dialog-title"] {
+    font-family: var(--workshop-font-heading);
+}
+
+.workshop-topbar h1,
+.project-tool-header strong,
+.erd-panel-heading strong,
+.workshop-quick-action-copy > h3 {
+    font-weight: 700;
+}
+
+.erd-table > header strong,
+.erd-table > .erd-field-row > .erd-editable-name,
+.erd-table > .erd-field-row small,
+.erd-workspace .tool-inspector input:not([type="checkbox"]):not([type="range"]),
+.workshop-scheme-color-field input[data-slot="input"],
+.workshop-shell code,
+.workshop-modal code,
+.chat-modal code,
+.workshop-hotkeys-list kbd,
+.workshop-canvas-context-menu kbd {
+    font-family: var(--workshop-font-code);
+    font-variant-ligatures: none;
+}
+
+.erd-table > header strong {
+    font-weight: 500;
+}
+
+.workshop-zoom-control,
+.workshop-stat-grid strong,
+.workshop-project-metric-grid strong,
+.sdlc-progress-card strong,
+.tool-inspector input[type="number"] {
+    font-variant-numeric: tabular-nums;
+}

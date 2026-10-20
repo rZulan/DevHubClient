@@ -7,7 +7,7 @@ import {
     Clock3,
     History,
     LayoutDashboard,
-    Lightbulb,
+    StickyNote,
     ListTodo,
     Plus,
     RotateCcw,
@@ -41,6 +41,7 @@ import type {
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import {cn} from "@/lib/utils"
+import {DashboardQuickAction} from "@/features/workshop/dashboard-quick-action"
 import {api, useGetOrganizationDashboardQuery, usePublishOrganizationDashboardMutation,} from "@/services/api"
 
 type WidgetCategory = "Quick Actions" | "Graphs" | "Info" | "Text"
@@ -257,13 +258,13 @@ const widgetCatalog: WidgetCatalogItem[] = [
     {
         type: "quick-action-idea",
         category: "Quick Actions",
-        title: "Start an idea",
-        description: "Capture a note or map a flow on the canvas.",
+        title: "Open notes",
+        description: "Capture thoughts and reminders on colorful sticky notes.",
         defaultWidth: 1,
         defaultHeight: 1,
         minWidth: 1,
         minHeight: 1,
-        icon: Lightbulb
+        icon: StickyNote
     },
     {
         type: "quick-action-team",
@@ -997,19 +998,20 @@ function DashboardWidgetContent({context, editing, onContentChange, widget}: {
         <h3>{greeting(now)}, <strong>{displayName}</strong></h3>
         <p>{projectName ? `Here’s what is moving in ${projectName}.` : `Here’s what is happening across ${organizationName}.`}</p>
     </CardContent></Card>
-    if (widget.type === "quick-action-project") return <QuickActionWidget
-        description="Define ownership, stack, and delivery dates." icon={Plus} title="Create new project"
+    if (widget.type === "quick-action-project") return <DashboardQuickAction
+        category="Projects" description="Define ownership, stack, and delivery dates." title="Create new project"
         to="../projects"/>
-    if (widget.type === "quick-action-tasks") return <QuickActionWidget
-        description="Review work assigned across the current project." icon={ListTodo} title="Open task board"
+    if (widget.type === "quick-action-tasks") return <DashboardQuickAction
+        category="Tasks" description="Review work assigned across the current project." title="Open task board"
         to="../todo"/>
-    if (widget.type === "quick-action-idea") return <QuickActionWidget
-        description="Capture a note or map a flow on the canvas." icon={Lightbulb} title="Start an idea"
-        to="../ideation"/>
+    // Reuse the saved widget identity so existing dashboard layouts remain intact.
+    if (widget.type === "quick-action-idea") return <DashboardQuickAction
+        category="Notes" description="Capture thoughts and reminders on colorful sticky notes." title="Open notes"
+        to="../notes"/>
     if (widget.type === "quick-action-team") return canManageTeams
-        ? <QuickActionWidget description="Choose a team leader and organize members." icon={Users}
+        ? <DashboardQuickAction category="Teams" description="Choose a team leader and organize members."
                              onClick={context.onCreateTeam} title="Create a team"/>
-        : <QuickActionWidget description="See ownership and team membership." icon={Users} title="View teams"
+        : <DashboardQuickAction category="Teams" description="See ownership and team membership." title="View teams"
                              to="../teams"/>
     if (widget.type === "assigned-tasks") return <section className="workshop-dashboard-section workshop-personal-todo">
         <Card><CardHeader><span>Task</span><Link to="../todo">Open
@@ -1043,7 +1045,7 @@ function DashboardWidgetContent({context, editing, onContentChange, widget}: {
                           time="10 minutes ago"/><ActivityItem copy="moved a task to In progress"
                                                                name={members[1]?.name ?? displayName}
                                                                time="38 minutes ago"/><ActivityItem
-            copy="added a note to Ideas" name={members[2]?.name ?? displayName} time="2 hours ago"/><ActivityItem
+            copy="added a note to Notes" name={members[2]?.name ?? displayName} time="2 hours ago"/><ActivityItem
             copy="completed a project task" name={members[3]?.name ?? displayName} time="Yesterday"/></ol>
         <Button asChild variant="ghost"><Link to="../todo">Load more <ArrowRight/></Link></Button></section>
     if (widget.type === "online-members") return <Card className="workshop-info-widget"><CardHeader><Users/><strong>Online
@@ -1073,22 +1075,6 @@ function DashboardWidgetContent({context, editing, onContentChange, widget}: {
                   onChange={(event) => onContentChange(event.target.value)} value={content}/> :
         <p>{resolvePlaceholders(content, context)}</p>}{editing &&
         <small>Try %time%, %username%, %organization%, %project%, or %online%.</small>}</CardContent></Card>
-}
-
-function QuickActionWidget({description, icon: Icon, onClick, title, to}: {
-    description: string;
-    icon: typeof LayoutDashboard;
-    onClick?: () => void;
-    title: string;
-    to?: string
-}) {
-    const content = <><span><Icon/></span><strong>{title}</strong><small>{description}</small><ArrowRight/></>
-    return <section className="workshop-dashboard-section">
-        <div className="workshop-quick-actions workshop-single-quick-action">{to
-            ? <Link to={to}>{content}</Link>
-            : <button onClick={onClick} type="button">{content}</button>}
-        </div>
-    </section>
 }
 
 function resolvePlaceholders(content: string, context: WidgetContext) {

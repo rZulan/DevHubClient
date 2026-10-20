@@ -94,10 +94,30 @@ export const router = createBrowserRouter([
                                             Component: (await import("@/pages/workshop/workshop-todo-page")).WorkshopTodoPage,
                                         }),
                                     },
+                                    // Archived Playground links lead to the active Notes tool.
+                                    {path: "ideation", loader: () => redirect("../notes")},
                                     {
-                                        path: "ideation",
+                                        path: "erd",
                                         lazy: async () => ({
-                                            Component: (await import("@/pages/workshop/workshop-ideation-page")).WorkshopIdeationPage,
+                                            Component: (await import("@/pages/workshop/workshop-erd-page")).WorkshopErdPage,
+                                        }),
+                                    },
+                                    {
+                                        path: "ui-editor",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-ui-editor-page")).WorkshopUiEditorPage,
+                                        }),
+                                    },
+                                    {
+                                        path: "notes",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-notes-page")).WorkshopNotesPage,
+                                        }),
+                                    },
+                                    {
+                                        path: "sdlc",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-sdlc-page")).WorkshopSdlcPage,
                                         }),
                                     },
                                     {

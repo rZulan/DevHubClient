@@ -19,12 +19,24 @@ export function clearSelectedOrganizationId() {
     localStorage.removeItem(selectedOrganizationKey)
 }
 
-export function getSelectedProjectId(organizationId: string) {
-    return localStorage.getItem(`${selectedProjectPrefix}${organizationId}`)
+export function getSelectedProjectId(userId: string | undefined, organizationId: string) {
+    if (!userId) return null
+    const userKey = `${selectedProjectPrefix}${userId}.${organizationId}`
+    const selectedProjectId = localStorage.getItem(userKey)
+    if (selectedProjectId) return selectedProjectId
+
+    // Preserve the existing selection once when upgrading from organization-only storage.
+    const legacyKey = `${selectedProjectPrefix}${organizationId}`
+    const legacyProjectId = localStorage.getItem(legacyKey)
+    if (!legacyProjectId) return null
+    localStorage.setItem(userKey, legacyProjectId)
+    localStorage.removeItem(legacyKey)
+    return legacyProjectId
 }
 
-export function setSelectedProjectId(organizationId: string, projectId: string) {
-    localStorage.setItem(`${selectedProjectPrefix}${organizationId}`, projectId)
+export function setSelectedProjectId(userId: string | undefined, organizationId: string, projectId: string) {
+    if (!userId) return
+    localStorage.setItem(`${selectedProjectPrefix}${userId}.${organizationId}`, projectId)
 }
 
 export function getWorkshopResumePath(userId: string) {

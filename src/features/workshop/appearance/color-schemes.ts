@@ -80,12 +80,12 @@ export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode
         "--ring": accent,
         "--sidebar": sidebar,
         "--sidebar-foreground": text,
-        "--sidebar-primary": accent,
-        "--sidebar-primary-foreground": onAccent,
-        "--sidebar-accent": mix(accent, strength.hover, sidebar),
+        "--sidebar-primary": text,
+        "--sidebar-primary-foreground": readableForeground(text),
+        "--sidebar-accent": mix(text, strength.hover, sidebar),
         "--sidebar-accent-foreground": text,
         "--sidebar-border": border,
-        "--sidebar-ring": accent,
+        "--sidebar-ring": mix(text, 50, sidebar),
     }
 }
 

@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "./features/workshop/workshop-typography.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -66,8 +67,8 @@
     --chart-5: oklch(0.269 0 0);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.922 0 0);
+    --sidebar-primary-foreground: oklch(0.205 0 0);
     --sidebar-accent: oklch(0.269 0 0);
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
@@ -152,7 +153,7 @@
 
 .workshop-column-complete {
     color: var(--muted-foreground);
-    font-size: .6rem;
+    font-size: 0.75rem;
     white-space: nowrap;
 }
 
@@ -251,7 +252,7 @@
 .workshop-assignee-picker > strong {
     display: block;
     margin-bottom: .5rem;
-    font-size: .8rem;
+    font-size: 0.875rem;
 }
 
 .workshop-assignee-options {
@@ -268,7 +269,7 @@
     border-radius: .35rem;
     padding: .45rem;
     text-align: left;
-    font-size: .75rem;
+    font-size: 0.8125rem;
 }
 
 .workshop-assignee-options > button:hover, .workshop-assignee-options > button:focus-visible {
@@ -284,7 +285,7 @@
 .workshop-assignee-options small {
     display: block;
     color: var(--muted-foreground);
-    font-size: .65rem;
+    font-size: 0.75rem;
 }
 
 .workshop-assignee-options svg {
@@ -295,7 +296,7 @@
 
 .workshop-assignee-options p {
     padding: .75rem .3rem;
-    font-size: .75rem;
+    font-size: 0.8125rem;
     color: var(--muted-foreground);
 }
 
@@ -329,7 +330,7 @@
 .workshop-board-settings small {
     display: block;
     margin-top: .25rem;
-    font-size: .65rem;
+    font-size: 0.75rem;
     color: var(--muted-foreground);
 }
 
@@ -337,7 +338,7 @@
     width: 1rem;
     flex: none;
     color: var(--muted-foreground);
-    font-size: .7rem;
+    font-size: 0.75rem;
 }
 
 .workshop-board-settings-actions {
@@ -417,6 +418,11 @@
         height: 1rem;
     }
 
+    .workshop-brand img {
+        width: 2rem;
+        height: 2rem;
+    }
+
     .workshop-brand b {
         color: #a78bfa;
         font-weight: 650;
@@ -448,7 +454,7 @@
         background: rgba(124, 58, 237, .08);
         padding: .38rem .7rem;
         color: #c4b5fd;
-        font-size: .7rem;
+        font-size: 0.75rem;
         font-weight: 650;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -548,7 +554,7 @@
 
     .workshop-org-card-copy small {
         color: #64748b;
-        font-size: .7rem;
+        font-size: 0.75rem;
     }
 
     .workshop-org-card > svg {
@@ -604,13 +610,13 @@
     }
 
     .workshop-setup-actions strong {
-        font-size: .8rem;
+        font-size: 0.875rem;
     }
 
     .workshop-setup-actions small {
         overflow: hidden;
         color: #64748b;
-        font-size: .66rem;
+        font-size: 0.75rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -689,7 +695,7 @@
     .workshop-modal > p {
         margin-top: .35rem;
         color: #7c899d;
-        font-size: .76rem;
+        font-size: 0.8125rem;
         line-height: 1.55;
     }
 
@@ -703,7 +709,7 @@
         display: grid;
         gap: .38rem;
         color: #cbd5e1;
-        font-size: .7rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
@@ -720,7 +726,7 @@
         background: #0b0e14;
         padding: .68rem .75rem;
         color: #f8fafc;
-        font-size: .78rem;
+        font-size: 0.875rem;
         outline: none;
         resize: vertical;
     }
@@ -736,7 +742,7 @@
         background: rgba(127, 29, 29, .12);
         padding: .55rem .65rem;
         color: #fca5a5 !important;
-        font-size: .7rem !important;
+        font-size: 0.8125rem !important;
     }
 
     .workshop-primary-action, .workshop-empty-panel button {
@@ -749,7 +755,7 @@
         background: #7c3aed;
         padding: .65rem 1rem;
         color: white;
-        font-size: .76rem;
+        font-size: 0.8125rem;
         font-weight: 650;
         box-shadow: 0 8px 24px rgba(124, 58, 237, .22);
     }
@@ -844,7 +850,7 @@
 
     .workshop-org-switcher strong {
         overflow: hidden;
-        font-size: .77rem;
+        font-size: .9375rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -852,7 +858,7 @@
     .workshop-org-switcher small {
         margin-top: .12rem;
         color: #596579;
-        font-size: .6rem;
+        font-size: .75rem;
     }
 
     .workshop-org-switcher svg {
@@ -868,7 +874,7 @@
     .workshop-nav > p {
         margin: 0 .55rem .5rem;
         color: #4e596c;
-        font-size: .58rem;
+        font-size: 0.8125rem;
         font-weight: 700;
         letter-spacing: .11em;
         text-transform: uppercase;
@@ -884,7 +890,7 @@
         border-radius: .5rem;
         padding: 0 .6rem;
         color: #7e899b;
-        font-size: .72rem;
+        font-size: .9375rem;
         font-weight: 530;
         transition: background .14s ease, color .14s ease, border-color .14s ease;
     }
@@ -906,6 +912,212 @@
         height: .9rem;
     }
 
+    .workshop-nav-group {
+        margin-top: .25rem;
+    }
+
+    .workshop-nav-group-trigger {
+        display: flex;
+        width: 100%;
+        min-height: 2.25rem;
+        align-items: center;
+        gap: .62rem;
+        border: 0;
+        border-radius: .5rem;
+        background: transparent;
+        padding: 0 .6rem;
+        color: #7e899b;
+        font: inherit;
+        font-size: .9375rem;
+        font-weight: 650;
+        text-align: left;
+        cursor: pointer;
+        transition: background .14s ease, color .14s ease;
+    }
+
+    .workshop-nav-group-trigger:hover {
+        background: #131821;
+        color: #dbe4f0;
+    }
+
+    .workshop-nav-group-trigger.active {
+        color: #c4b5fd;
+    }
+
+    .workshop-nav-group-trigger > svg:first-child {
+        width: .9rem;
+        height: .9rem;
+    }
+
+    .workshop-nav-chevron {
+        width: .75rem;
+        height: .75rem;
+        margin-left: auto;
+        transition: transform .15s ease;
+    }
+
+    .workshop-nav-group.open .workshop-nav-chevron {
+        transform: rotate(90deg);
+    }
+
+    .workshop-nav-submenu {
+        display: none;
+        padding-left: .72rem;
+    }
+
+    .workshop-nav-group.open .workshop-nav-submenu {
+        display: block;
+    }
+
+    .workshop-nav-submenu .workshop-nav-link {
+        position: relative;
+    }
+
+    .workshop-project-entry > span {
+        overflow: hidden;
+        min-width: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .workshop-project-context-trigger {
+        display: block;
+        width: 100%;
+        outline: none;
+    }
+
+    .workshop-project-context-trigger > .workshop-project-entry {
+        width: 100%;
+    }
+
+    .workshop-project-context-menu {
+        min-width: 15.5rem;
+        border-color: color-mix(in oklab, var(--border) 82%, var(--primary));
+        padding: .38rem;
+        box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .24), 0 .15rem .5rem rgba(0, 0, 0, .16);
+    }
+
+    .workshop-member-menu {
+        width: 15.5rem;
+        max-width: calc(100vw - 1rem);
+        max-height: var(--radix-context-menu-content-available-height);
+        overflow-y: auto;
+        border-color: color-mix(in oklab, var(--border) 85%, var(--primary));
+        padding: .375rem;
+        box-shadow: 0 .75rem 2rem rgb(0 0 0 / .22), 0 .125rem .375rem rgb(0 0 0 / .12);
+    }
+
+    .workshop-member-menu-heading { padding: .5rem .625rem; }
+    .workshop-member-menu-heading strong, .workshop-member-menu-heading small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .workshop-member-menu-heading strong { color: var(--popover-foreground); font-size: .8125rem; font-weight: 600; }
+    .workshop-member-menu-heading small { margin-top: .125rem; color: var(--muted-foreground); font-size: .6875rem; }
+    .workshop-member-menu :is([data-slot="context-menu-item"], [data-slot="context-menu-sub-trigger"], [data-slot="context-menu-checkbox-item"]) { min-height: 2.25rem; gap: .625rem; font-size: .8125rem; }
+    .workshop-member-menu :is([data-slot="context-menu-item"], [data-slot="context-menu-sub-trigger"]) { padding-inline: .625rem; }
+    .workshop-member-menu :is([data-slot="context-menu-item"], [data-slot="context-menu-sub-trigger"]) > svg { width: 1rem; height: 1rem; flex: none; color: var(--muted-foreground); }
+    .workshop-member-menu [data-slot="context-menu-sub-trigger"] > .context-menu-submenu-arrow { width: .875rem; height: .875rem; margin-left: auto; }
+    .workshop-member-submenu { width: 15rem; }
+    .workshop-member-menu-dot { width: .5rem; height: .5rem; flex: none; border-radius: 50%; }
+    .workshop-member-menu-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .workshop-member-menu-badge { margin-left: auto; flex: none; border: 1px solid var(--border); border-radius: .25rem; padding: .0625rem .375rem; color: var(--muted-foreground); font-size: .625rem; line-height: 1rem; }
+    .workshop-member-menu [data-variant="destructive"] > svg { color: currentColor; }
+
+    .workshop-project-context-header {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: .65rem;
+        padding: .5rem .55rem .55rem;
+    }
+
+    .workshop-project-context-header > span:first-child {
+        display: grid;
+        width: 2rem;
+        height: 2rem;
+        flex: none;
+        place-items: center;
+        border-radius: .5rem;
+        background: color-mix(in oklab, var(--primary) 14%, var(--accent));
+        color: var(--primary);
+    }
+
+    .workshop-project-context-header svg {
+        width: .95rem;
+        height: .95rem;
+    }
+
+    .workshop-project-context-header > span:last-child {
+        display: flex;
+        overflow: hidden;
+        min-width: 0;
+        flex-direction: column;
+        gap: .08rem;
+    }
+
+    .workshop-project-context-header strong {
+        overflow: hidden;
+        color: var(--popover-foreground);
+        font-size: 0.875rem;
+        font-weight: 650;
+        line-height: 1.15rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .workshop-project-context-header small {
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .workshop-project-context-item {
+        min-height: 2.1rem;
+        padding-right: .55rem;
+        padding-left: .55rem;
+        font-size: 0.75rem;
+    }
+
+    .workshop-project-context-item > svg {
+        width: .9rem;
+        height: .9rem;
+        color: var(--muted-foreground);
+    }
+
+    .workshop-project-context-status {
+        margin-left: auto;
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--primary) 14%, transparent);
+        padding: .12rem .38rem;
+        color: var(--primary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .workshop-project-entry.current {
+        color: #d8ccff;
+    }
+
+    .workshop-current-project-dot {
+        width: .38rem;
+        height: .38rem;
+        flex: none;
+        margin-left: auto;
+        border-radius: 999px;
+        background: var(--sidebar-foreground);
+        box-shadow: none;
+    }
+
+    .workshop-nav-submenu .workshop-nav-link::before {
+        position: absolute;
+        top: -.15rem;
+        bottom: -.15rem;
+        left: -.3rem;
+        width: 1px;
+        background: #242936;
+        content: "";
+    }
+
     .workshop-sidebar-footer {
         display: grid;
         margin-top: auto;
@@ -921,7 +1133,7 @@
         border-radius: .45rem;
         padding: .5rem;
         color: #687489;
-        font-size: .66rem;
+        font-size: .875rem;
         transition: background .15s ease, color .15s ease;
     }
 
@@ -932,6 +1144,12 @@
 
     .workshop-sidebar-footer svg {
         width: .8rem;
+    }
+
+    .workshop-sidebar-footer > a svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
     }
 
     .workshop-sidebar-user {
@@ -954,14 +1172,14 @@
 
     .workshop-sidebar-user strong {
         overflow: hidden;
-        font-size: .68rem;
+        font-size: .875rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     .workshop-sidebar-user small {
         color: #34d399;
-        font-size: .56rem;
+        font-size: .75rem;
     }
 
     .workshop-sidebar-user.status-away small {
@@ -1020,19 +1238,19 @@
     }
 
     .workshop-presence-menu strong {
-        font-size: .7rem;
+        font-size: 0.875rem;
         font-weight: 600;
     }
 
     .workshop-presence-menu small {
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-presence-logout {
         min-height: 2.15rem;
         gap: .55rem;
-        font-size: .7rem;
+        font-size: 0.75rem;
         font-weight: 600;
     }
 
@@ -1045,7 +1263,7 @@
     .workshop-org-menu [data-slot="dropdown-menu-sub-trigger"] {
         min-height: 2.15rem;
         gap: .55rem;
-        font-size: .7rem;
+        font-size: 0.75rem;
     }
 
     .workshop-org-menu .workshop-org-mark {
@@ -1122,7 +1340,7 @@
     .workshop-topbar > div:first-child small {
         display: block;
         color: #596579;
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-topbar h1 {
@@ -1161,13 +1379,13 @@
 
     .workshop-invite-content > label {
         color: #cbd5e1;
-        font-size: .7rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
     .workshop-invite-content > p:not(.workshop-form-error) {
         color: #7c899d;
-        font-size: .68rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-invite-copy-row {
@@ -1209,7 +1427,7 @@
 
     .workshop-project-select > span {
         color: #5d6879;
-        font-size: .58rem;
+        font-size: 0.875rem;
         white-space: nowrap;
     }
 
@@ -1221,7 +1439,7 @@
         background: #171c26;
         padding: .42rem .55rem;
         color: #dbe4f0;
-        font-size: .68rem;
+        font-size: 0.875rem;
         outline: none;
     }
 
@@ -1318,7 +1536,7 @@
         align-items: center;
         gap: .45rem;
         color: #e2e8f0;
-        font-size: .72rem;
+        font-size: 0.75rem;
     }
 
     .workshop-members-collapse {
@@ -1353,7 +1571,7 @@
         border-radius: 999px;
         background: #1d2330;
         color: #68758a;
-        font-size: .55rem;
+        font-size: 0.75rem;
     }
 
     .workshop-members > header label {
@@ -1384,7 +1602,7 @@
         border: 0;
         background: transparent;
         color: #dbe4f0;
-        font-size: .65rem;
+        font-size: 0.875rem;
         outline: none;
     }
 
@@ -1402,7 +1620,7 @@
 
     .workshop-member-list h2 {
         margin: .4rem .4rem .35rem;
-        font-size: .56rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -1461,7 +1679,7 @@
     .workshop-member strong {
         overflow: hidden;
         color: #cbd5e1;
-        font-size: .66rem;
+        font-size: 0.875rem;
         font-weight: 550;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1472,7 +1690,7 @@
         max-width: 10.5rem;
         margin-top: .08rem;
         color: #4f5b6d;
-        font-size: .55rem;
+        font-size: 0.75rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -1499,7 +1717,7 @@
         display: block;
         margin-bottom: .55rem;
         color: #8b5cf6;
-        font-size: .58rem;
+        font-size: 0.75rem;
         font-weight: 750;
         letter-spacing: .12em;
         text-transform: uppercase;
@@ -1517,7 +1735,7 @@
         max-width: 38rem;
         margin-top: .55rem;
         color: #64748b;
-        font-size: .76rem;
+        font-size: 0.8125rem;
         line-height: 1.55;
     }
 
@@ -1530,7 +1748,7 @@
         background: rgba(6, 78, 59, .08);
         padding: .38rem .65rem;
         color: #6ee7b7;
-        font-size: .62rem;
+        font-size: 0.75rem;
         white-space: nowrap;
     }
 
@@ -1552,7 +1770,7 @@
         background: rgba(124, 58, 237, .16);
         padding: 0 .8rem;
         color: #c4b5fd;
-        font-size: .68rem;
+        font-size: 0.75rem;
         font-weight: 650;
         white-space: nowrap;
     }
@@ -1620,7 +1838,7 @@
     .workshop-stat-grid small {
         overflow: hidden;
         color: #5e697b;
-        font-size: .58rem;
+        font-size: 0.75rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -1642,7 +1860,7 @@
     .workshop-featured-copy > p:nth-of-type(1) {
         margin-top: .85rem;
         color: #616d80;
-        font-size: .58rem;
+        font-size: 0.8125rem;
         font-weight: 650;
         text-transform: uppercase;
     }
@@ -1659,7 +1877,7 @@
         max-width: 34rem;
         margin-top: .45rem;
         color: #788599;
-        font-size: .72rem;
+        font-size: 0.8125rem;
         line-height: 1.55;
     }
 
@@ -1671,7 +1889,7 @@
         background: rgba(14, 116, 144, .1);
         padding: .24rem .5rem;
         color: #7dd3fc;
-        font-size: .55rem;
+        font-size: 0.75rem;
         font-weight: 650;
     }
 
@@ -1716,7 +1934,7 @@
 
     .workshop-progress-row small {
         color: #5f6b7e;
-        font-size: .56rem;
+        font-size: 0.75rem;
         white-space: nowrap;
     }
 
@@ -1735,7 +1953,7 @@
         border-radius: .48rem;
         padding: 0 .65rem;
         color: #bec8d7;
-        font-size: .62rem;
+        font-size: 0.75rem;
     }
 
     .workshop-featured-actions a:first-child {
@@ -1777,14 +1995,14 @@
 
     .workshop-project-snapshot small {
         color: #515d70;
-        font-size: .55rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-snapshot strong {
         overflow: hidden;
         margin-top: .1rem;
         color: #cbd5e1;
-        font-size: .64rem;
+        font-size: 0.875rem;
         font-weight: 550;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1802,7 +2020,7 @@
         background: #1b202a;
         padding: .22rem .4rem;
         color: #8490a2;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-lobby-columns {
@@ -1829,19 +2047,19 @@
 
     .workshop-section-card > header h3 {
         color: #e2e8f0;
-        font-size: .75rem;
+        font-size: 0.875rem;
         font-weight: 620;
     }
 
     .workshop-section-card > header p {
         margin-top: .12rem;
         color: #536074;
-        font-size: .55rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-section-card > header a {
         color: #8b9ab0;
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-list {
@@ -1875,14 +2093,14 @@
 
     .workshop-team-list strong {
         color: #cbd5e1;
-        font-size: .65rem;
+        font-size: 0.875rem;
     }
 
     .workshop-team-list article > div small {
         overflow: hidden;
         margin-top: .12rem;
         color: #536074;
-        font-size: .53rem;
+        font-size: 0.75rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -1902,13 +2120,13 @@
         border-radius: 999px;
         background: #29303e;
         color: #b3becd;
-        font-size: .45rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-list article > span small {
         margin-left: .35rem;
         color: #566276;
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-section-action {
@@ -1921,7 +2139,7 @@
         background: rgba(124, 58, 237, .12);
         padding: 0 .52rem;
         color: #b9a7f8;
-        font-size: .54rem;
+        font-size: 0.75rem;
         font-weight: 650;
     }
 
@@ -1939,7 +2157,7 @@
         align-items: center;
         gap: .3rem;
         color: #5e697b;
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-list article.workshop-team-hierarchy {
@@ -1980,7 +2198,7 @@
     .workshop-team-leader > em {
         max-width: 8rem;
         overflow: hidden;
-        font-size: .5rem;
+        font-size: 0.75rem;
         font-style: normal;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -2006,7 +2224,7 @@
         background: #0b0e14;
         padding: .68rem .75rem;
         color: #f8fafc;
-        font-size: .72rem;
+        font-size: 0.875rem;
         outline: none;
     }
 
@@ -2029,7 +2247,7 @@
         width: 100%;
         margin-bottom: .35rem;
         color: #cbd5e1;
-        font-size: .7rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
@@ -2079,12 +2297,12 @@
 
     .workshop-member-picker strong {
         color: #cbd5e1;
-        font-size: .56rem;
+        font-size: 0.875rem;
     }
 
     .workshop-member-picker small {
         color: #536074;
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-summary {
@@ -2128,7 +2346,7 @@
     .workshop-team-summary small {
         margin-top: .2rem;
         color: #5d697c;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-toolbar {
@@ -2161,13 +2379,13 @@
         background: #11151d;
         padding-left: 1.9rem;
         color: #dbe4ef;
-        font-size: .66rem;
+        font-size: 0.875rem;
     }
 
     .workshop-team-toolbar [data-slot="badge"] {
         border-color: #303746;
         color: #667388;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-grid {
@@ -2201,7 +2419,7 @@
         grid-row: 1;
         border-color: color-mix(in srgb, var(--team-color) 35%, #303746);
         color: var(--team-color);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-card [data-slot="card-header"] > div:last-child {
@@ -2220,7 +2438,7 @@
         overflow: hidden;
         margin-top: .25rem;
         color: #667388;
-        font-size: .62rem;
+        font-size: 0.875rem;
         line-height: 1.5;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -2270,13 +2488,13 @@
 
     .workshop-team-lead-row small {
         color: #526075;
-        font-size: .46rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-lead-row strong {
         margin-top: .08rem;
         color: #cbd5e1;
-        font-size: .58rem;
+        font-size: 0.875rem;
     }
 
     .workshop-team-project-row {
@@ -2291,7 +2509,7 @@
         align-items: center;
         gap: .3rem;
         color: #607087;
-        font-size: .5rem;
+        font-size: 0.75rem;
         white-space: nowrap;
     }
 
@@ -2310,12 +2528,12 @@
         height: 1.2rem;
         background: #1e2530;
         color: #8693a6;
-        font-size: .44rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-project-row small {
         color: #4f5c6f;
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-card > footer {
@@ -2341,13 +2559,13 @@
 
     .workshop-team-card > footer > small {
         color: #526075;
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-muted-empty {
         padding: 1rem;
         color: #64748b;
-        font-size: .68rem;
+        font-size: 0.75rem;
         text-align: center;
     }
 
@@ -2373,7 +2591,7 @@
         flex: none;
         place-items: center;
         border-radius: 999px;
-        font-size: .48rem;
+        font-size: 0.8125rem;
         font-weight: 700;
     }
 
@@ -2394,7 +2612,7 @@
 
     .workshop-activity-card li p {
         color: #748095;
-        font-size: .56rem;
+        font-size: 0.8125rem;
         line-height: 1.45;
     }
 
@@ -2438,7 +2656,7 @@
         max-width: 25rem;
         margin-top: .4rem;
         color: #64748b;
-        font-size: .7rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-empty-panel a, .workshop-empty-panel button {
@@ -2447,7 +2665,7 @@
         align-items: center;
         gap: .35rem;
         color: #c4b5fd;
-        font-size: .66rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-empty-panel a svg {
@@ -2517,14 +2735,14 @@
         background: rgba(124, 58, 237, .15);
         padding: .18rem .4rem;
         color: #a78bfa;
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-grid > article > p {
         min-height: 2.5rem;
         margin-top: .35rem;
         color: #68758a;
-        font-size: .65rem;
+        font-size: 0.8125rem;
         line-height: 1.55;
     }
 
@@ -2560,14 +2778,14 @@
 
     .workshop-project-meta small {
         color: #4f5a6c;
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-meta strong {
         overflow: hidden;
         margin-top: .08rem;
         color: #aeb9c9;
-        font-size: .58rem;
+        font-size: 0.875rem;
         font-weight: 550;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -2589,7 +2807,7 @@
         align-items: center;
         gap: .3rem;
         color: #596579;
-        font-size: .5rem;
+        font-size: 0.75rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -2614,7 +2832,7 @@
         background: #11151d;
         padding: .25rem .48rem;
         color: #718096;
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-ownership svg {
@@ -2638,7 +2856,7 @@
         border-radius: .4rem;
         padding: .3rem .46rem;
         color: #8c9aaf;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-links a:hover {
@@ -2657,7 +2875,7 @@
         background: rgba(124, 58, 237, .1);
         padding: .3rem .5rem;
         color: #b9a7f8;
-        font-size: .5rem;
+        font-size: 0.8125rem;
         white-space: nowrap;
     }
 
@@ -2734,7 +2952,7 @@
     }
 
     .workshop-wizard-progress small {
-        font-size: .5rem;
+        font-size: 0.75rem;
         font-weight: 600;
     }
 
@@ -2766,7 +2984,7 @@
 
     .workshop-wizard-heading > span {
         color: #8b5cf6;
-        font-size: .52rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -2783,7 +3001,7 @@
     .workshop-wizard-heading p {
         margin-top: .25rem;
         color: #626f83;
-        font-size: .65rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-wizard-panel {
@@ -2814,7 +3032,7 @@
         min-width: 0;
         gap: .35rem;
         color: #aeb9c9;
-        font-size: .62rem;
+        font-size: 0.8125rem;
         font-weight: 580;
     }
 
@@ -2825,7 +3043,7 @@
     .workshop-form-grid label > span:not(.workshop-link-input):not(.workshop-tag-editor) {
         float: right;
         color: #525e71;
-        font-size: .5rem;
+        font-size: 0.875rem;
         font-weight: 450;
     }
 
@@ -2836,7 +3054,7 @@
         background: #0b0e14;
         padding: .68rem .75rem;
         color: #f8fafc;
-        font-size: .72rem;
+        font-size: 0.875rem;
         outline: none;
     }
 
@@ -2867,7 +3085,7 @@
         background: #0b0e14;
         padding: .62rem .7rem;
         color: #f8fafc;
-        font-size: .68rem;
+        font-size: 0.875rem;
         outline: none;
         transition: border-color .15s, box-shadow .15s;
     }
@@ -2925,7 +3143,7 @@
 
     .workshop-tag-list.empty > small {
         color: #485365;
-        font-size: .58rem;
+        font-size: 0.75rem;
         font-weight: 450;
     }
 
@@ -2940,7 +3158,7 @@
         background: rgba(124, 58, 237, .14);
         padding: .18rem .22rem .18rem .48rem;
         color: #c4b5fd;
-        font-size: .62rem;
+        font-size: 0.875rem;
         font-weight: 550;
     }
 
@@ -2972,7 +3190,7 @@
 
     .workshop-tag-footer > small {
         color: #68758a;
-        font-size: .55rem;
+        font-size: 0.75rem;
         font-weight: 500;
     }
 
@@ -2981,7 +3199,7 @@
         background: #242a35;
         padding: .35rem .55rem;
         color: #a8b3c3;
-        font-size: .55rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
@@ -3036,7 +3254,7 @@
         border-radius: .62rem;
         padding: .65rem 1rem;
         color: #7f8b9f;
-        font-size: .72rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-form-actions > button:first-child:hover {
@@ -3053,7 +3271,7 @@
         border-radius: .62rem;
         padding: .65rem .85rem;
         color: #9aa7ba;
-        font-size: .72rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-form-actions > div > button:not(.workshop-primary-action):hover {
@@ -3107,7 +3325,7 @@
 
     .workshop-board-column > header strong {
         color: #dbe3ee;
-        font-size: .68rem;
+        font-size: 14px;
     }
 
     .workshop-board-column > header b {
@@ -3119,13 +3337,13 @@
         border-radius: 999px;
         background: #262c38;
         color: #6e7a8d;
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-board-column > header p {
         margin-top: .25rem;
         color: #4f5a6b;
-        font-size: .52rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-task-list {
@@ -3164,7 +3382,7 @@
     .workshop-task > header span {
         border-radius: 999px;
         padding: .16rem .38rem;
-        font-size: .48rem;
+        font-size: 0.75rem;
         font-weight: 650;
     }
 
@@ -3206,7 +3424,7 @@
 
     .workshop-task h3 {
         color: #dce4ef;
-        font-size: .66rem;
+        font-size: 15px;
         font-weight: 600;
         line-height: 1.4;
     }
@@ -3214,7 +3432,7 @@
     .workshop-task > p {
         margin-top: .45rem;
         color: #637084;
-        font-size: .55rem;
+        font-size: 0.8125rem;
         line-height: 1.45;
     }
 
@@ -3230,7 +3448,7 @@
         border-radius: .3rem;
         padding: .18rem .32rem;
         color: #68758a;
-        font-size: .46rem;
+        font-size: 0.75rem;
     }
 
     .workshop-task > footer b, .workshop-task > footer button {
@@ -3264,7 +3482,7 @@
         border: 1px dashed #303745;
         border-radius: .5rem;
         color: #596579;
-        font-size: .55rem;
+        font-size: 0.75rem;
     }
 
     .workshop-add-task:hover {
@@ -3305,12 +3523,12 @@
 
     .workshop-role-summary strong {
         color: #e2e8f0;
-        font-size: .8rem;
+        font-size: 0.875rem;
     }
 
     .workshop-role-summary small {
         color: #586478;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-drag-hint {
@@ -3319,7 +3537,7 @@
         align-items: center;
         gap: .3rem;
         color: var(--muted-foreground);
-        font-size: .54rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-drag-hint svg {
@@ -3381,12 +3599,12 @@
     }
 
     .workshop-role-leave strong {
-        font-size: .72rem;
+        font-size: 0.875rem;
     }
 
     .workshop-role-leave small {
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-heading-actions {
@@ -3403,13 +3621,13 @@
     }
 
     .workshop-role-member-management > h3 {
-        font-size: .76rem;
+        font-size: 0.875rem;
     }
 
     .workshop-role-member-management > p {
         margin-top: .15rem;
         color: var(--muted-foreground);
-        font-size: .56rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-role-member-management > div {
@@ -3434,7 +3652,7 @@
         place-items: center;
         border-radius: 999px;
         background: var(--background);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-member-management article > span img,
@@ -3452,12 +3670,12 @@
     }
 
     .workshop-role-member-management article strong {
-        font-size: .62rem;
+        font-size: 0.875rem;
     }
 
     .workshop-role-member-management article small {
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-member-management article button {
@@ -3496,14 +3714,14 @@
 
     .workshop-role-copy header h3 {
         color: #dde5ef;
-        font-size: .7rem;
+        font-size: 0.875rem;
         font-weight: 620;
     }
 
     .workshop-role-copy header p {
         margin-top: .08rem;
         color: #4f5b6d;
-        font-size: .48rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-role-copy header b {
@@ -3512,7 +3730,7 @@
         background: #242a36;
         padding: .22rem .45rem;
         color: #6b788d;
-        font-size: .48rem;
+        font-size: 0.75rem;
         font-weight: 550;
     }
 
@@ -3532,7 +3750,7 @@
         background: color-mix(in srgb, var(--role-color), transparent 91%);
         padding: .2rem .4rem;
         color: color-mix(in srgb, var(--role-color), white 28%);
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-permission-tags svg {
@@ -3542,7 +3760,7 @@
 
     .workshop-permission-tags small {
         color: #4f5a6c;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-members {
@@ -3559,7 +3777,7 @@
         border-radius: 999px;
         background: #29303d;
         color: #aeb9c9;
-        font-size: .46rem;
+        font-size: 0.75rem;
     }
 
     .workshop-role-fields {
@@ -3586,7 +3804,7 @@
     .workshop-role-modal legend {
         margin-bottom: .45rem;
         color: #cbd5e1;
-        font-size: .7rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
@@ -3598,7 +3816,7 @@
         border-radius: .45rem;
         padding: .42rem .55rem;
         color: #8995a8;
-        font-size: .6rem;
+        font-size: 0.8125rem;
         cursor: pointer;
     }
 
@@ -3637,12 +3855,12 @@
 
     .workshop-role-modal fieldset label strong {
         color: var(--foreground);
-        font-size: .62rem;
+        font-size: 0.875rem;
     }
 
     .workshop-role-modal fieldset label small {
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
         font-weight: 400;
     }
 
@@ -3699,7 +3917,7 @@
         background: #0b0e14;
         padding: 0 .6rem;
         color: #68758a;
-        font-size: .52rem;
+        font-size: 0.75rem;
         transform: translateX(-50%);
         box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
     }
@@ -3745,7 +3963,7 @@
         background: color-mix(in srgb, var(--role-color), #11151c 88%);
         padding: .35rem .65rem;
         color: color-mix(in srgb, var(--role-color), white 35%);
-        font-size: .58rem;
+        font-size: 0.875rem;
     }
 
     .workshop-chart-tree > section > h3 > span {
@@ -3757,7 +3975,7 @@
 
     .workshop-chart-tree > section > h3 small {
         color: #586579;
-        font-size: .45rem;
+        font-size: 0.75rem;
     }
 
     .workshop-chart-line {
@@ -3797,7 +4015,7 @@
         border-radius: 999px;
         background: color-mix(in srgb, var(--role-color), transparent 82%);
         color: color-mix(in srgb, var(--role-color), white 28%);
-        font-size: .65rem;
+        font-size: 0.75rem;
         font-weight: 700;
     }
 
@@ -3816,21 +4034,21 @@
         display: block;
         margin-top: .45rem;
         color: #dbe4ef;
-        font-size: .65rem;
+        font-size: 0.875rem;
     }
 
     .workshop-chart-tree article small {
         display: block;
         margin-top: .08rem;
         color: #667286;
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-chart-tree article p {
         overflow: hidden;
         margin-top: .45rem;
         color: #546074;
-        font-size: .47rem;
+        font-size: 0.8125rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -3894,7 +4112,7 @@
         border-radius: .38rem;
         padding: .35rem .5rem;
         color: inherit;
-        font-size: .7rem;
+        font-size: 0.8125rem;
         text-align: left;
     }
 
@@ -3932,7 +4150,7 @@
     .workshop-canvas-context-menu kbd {
         color: var(--muted-foreground);
         font-family: inherit;
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-canvas-context-separator {
@@ -4006,12 +4224,12 @@
 
     .workshop-canvas-meta small {
         color: #586579;
-        font-size: .45rem;
+        font-size: 0.75rem;
     }
 
     .workshop-canvas-meta strong {
         color: #cbd5e1;
-        font-size: .58rem;
+        font-size: 0.875rem;
         font-weight: 550;
     }
 
@@ -4021,7 +4239,7 @@
         background: rgba(4, 120, 87, .12);
         padding: .22rem .4rem;
         color: #6ee7b7;
-        font-size: .45rem;
+        font-size: 0.75rem;
         font-style: normal;
     }
 
@@ -4053,7 +4271,7 @@
         border-radius: .38rem;
         padding: 0 .45rem;
         color: #758196;
-        font-size: .52rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-canvas-toolbar button:hover, .workshop-canvas-toolbar button.active {
@@ -4119,13 +4337,13 @@
 
     .workshop-shape-menu > header strong {
         color: #e2e8f0;
-        font-size: .68rem;
+        font-size: 0.875rem;
         font-weight: 650;
     }
 
     .workshop-shape-menu > header small {
         color: #596579;
-        font-size: .45rem;
+        font-size: 0.75rem;
     }
 
     .workshop-shape-menu > header button {
@@ -4168,7 +4386,7 @@
         background: #0a0d12;
         padding: .5rem .55rem .5rem 1.6rem;
         color: #dbe4ef;
-        font-size: .58rem;
+        font-size: 0.875rem;
         outline: none;
     }
 
@@ -4193,7 +4411,7 @@
     .workshop-shape-sections h3 {
         margin-bottom: .45rem;
         color: #6f7c90;
-        font-size: .48rem;
+        font-size: 0.875rem;
         font-weight: 700;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -4272,7 +4490,7 @@
     .workshop-shape-sections section button small {
         overflow: hidden;
         width: 100%;
-        font-size: .48rem;
+        font-size: 0.75rem;
         text-align: center;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -4492,7 +4710,7 @@
     }
 
     .workshop-shape-properties > strong {
-        font-size: .8rem;
+        font-size: 0.875rem;
     }
 
     .workshop-property-section {
@@ -4505,7 +4723,7 @@
         align-items: center;
         gap: .35rem;
         color: var(--muted-foreground);
-        font-size: .72rem;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         list-style: none;
@@ -4544,7 +4762,7 @@
         grid-template-columns: 6rem minmax(0, 1fr);
         align-items: center;
         gap: .6rem;
-        font-size: .75rem;
+        font-size: 13px;
     }
 
     .workshop-property-field input, .workshop-property-field select {
@@ -4699,7 +4917,7 @@
         background: #6366f1;
         color: white;
         box-shadow: 0 4px 12px #0004;
-        font-size: .68rem;
+        font-size: 0.75rem;
         font-weight: 650;
         line-height: 1.2;
         text-overflow: ellipsis;
@@ -4736,13 +4954,17 @@
         min-width: 0;
     }
 
-    .workshop-shape-style-options, .workshop-shape-layer-options {
+    .workshop-shape-style-options, .workshop-shape-layer-options, .workshop-transform-options {
         display: flex;
         gap: .4rem;
     }
 
-    .workshop-shape-style-options > button, .workshop-shape-layer-options > button {
+    .workshop-shape-style-options > button, .workshop-shape-layer-options > button, .workshop-transform-options > button {
         flex: 1;
+    }
+
+    .workshop-transform-options + .workshop-transform-options {
+        margin-top: .4rem;
     }
 
     .workshop-color-value {
@@ -4760,7 +4982,7 @@
     .workshop-shape-style-options > button {
         min-width: 0;
         padding-inline: .3rem;
-        font-size: .7rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-shape-color input {
@@ -4775,7 +4997,7 @@
 
     .workshop-color-value > span {
         color: var(--muted-foreground);
-        font-size: .7rem;
+        font-size: 0.75rem;
     }
 
     .workshop-canvas-world {
@@ -4838,7 +5060,7 @@
         background: var(--muted);
         color: var(--foreground);
         font-family: inherit;
-        font-size: .68rem;
+        font-size: 0.75rem;
         line-height: 1;
         text-align: center;
         white-space: nowrap;
@@ -4847,7 +5069,7 @@
     .workshop-hotkeys-tip {
         margin: 0;
         color: var(--muted-foreground);
-        font-size: .72rem;
+        font-size: 0.75rem;
         line-height: 1.5;
     }
 
@@ -4880,7 +5102,8 @@
         pointer-events: none;
     }
 
-    .workshop-group-bounds .workshop-resize-handle {
+    .workshop-group-bounds .workshop-resize-handle,
+    .workshop-group-bounds .workshop-rotate-corner {
         pointer-events: auto;
     }
 
@@ -4900,6 +5123,91 @@
     .workshop-resize-handle:focus-visible {
         outline: 2px solid var(--ring);
         outline-offset: 3px;
+    }
+
+    .workshop-rotate-corner {
+        position: absolute;
+        z-index: 4;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: grab;
+        touch-action: none;
+        transform: translate(-50%, -50%) scale(var(--canvas-ui-scale));
+    }
+
+    .workshop-rotate-corner:active {
+        cursor: grabbing;
+    }
+
+    .workshop-rotate-corner[data-corner="nw"] {
+        top: -14px;
+        left: -14px;
+    }
+
+    .workshop-rotate-corner[data-corner="ne"] {
+        top: -14px;
+        left: calc(100% + 14px);
+    }
+
+    .workshop-rotate-corner[data-corner="sw"] {
+        top: calc(100% + 14px);
+        left: -14px;
+    }
+
+    .workshop-rotate-corner[data-corner="se"] {
+        top: calc(100% + 14px);
+        left: calc(100% + 14px);
+    }
+
+    .workshop-rotate-corner:focus-visible {
+        outline: 2px solid var(--ring);
+        border-radius: 50%;
+        outline-offset: 3px;
+    }
+
+    .workshop-rotation-guide {
+        position: absolute;
+        z-index: 3;
+        top: 50%;
+        left: 50%;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        overflow: visible;
+    }
+
+    .workshop-rotation-track {
+        fill: none;
+        stroke: color-mix(in oklab, var(--primary) 72%, transparent);
+        stroke-width: calc(1px * var(--canvas-ui-scale));
+        stroke-dasharray: calc(4px * var(--canvas-ui-scale)) calc(4px * var(--canvas-ui-scale));
+        filter: drop-shadow(0 0 calc(2px * var(--canvas-ui-scale)) color-mix(in oklab, var(--background) 85%, transparent));
+    }
+
+    .workshop-rotation-hit-ring {
+        fill: none;
+        stroke: transparent;
+        stroke-width: calc(18px * var(--canvas-ui-scale));
+        pointer-events: stroke;
+        cursor: grab;
+    }
+
+    .workshop-rotation-hit-ring:active {
+        cursor: grabbing;
+    }
+
+    .workshop-rotation-tracker {
+        stroke: var(--primary);
+        stroke-linecap: round;
+        stroke-width: calc(3px * var(--canvas-ui-scale));
+        pointer-events: none;
+        transform: rotate(var(--rotation-guide-angle));
+        transform-box: view-box;
+        transform-origin: 50px 50px;
+        transition: transform 45ms linear;
+        filter: drop-shadow(0 0 calc(3px * var(--canvas-ui-scale)) var(--background)) drop-shadow(0 0 calc(4px * var(--canvas-ui-scale)) color-mix(in oklab, var(--primary) 55%, transparent));
     }
 
     .workshop-resize-handle[data-direction="n"] {
@@ -4956,6 +5264,21 @@
         left: 50%;
         transform: translateX(-50%) scale(var(--canvas-ui-scale));
         transform-origin: center top;
+        padding: 3px 7px;
+        border-radius: 4px;
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 12px;
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+    .workshop-rotation-angle {
+        position: absolute;
+        top: -38px;
+        left: 50%;
+        transform: translateX(-50%) scale(var(--canvas-ui-scale));
+        transform-origin: center bottom;
         padding: 3px 7px;
         border-radius: 4px;
         background: var(--foreground);
@@ -5127,7 +5450,7 @@
         place-items: center;
         border-radius: .32rem;
         color: #758196;
-        font-size: .52rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-zoom-control button:hover {
@@ -5228,7 +5551,7 @@
     .workshop-dashboard-heading p {
         margin-top: .55rem;
         color: var(--muted-foreground);
-        font-size: .76rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-dashboard-heading > [data-slot="badge"] {
@@ -5276,7 +5599,7 @@
 
     .workshop-dashboard-section > header > span {
         color: var(--foreground);
-        font-size: .68rem;
+        font-size: 0.75rem;
         font-weight: 720;
         letter-spacing: .1em;
         text-transform: uppercase;
@@ -5284,7 +5607,7 @@
 
     .workshop-dashboard-section > header > small {
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-dashboard-section > header > a {
@@ -5292,7 +5615,7 @@
         align-items: center;
         gap: .25rem;
         color: var(--muted-foreground);
-        font-size: .6rem;
+        font-size: 0.75rem;
     }
 
     .workshop-dashboard-section > header > a:hover {
@@ -5309,73 +5632,33 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .workshop-quick-actions { container-type: inline-size; }
     .workshop-quick-actions > a,
     .workshop-quick-actions > button {
-        position: relative;
-        display: flex;
-        min-width: 0;
-        min-height: 9.5rem;
-        height: auto;
-        align-items: flex-start;
-        justify-content: flex-start;
-        flex-direction: column;
-        gap: .45rem;
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 1rem;
-        background: var(--card);
-        padding: 1rem;
-        color: var(--card-foreground);
-        text-align: left;
-        white-space: normal;
-        box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 4%, transparent);
-        transition: border-color .16s ease, background .16s ease, transform .16s ease;
+        display: flex; flex-direction: column; align-items: stretch; justify-content: space-between;
+        min-width: 0; min-height: 180px; gap: 18px; border: 1px solid var(--border); border-radius: 14px;
+        padding: 20px; background: var(--card); color: var(--card-foreground); text-align: left;
+        white-space: normal; cursor: pointer; box-shadow: none;
+        transition: border-color .18s ease, background .18s ease;
     }
-
     .workshop-quick-actions > a:hover,
     .workshop-quick-actions > button:hover {
-        border-color: color-mix(in oklab, var(--foreground) 28%, var(--border));
-        background: var(--accent);
-        transform: translateY(-2px);
+        border-color: color-mix(in oklab, var(--foreground) 25%, var(--border));
+        background: color-mix(in oklab, var(--foreground) 3%, var(--card));
     }
-
-    .workshop-quick-actions > a > span,
-    .workshop-quick-actions > button > span {
-        display: grid;
-        width: 2rem;
-        height: 2rem;
-        place-items: center;
-        margin-bottom: .2rem;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        background: var(--background);
-        color: var(--foreground);
+    .workshop-quick-actions > a:focus-visible,
+    .workshop-quick-actions > button:focus-visible {
+        outline: 2px solid var(--foreground); outline-offset: 3px;
     }
-
-    .workshop-quick-actions > a > span svg,
-    .workshop-quick-actions > button > span svg {
-        width: .9rem;
-    }
-
-    .workshop-quick-actions strong {
-        color: var(--foreground);
-        font-size: .7rem;
-        font-weight: 680;
-    }
-
-    .workshop-quick-actions small {
-        color: var(--muted-foreground);
-        font-size: .55rem;
-        line-height: 1.45;
-    }
-
-    .workshop-quick-actions > a > svg,
-    .workshop-quick-actions > button > svg {
-        position: absolute;
-        right: .8rem;
-        bottom: .8rem;
-        width: .75rem;
-        color: var(--muted-foreground);
+    .workshop-quick-action-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .workshop-quick-action-topline > span { color: var(--muted-foreground); font-size: 12px; line-height: 18px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+    .workshop-quick-action-topline > svg { width: 19px; height: 19px; flex-shrink: 0; stroke-width: 1.6; color: var(--muted-foreground); transition: color .18s ease; }
+    .workshop-quick-actions > a:hover .workshop-quick-action-topline > svg,
+    .workshop-quick-actions > button:hover .workshop-quick-action-topline > svg { color: var(--foreground); }
+    .workshop-quick-action-copy > h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; color: var(--foreground); font-size: clamp(17px, 9cqi, 20px); line-height: 1.25; font-weight: 600; letter-spacing: -.025em; }
+    .workshop-quick-action-copy > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 10px 0 0; max-width: 34ch; color: var(--muted-foreground); font-size: 14px; line-height: 1.55; }
+    @container (max-width: 180px) {
+        .workshop-quick-actions > a, .workshop-quick-actions > button { padding: 16px; gap: 14px; }
     }
 
     .workshop-quick-actions.workshop-single-quick-action {
@@ -5406,7 +5689,7 @@
         border-bottom: 1px solid var(--border);
         padding: .55rem .8rem;
         color: var(--muted-foreground);
-        font-size: .56rem;
+        font-size: 0.875rem;
         font-weight: 680;
         grid-template-columns: minmax(0, 1fr) auto auto;
     }
@@ -5460,7 +5743,7 @@
     .workshop-personal-todo [data-slot="card-content"] > div strong {
         overflow: hidden;
         color: var(--foreground);
-        font-size: .62rem;
+        font-size: 0.875rem;
         font-weight: 560;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -5468,14 +5751,14 @@
 
     .workshop-personal-todo [data-slot="card-content"] > div [data-slot="badge"] {
         color: var(--muted-foreground);
-        font-size: .48rem;
+        font-size: 0.75rem;
         text-transform: capitalize;
     }
 
     .workshop-personal-todo [data-slot="card-content"] > p {
         padding: 1.3rem;
         color: var(--muted-foreground);
-        font-size: .64rem;
+        font-size: 0.8125rem;
         text-align: center;
     }
 
@@ -5540,12 +5823,12 @@
 
     .workshop-stat-bars > div > strong {
         color: var(--foreground);
-        font-size: .7rem;
+        font-size: 0.875rem;
     }
 
     .workshop-stat-bars > div > small {
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-trend-chart {
@@ -5564,12 +5847,12 @@
 
     .workshop-trend-chart strong {
         color: var(--foreground);
-        font-size: .68rem;
+        font-size: 0.875rem;
     }
 
     .workshop-trend-chart small {
         color: var(--muted-foreground);
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-trend-chart svg {
@@ -5624,7 +5907,7 @@
 
     .workshop-dashboard-activity > header strong {
         color: var(--foreground);
-        font-size: .66rem;
+        font-size: 0.875rem;
     }
 
     .workshop-dashboard-activity ol {
@@ -5662,7 +5945,7 @@
 
     .workshop-dashboard-activity li p {
         color: var(--muted-foreground);
-        font-size: .56rem;
+        font-size: 0.8125rem;
         line-height: 1.45;
     }
 
@@ -5674,7 +5957,7 @@
         display: block;
         margin-top: .12rem;
         color: var(--muted-foreground);
-        font-size: .49rem;
+        font-size: 0.75rem;
     }
 
     .workshop-dashboard-activity > [data-slot="button"] {
@@ -5683,7 +5966,7 @@
         border-top: 1px solid var(--border);
         border-radius: 0;
         color: var(--muted-foreground);
-        font-size: .56rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-dashboard-activity > [data-slot="button"] svg {
@@ -5756,18 +6039,18 @@
     }
 
     .workshop-dashboard-editor-bar strong {
-        font-size: .67rem;
+        font-size: 0.875rem;
     }
 
     .workshop-dashboard-editor-bar small {
         color: var(--muted-foreground);
-        font-size: .54rem;
+        font-size: 0.75rem;
     }
 
     .workshop-dashboard-editor-bar [data-slot="button"] {
         gap: .35rem;
         cursor: pointer;
-        font-size: .62rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-dashboard-editor-bar [data-slot="button"] svg {
@@ -5777,7 +6060,7 @@
     .workshop-dashboard-publish-error {
         margin-top: .75rem;
         color: var(--destructive);
-        font-size: .65rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-dashboard-loading {
@@ -5785,7 +6068,7 @@
         min-height: 14rem;
         place-items: center;
         color: var(--muted-foreground);
-        font-size: .7rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-widget-sections {
@@ -5848,7 +6131,7 @@
         background: var(--background);
         padding: 0 .55rem;
         opacity: 0;
-        font-size: .52rem;
+        font-size: 0.75rem;
         font-weight: 680;
         transform: scale(.96);
         transition: opacity .15s ease, transform .15s ease;
@@ -5900,12 +6183,12 @@
     }
 
     .workshop-add-section-bottom > span {
-        font-size: .65rem;
+        font-size: 0.75rem;
         font-weight: 680;
     }
 
     .workshop-add-section-bottom > small {
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-widget {
@@ -5978,12 +6261,12 @@
     }
 
     .workshop-widget-add-space > span {
-        font-size: .65rem;
+        font-size: 0.75rem;
         font-weight: 680;
     }
 
     .workshop-widget-add-space > small {
-        font-size: .54rem;
+        font-size: 0.75rem;
     }
 
     .workshop-widget-remove[data-slot="button"] {
@@ -6132,7 +6415,7 @@
 
     .workshop-welcome-widget [data-slot="card-content"] > span {
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: .09em;
         text-transform: uppercase;
@@ -6153,7 +6436,7 @@
     .workshop-welcome-widget p {
         margin-top: .38rem;
         color: var(--muted-foreground);
-        font-size: .7rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-info-widget, .workshop-overview-widget, .workshop-team-chart-widget, .workshop-text-widget {
@@ -6178,12 +6461,12 @@
     }
 
     .workshop-info-widget [data-slot="card-header"] strong, .workshop-overview-widget [data-slot="card-header"] strong, .workshop-team-chart-widget [data-slot="card-header"] strong, .workshop-text-widget [data-slot="card-header"] strong {
-        font-size: .66rem;
+        font-size: 0.875rem;
     }
 
     .workshop-info-widget [data-slot="card-header"] [data-slot="badge"] {
         margin-left: auto;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-info-widget [data-slot="card-content"] {
@@ -6215,12 +6498,12 @@
     }
 
     .workshop-info-widget [data-slot="card-content"] strong {
-        font-size: .62rem;
+        font-size: 0.875rem;
     }
 
     .workshop-info-widget [data-slot="card-content"] small, .workshop-info-widget [data-slot="card-content"] > p {
         color: var(--muted-foreground);
-        font-size: .53rem;
+        font-size: 0.75rem;
     }
 
     .workshop-overview-widget [data-slot="card-content"] {
@@ -6228,7 +6511,7 @@
     }
 
     .workshop-overview-widget [data-slot="card-content"] > strong {
-        font-size: .82rem;
+        font-size: 0.875rem;
     }
 
     .workshop-overview-widget [data-slot="card-content"] > div {
@@ -6242,7 +6525,7 @@
         display: flex;
         flex-direction: column;
         color: var(--muted-foreground);
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-overview-widget [data-slot="card-content"] b {
@@ -6261,7 +6544,7 @@
         margin-bottom: .25rem;
         justify-content: space-between;
         color: var(--foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-team-chart-widget [data-slot="card-content"] > div > span small {
@@ -6284,7 +6567,7 @@
 
     .workshop-team-chart-widget [data-slot="card-content"] > p {
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-text-widget [data-slot="card-content"] {
@@ -6297,7 +6580,7 @@
 
     .workshop-text-widget [data-slot="card-content"] > p {
         color: var(--foreground);
-        font-size: .76rem;
+        font-size: 0.8125rem;
         line-height: 1.65;
         white-space: pre-wrap;
     }
@@ -6305,14 +6588,14 @@
     .workshop-text-widget textarea {
         min-height: 7rem;
         resize: vertical;
-        font-size: .68rem;
+        font-size: 0.875rem;
     }
 
     .workshop-text-widget [data-slot="card-content"] > small {
         display: block;
         margin-top: .45rem;
         color: var(--muted-foreground);
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-widget-height-0-5 .workshop-text-widget [data-slot="card-content"] {
@@ -6347,12 +6630,12 @@
 
     .workshop-dashboard-empty strong {
         color: var(--foreground);
-        font-size: .8rem;
+        font-size: 0.875rem;
     }
 
     .workshop-dashboard-empty span {
         margin-top: .25rem;
-        font-size: .62rem;
+        font-size: 0.75rem;
     }
 
     .workshop-dashboard-empty [data-slot="button"] {
@@ -6376,7 +6659,7 @@
     .workshop-widget-library-content h3 {
         margin-bottom: .45rem;
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.875rem;
         font-weight: 720;
         letter-spacing: .09em;
         text-transform: uppercase;
@@ -6420,13 +6703,13 @@
     }
 
     .workshop-widget-library-content section [data-slot="button"] strong {
-        font-size: .65rem;
+        font-size: 0.875rem;
     }
 
     .workshop-widget-library-content section [data-slot="button"] small {
         margin-top: .14rem;
         color: var(--muted-foreground);
-        font-size: .52rem;
+        font-size: 0.75rem;
         line-height: 1.4;
     }
 
@@ -6443,7 +6726,7 @@
 
     .workshop-widget-library-content > aside strong {
         margin-right: .25rem;
-        font-size: .6rem;
+        font-size: 0.875rem;
     }
 
     .workshop-widget-library-content > aside span {
@@ -6453,7 +6736,7 @@
         padding: .2rem .35rem;
         color: var(--muted-foreground);
         font-family: monospace;
-        font-size: .52rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-detail-page {
@@ -6465,7 +6748,7 @@
         align-items: center;
         gap: .4rem;
         color: var(--muted-foreground);
-        font-size: .64rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-back:hover {
@@ -6512,7 +6795,7 @@
     }
 
     .workshop-project-detail-title [data-slot="badge"] {
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-detail-title h2 {
@@ -6528,7 +6811,7 @@
         max-width: 46rem;
         margin-top: .65rem;
         color: var(--muted-foreground);
-        font-size: .76rem;
+        font-size: 0.8125rem;
         line-height: 1.6;
     }
 
@@ -6540,7 +6823,7 @@
 
     .workshop-project-detail-actions [data-slot="button"] {
         min-height: 2.25rem;
-        font-size: .62rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-detail-actions svg {
@@ -6594,14 +6877,14 @@
 
     .workshop-project-metric-grid small {
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-metric-grid strong {
         overflow: hidden;
         margin-top: .12rem;
         color: var(--foreground);
-        font-size: .76rem;
+        font-size: 0.875rem;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -6634,7 +6917,7 @@
 
     .workshop-project-detail-page [data-slot="card-description"] {
         color: var(--muted-foreground);
-        font-size: .55rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-overview-grid,
@@ -6673,7 +6956,7 @@
     .workshop-project-overview-grid small,
     .workshop-project-technical-grid small {
         color: var(--muted-foreground);
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-overview-grid strong,
@@ -6681,7 +6964,7 @@
         overflow: hidden;
         margin-top: .1rem;
         color: var(--foreground);
-        font-size: .58rem;
+        font-size: 0.875rem;
         font-weight: 560;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -6696,7 +6979,7 @@
         align-items: center;
         justify-content: space-between;
         color: var(--foreground);
-        font-size: .58rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-progress > span b {
@@ -6712,7 +6995,7 @@
         display: block;
         margin-top: .4rem;
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-detail-stack {
@@ -6723,7 +7006,7 @@
         display: block;
         margin-bottom: .5rem;
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.75rem;
         font-weight: 650;
         text-transform: uppercase;
     }
@@ -6735,12 +7018,12 @@
     }
 
     .workshop-project-detail-stack [data-slot="badge"] {
-        font-size: .5rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-detail-stack small {
         color: var(--muted-foreground);
-        font-size: .55rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-task-card [data-slot="card-content"] {
@@ -6770,7 +7053,7 @@
     .workshop-project-task-card [data-slot="card-content"] strong {
         overflow: hidden;
         color: var(--foreground);
-        font-size: .6rem;
+        font-size: 0.875rem;
         font-weight: 580;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -6779,19 +7062,19 @@
     .workshop-project-task-card [data-slot="card-content"] small {
         margin-top: .14rem;
         color: var(--muted-foreground);
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-task-card [data-slot="badge"] {
         flex: none;
-        font-size: .48rem;
+        font-size: 0.75rem;
         text-transform: capitalize;
     }
 
     .workshop-project-task-card [data-slot="card-content"] > p {
         padding: 1rem;
         color: var(--muted-foreground);
-        font-size: .58rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-resource-list {
@@ -6826,12 +7109,12 @@
     }
 
     .workshop-project-resource-list strong {
-        font-size: .56rem;
+        font-size: 0.875rem;
         font-weight: 560;
     }
 
     .workshop-project-resource-list small {
-        font-size: .48rem;
+        font-size: 0.75rem;
     }
 
     .workshop-project-access {
@@ -6859,14 +7142,14 @@
 
     .workshop-project-access strong {
         color: var(--foreground);
-        font-size: .56rem;
+        font-size: 0.875rem;
         font-weight: 580;
     }
 
     .workshop-project-access small {
         margin-top: .14rem;
         color: var(--muted-foreground);
-        font-size: .48rem;
+        font-size: 0.75rem;
         line-height: 1.45;
     }
 
@@ -6902,7 +7185,7 @@
         display: grid;
         gap: .38rem;
         color: var(--foreground);
-        font-size: .62rem;
+        font-size: 0.8125rem;
         font-weight: 600;
     }
 
@@ -6912,7 +7195,7 @@
 
     .workshop-project-edit-grid > label > span {
         color: var(--muted-foreground);
-        font-size: .5rem;
+        font-size: 0.8125rem;
         font-weight: 450;
     }
 
@@ -6926,7 +7209,7 @@
     }
 
     .workshop-project-edit-actions [data-slot="button"] {
-        font-size: .62rem;
+        font-size: 0.8125rem;
     }
 
     .workshop-project-edit-actions svg {
@@ -6935,11 +7218,11 @@
 
     @media (max-width: 1100px) {
         .workshop-shell {
-            grid-template-columns: 4.5rem minmax(0, 1fr) 15rem;
+            grid-template-columns: 11rem minmax(0, 1fr) 15rem;
         }
 
         .workshop-shell.members-collapsed {
-            grid-template-columns: 4.5rem minmax(0, 1fr);
+            grid-template-columns: 11rem minmax(0, 1fr);
         }
 
         .workshop-org-header {
@@ -6953,7 +7236,7 @@
             padding: .45rem;
         }
 
-        .workshop-org-switcher > span:nth-child(2), .workshop-org-switcher > svg, .workshop-nav > p, .workshop-nav-link span, .workshop-sidebar-footer > a span, .workshop-sidebar-user > span:nth-child(2), .workshop-status-chevron {
+        .workshop-org-switcher > span:nth-child(2), .workshop-org-switcher > svg, .workshop-sidebar-footer > a span, .workshop-sidebar-user > span:nth-child(2), .workshop-status-chevron {
             display: none;
         }
 
@@ -6962,8 +7245,27 @@
         }
 
         .workshop-nav-link {
-            justify-content: center;
-            padding: 0;
+            justify-content: flex-start;
+            padding: 0 .6rem;
+        }
+
+        .workshop-nav-group-trigger {
+            justify-content: flex-start;
+            padding: 0 .6rem;
+        }
+
+        .workshop-nav-submenu {
+            padding-left: 0;
+        }
+
+        .workshop-nav-submenu .workshop-nav-link::before {
+            display: none;
+        }
+
+        .workshop-current-project-dot {
+            position: absolute;
+            right: .2rem;
+            bottom: .25rem;
         }
 
         .workshop-sidebar-footer > a {
@@ -6999,7 +7301,7 @@
 
     @media (max-width: 800px) {
         .workshop-shell, .workshop-shell.members-collapsed {
-            grid-template-columns: 4rem minmax(0, 1fr);
+            grid-template-columns: 10rem minmax(0, 1fr);
         }
 
         .workshop-members {
@@ -7127,7 +7429,24 @@
             display: grid;
             height: 100%;
             padding: .35rem;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        .workshop-nav-group {
+            display: contents;
+        }
+
+        .workshop-nav-group-trigger {
+            display: none;
+        }
+
+        .workshop-nav-submenu,
+        .workshop-nav-group.open .workshop-nav-submenu {
+            display: contents;
+        }
+
+        .workshop-projects-group .workshop-project-entry {
+            display: none;
         }
 
         .workshop-nav-link {
@@ -7145,7 +7464,7 @@
         }
 
         .workshop-topbar h1 {
-            font-size: .8rem;
+            font-size: 0.875rem;
         }
 
         .workshop-project-select {
@@ -7450,6 +7769,14 @@
         background: var(--sidebar);
     }
 
+    .workshop-sidebar, .workshop-members {
+        --primary: var(--sidebar-primary);
+        --primary-foreground: var(--sidebar-primary-foreground);
+        --accent: var(--sidebar-accent);
+        --accent-foreground: var(--sidebar-accent-foreground);
+        --ring: var(--sidebar-ring);
+    }
+
     .workshop-sidebar::after {
         background: var(--border);
     }
@@ -7470,6 +7797,7 @@
     }
 
     .workshop-nav-link:hover,
+    .workshop-nav-group-trigger:hover,
     .workshop-sidebar-footer > a:hover,
     .workshop-member:hover {
         background: var(--sidebar-accent);
@@ -7505,11 +7833,25 @@
         color: var(--muted-foreground);
     }
 
+    .workshop-nav-group-trigger {
+        color: var(--muted-foreground);
+    }
+
+    .workshop-nav-group-trigger.active,
+    .workshop-project-entry.current {
+        color: var(--sidebar-accent-foreground);
+    }
+
+    .workshop-nav-submenu .workshop-nav-link::before {
+        background: var(--sidebar-border);
+    }
+
     .workshop-nav-link.active {
-        border-color: var(--sidebar-border);
+        border-color: transparent;
         background: var(--sidebar-accent);
         color: var(--sidebar-accent-foreground);
-        box-shadow: inset 2px 0 var(--sidebar-foreground);
+        box-shadow: none;
+        font-weight: 600;
     }
 
     .workshop-nav > p,
@@ -9360,7 +9702,7 @@
     justify-content: center;
     border: 2px solid var(--background);
     padding: 0 .25rem;
-    font-size: .58rem;
+    font-size: 0.75rem;
 }
 
 .chat-modal {
@@ -9429,7 +9771,7 @@
     display: block;
     margin-top: .08rem;
     color: var(--muted-foreground);
-    font-size: .65rem;
+    font-size: 0.75rem;
 }
 
 .chat-title-icon, .chat-conversation-icon {
@@ -9457,7 +9799,7 @@
 .chat-create-actions button {
     height: 2.2rem;
     gap: .35rem;
-    font-size: .67rem;
+    font-size: 0.8125rem;
 }
 
 .chat-create-actions svg {
@@ -9482,7 +9824,7 @@
 .chat-search input {
     height: 2.25rem;
     padding-left: 2rem;
-    font-size: .7rem;
+    font-size: 0.875rem;
 }
 
 .chat-conversation-list {
@@ -9546,7 +9888,7 @@
 
 .chat-conversation-copy strong {
     overflow: hidden;
-    font-size: .72rem;
+    font-size: 0.875rem;
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -9555,7 +9897,7 @@
 .chat-conversation-copy time {
     flex: none;
     color: var(--muted-foreground);
-    font-size: .56rem;
+    font-size: 0.75rem;
 }
 
 .chat-conversation-copy small {
@@ -9563,7 +9905,7 @@
     overflow: hidden;
     margin-top: .15rem;
     color: var(--muted-foreground);
-    font-size: .63rem;
+    font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -9573,13 +9915,13 @@
     height: 1.2rem;
     justify-content: center;
     padding: 0 .28rem;
-    font-size: .56rem;
+    font-size: 0.75rem;
 }
 
 .chat-empty-list {
     padding: 2rem 1rem;
     color: var(--muted-foreground);
-    font-size: .7rem;
+    font-size: 0.75rem;
     text-align: center;
 }
 
@@ -9590,7 +9932,7 @@
     border-top: 1px solid var(--border);
     padding: .65rem .8rem;
     color: var(--muted-foreground);
-    font-size: .58rem;
+    font-size: 0.75rem;
 }
 
 .chat-conversations > footer svg {
@@ -9657,7 +9999,7 @@
     display: block;
     margin: 0 0 .2rem .25rem;
     color: var(--muted-foreground);
-    font-size: .59rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -9666,7 +10008,7 @@
     border-radius: .85rem .85rem .85rem .2rem;
     background: var(--card);
     padding: .62rem .78rem;
-    font-size: .75rem;
+    font-size: 14px;
     line-height: 1.45;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
@@ -9683,7 +10025,7 @@
     display: block;
     margin: .2rem .25rem 0;
     color: var(--muted-foreground);
-    font-size: .54rem;
+    font-size: 0.75rem;
 }
 
 .chat-message.mine time {
@@ -9713,7 +10055,7 @@
 
 .chat-first-message span, .chat-welcome p, .chat-status-message {
     margin-top: .25rem;
-    font-size: .67rem;
+    font-size: 0.8125rem;
 }
 
 .chat-composer {
@@ -9725,7 +10067,7 @@
 .chat-composer > p, .chat-form-error {
     margin-bottom: .4rem;
     color: var(--destructive);
-    font-size: .62rem;
+    font-size: 0.8125rem;
 }
 
 .chat-composer > div {
@@ -9738,7 +10080,7 @@
     min-height: 2.55rem;
     max-height: 8rem;
     resize: none;
-    font-size: .72rem;
+    font-size: 0.875rem;
 }
 
 .chat-composer button {
@@ -9768,7 +10110,7 @@
     display: grid;
     gap: .4rem;
     color: var(--muted-foreground);
-    font-size: .68rem;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 
@@ -9781,7 +10123,7 @@
 .chat-member-picker h3, .chat-settings-content > h3 {
     padding: .65rem .8rem;
     color: var(--muted-foreground);
-    font-size: .65rem;
+    font-size: 0.875rem;
     font-weight: 650;
     text-transform: uppercase;
     letter-spacing: .06em;
@@ -9803,13 +10145,13 @@
 
 .chat-member-picker strong, .chat-settings-members strong {
     display: block;
-    font-size: .71rem;
+    font-size: 0.875rem;
 }
 
 .chat-member-picker small, .chat-settings-members small {
     display: block;
     color: var(--muted-foreground);
-    font-size: .61rem;
+    font-size: 0.75rem;
 }
 
 .chat-settings-content {
@@ -9836,14 +10178,14 @@
 
 .chat-locked-note strong {
     display: block;
-    font-size: .7rem;
+    font-size: 0.875rem;
 }
 
 .chat-locked-note small {
     display: block;
     margin-top: .18rem;
     color: var(--muted-foreground);
-    font-size: .62rem;
+    font-size: 0.75rem;
     line-height: 1.45;
 }
 
@@ -9868,7 +10210,7 @@
 
 .chat-settings-members [data-slot="badge"] {
     gap: .25rem;
-    font-size: .56rem;
+    font-size: 0.75rem;
 }
 
 .chat-settings-members [data-slot="badge"] svg {
@@ -9878,7 +10220,7 @@
 .chat-settings-members button {
     height: 1.8rem;
     padding-inline: .55rem;
-    font-size: .58rem;
+    font-size: 0.8125rem;
 }
 
 .chat-add-member {
@@ -9894,7 +10236,7 @@
     background: var(--background);
     padding: .55rem .65rem;
     color: var(--foreground);
-    font-size: .68rem;
+    font-size: 0.875rem;
 }
 
 @media (max-width: 760px) {
@@ -10016,6 +10358,138 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
     gap: 18px;
 }
+
+.workshop-notes-page { display: flex; flex-direction: column; gap: 28px; }
+.notes-board-status, .notes-board-status > span { display: flex; align-items: center; gap: 8px; }
+.notes-board-status svg { width: 13px; height: 13px; }
+.workshop-notes-grid, .notes-board-loading { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 18px; }
+.workshop-sticky-note { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 242px; gap: 18px; padding: 24px; border: 1px solid color-mix(in srgb, var(--note-ink) 12%, transparent); border-radius: 5px 5px 22px 5px; background: var(--note-color); color: var(--note-ink); text-align: left; cursor: pointer; box-shadow: 0 3px 7px #0000000c; transition: transform .15s, box-shadow .15s; }
+.workshop-sticky-note::after { content: ""; position: absolute; right: 0; bottom: 0; width: 21px; height: 21px; border-radius: 5px 0 21px 0; background: color-mix(in srgb, var(--note-ink) 13%, var(--note-color)); }
+.workshop-sticky-note:hover { transform: translateY(-3px); box-shadow: 0 8px 18px #00000016; }
+.sticky-note-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; cursor: pointer; }
+.sticky-note-open:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.sticky-note-heading { display: flex; align-items: flex-start; gap: 10px; }
+.sticky-note-heading svg { width: 17px; height: 17px; flex-shrink: 0; margin-top: 3px; opacity: .7; }
+.sticky-note-heading strong { flex: 1; min-width: 0; font-size: 16px; line-height: 1.45; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sticky-note-body { overflow-wrap: anywhere; font-size: 14px; line-height: 1.75; max-height: 7.5em; overflow: hidden; }
+.sticky-note-body.empty { opacity: .55; }
+.sticky-note-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--note-ink) 14%, transparent); font-size: 11px; }
+.sticky-note-footer > span { display: inline-flex; gap: 5px; align-items: center; }
+.sticky-note-footer svg { width: 12px; height: 12px; }
+.notes-board-error { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; }
+.notes-board-error > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.notes-board-limit, .notes-editor-blocked { color: var(--muted-foreground); font-size: 13px; }
+.notes-board-loading > div { height: 242px; border: 1px solid var(--border); border-radius: 8px; background: var(--muted); }
+.notes-empty-panel { flex: 1; }
+.notes-empty-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: #f6e7a6; color: #655425; }
+.notes-empty-icon svg { width: 28px; height: 28px; }
+.notes-empty-panel > button { margin-top: 8px; }
+/* Let Markdown shrink within the dialog; individual code blocks own horizontal scrolling. */
+.notes-editor-dialog { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.notes-editor-dialog > * { min-width: 0; }
+.notes-editor-paper { display: flex; flex-direction: column; min-width: 0; max-width: 100%; gap: 12px; padding: 22px; border-radius: 5px 5px 22px 5px; background: var(--note-color); color: var(--note-ink); }
+.notes-editor-paper input, .notes-editor-paper textarea { width: 100%; padding: 0; color: inherit; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.notes-editor-paper input { font-size: 18px; font-weight: 650; }
+.notes-editor-paper textarea { min-height: 200px; max-height: 40dvh; resize: vertical; font-size: 14px; line-height: 1.8; }
+.notes-editor-paper input::placeholder, .notes-editor-paper textarea::placeholder { color: inherit; opacity: .55; }
+.notes-editor-paper input:focus-visible, .notes-editor-paper textarea:focus-visible { outline: 2px solid currentColor; outline-offset: 5px; box-shadow: none; }
+.note-color-picker { margin: 20px 0 24px; }
+.note-color-picker legend { margin-bottom: 10px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
+.note-color-picker > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.note-color-picker button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #0000001a; border-radius: 50%; cursor: pointer; }
+.note-color-picker button[aria-pressed="true"] { outline: 2px solid var(--foreground); outline-offset: 3px; }
+.note-color-picker button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.note-color-picker button svg { width: 16px; height: 16px; }
+.note-color-picker:disabled { opacity: .6; }
+.note-custom-color { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted-foreground); }
+.note-custom-color input { width: 32px; height: 32px; padding: 2px; border: 1px solid var(--border); border-radius: 50%; background: var(--card); cursor: pointer; }
+.notes-editor-footer { margin-top: 20px; }
+.notes-delete-button { margin-right: auto; color: var(--destructive); }
+.notes-editor-mode { display: flex; gap: 4px; margin-bottom: 12px; }
+.notes-markdown-hint { margin-top: 10px; color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
+.notes-reader-paper > h3, .notes-editor-preview > h3 { font-size: 18px; line-height: 1.5; font-weight: 650; overflow-wrap: anywhere; }
+.notes-editor-preview { min-width: 0; min-height: 200px; }
+.notes-editor-preview > h3 { margin-bottom: 14px; }
+.notes-reader-empty { opacity: .6; font-size: 14px; }
+.note-markdown { min-width: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.75; }
+.note-markdown > :first-child { margin-top: 0; }
+.note-markdown > :last-child { margin-bottom: 0; }
+.note-markdown :is(p, ul, ol, blockquote, pre, table, hr) { margin-block: .75em; }
+.note-markdown :is(h1, h2, h3, h4, h5, h6) { margin-block: 1.2em .5em; font-weight: 700; line-height: 1.3; color: inherit; scroll-margin-block: 16px; }
+.note-markdown h1 { font-size: 2em; padding-bottom: .3em; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+.note-markdown h2 { font-size: 1.65em; padding-bottom: .3em; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+.note-markdown h3 { font-size: 1.4em; }
+.note-markdown h4 { font-size: 1.2em; }
+.note-markdown h5 { font-size: 1.05em; }
+.note-markdown h6 { font-size: .925em; letter-spacing: .015em; }
+.note-markdown strong { font-weight: 750; }
+.note-markdown em { font-style: italic; }
+.note-markdown ul { list-style: disc; padding-left: 1.5em; }
+.note-markdown ul ul { list-style-type: circle; }
+.note-markdown ul ul ul { list-style-type: square; }
+.note-markdown ol { list-style: decimal; padding-left: 1.5em; }
+.note-markdown li > :is(ul, ol) { margin-block: .25em; }
+.note-markdown li + li { margin-top: .2em; }
+.note-markdown .contains-task-list { list-style: none; padding-left: .15em; }
+.note-task-checkbox { margin-right: .5em; }
+.note-markdown blockquote { padding-left: 1em; border-left: 3px solid color-mix(in srgb, currentColor 50%, transparent); }
+.note-markdown blockquote > :first-child { margin-top: 0; }
+.note-markdown blockquote > :last-child { margin-bottom: 0; }
+.note-markdown :is(a, .note-markdown-link) { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.note-markdown code { padding: .1em .3em; border-radius: 4px; background: color-mix(in srgb, currentColor 9%, transparent); font-family: var(--workshop-font-code); font-size: .87em; }
+.note-markdown pre { max-width: 100%; overflow-x: auto; padding: 12px; border-radius: 6px; background: color-mix(in srgb, currentColor 7%, transparent); }
+.note-markdown pre code { padding: 0; background: none; white-space: pre; }
+.note-code-block { min-width: 0; max-width: 100%; margin-block: .85em; overflow: hidden; border: 1px solid #ffffff08; border-radius: 8px; background: #212121; color: #eeffff; color-scheme: dark; }
+.note-code-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; padding: 10px 22px; color: inherit; font-family: var(--workshop-font-code); font-size: 11px; }
+.note-code-labels { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 6px 24px; }
+.note-code-labels > span { min-width: 0; overflow-wrap: anywhere; }
+.note-code-theme { opacity: .7; }
+.note-code-header button { flex-shrink: 0; padding: 2px 7px; border: 1px solid transparent; border-radius: 4px; color: inherit; opacity: .7; cursor: pointer; font-family: var(--workshop-font-ui); font-size: 11px; }
+.note-code-header button:hover { background: #88888820; opacity: 1; }
+.note-code-header button:focus-visible { outline: 2px solid #80cbc4; outline-offset: 2px; }
+.note-markdown .note-code-block pre { min-width: 0; margin: 0; padding: 20px 22px 24px; border-radius: 0; background: transparent; color: inherit; tab-size: 4; overscroll-behavior-x: contain; }
+.note-code-block pre:focus-visible { outline: 2px solid #80cbc4; outline-offset: -2px; }
+.note-code-block code { display: block; font-size: 13px; line-height: 1.8; overflow-wrap: normal; }
+.note-markdown-compact .note-code-header { min-height: 30px; padding: 6px 12px; }
+.note-markdown-compact .note-code-block pre { padding: 10px 12px; }
+.note-markdown-compact .note-code-block code { font-size: 11px; }
+.note-body-editor { min-width: 0; }
+.note-body-editor .note-body-text-segment { min-height: 64px; }
+.note-code-editor { margin-block: 12px; }
+.note-code-selectors { display: flex; flex-wrap: wrap; gap: 12px 24px; min-width: 0; width: 100%; }
+.note-code-selectors label { display: flex; flex-direction: column; gap: 5px; flex: 1 1 180px; min-width: 0; font-size: 11px; }
+.note-code-selectors select { width: 100%; min-width: 0; padding: 5px 8px; border: 1px solid #88888860; border-radius: 5px; background: var(--code-paper); color: inherit; font: inherit; font-size: 12px; }
+.note-code-selectors select:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.note-code-input { position: relative; min-width: 0; margin: 8px 12px; }
+.note-code-input pre, .notes-editor-paper .note-code-input textarea { padding: 10px; border: 0; border-radius: 4px; font-family: var(--workshop-font-code); font-size: 13px; font-weight: 400; line-height: 1.8; letter-spacing: normal; tab-size: 4; white-space: pre; overflow-wrap: normal; word-break: normal; }
+.note-code-input pre { position: absolute; inset: 0; margin: 0; overflow: hidden; pointer-events: none; }
+.note-code-input pre code { font: inherit; }
+.notes-editor-paper .note-code-input textarea { position: relative; display: block; width: 100%; min-height: 240px; max-height: 45dvh; field-sizing: fixed; overflow: auto; resize: vertical; color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--code-ink); background: transparent; outline-offset: 0; }
+.notes-editor-paper .note-code-input textarea::selection { background: #80808066; }
+.note-code-editor-hint, .note-code-load-error { margin: 0; padding: 4px 22px 12px; opacity: .65; font-size: 11px; }
+.note-markdown-table { max-width: 100%; overflow-x: auto; }
+.note-markdown table { width: 100%; border-collapse: collapse; font-size: .9em; }
+.note-markdown :is(th, td) { padding: 5px 10px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
+.note-markdown th { font-weight: 700; text-align: left; background: color-mix(in srgb, currentColor 5%, transparent); }
+.note-markdown hr { margin-block: 1.5em; border: 0; border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
+.note-markdown img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
+.note-markdown sup { font-size: .75em; line-height: 0; vertical-align: super; }
+.note-markdown .footnotes { margin-top: 1.5em; padding-top: .5em; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); font-size: .85em; }
+.note-markdown .footnotes :is(li, [id]) { scroll-margin-block: 16px; }
+.note-markdown-compact { font-size: 12px; }
+.note-markdown-compact :is(p, ul, ol, blockquote, pre, table) { margin-block: .35em; }
+.notes-markdown-guide { margin-top: 8px; color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+.notes-markdown-guide summary { width: fit-content; cursor: pointer; font-weight: 600; }
+.notes-markdown-guide summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 3px; }
+.notes-markdown-guide dl { display: grid; gap: 14px; margin-top: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+.notes-markdown-guide dt { margin-bottom: 4px; color: var(--foreground); font-weight: 600; }
+.notes-markdown-guide :is(code, pre) { font-family: var(--workshop-font-code); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+    .notes-editor-paper { padding: 18px; }
+    .notes-editor-footer { flex-wrap: wrap; }
+    .note-color-picker > div { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .workshop-sticky-note { transition: none; } }
 
 .workshop-todo-card {
     display: flex;
@@ -10309,7 +10783,7 @@
 
 .workshop-settings-sidebar > header strong {
     overflow: hidden;
-    font-size: .8rem;
+    font-size: 0.875rem;
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -10317,7 +10791,7 @@
 
 .workshop-settings-sidebar > header small {
     color: var(--muted-foreground);
-    font-size: .62rem;
+    font-size: 0.75rem;
 }
 
 .workshop-settings-sidebar nav {
@@ -10344,7 +10818,7 @@
 .workshop-settings-link > span {
     overflow: hidden;
     color: var(--foreground);
-    font-size: .74rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -10388,7 +10862,7 @@
     max-width: 40rem;
     margin-top: .3rem;
     color: var(--muted-foreground);
-    font-size: .76rem;
+    font-size: 13px;
     line-height: 1.55;
 }
 
@@ -10416,7 +10890,7 @@
     display: flex;
     align-items: center;
     gap: .4rem;
-    font-size: .82rem;
+    font-size: 0.875rem;
     font-weight: 650;
 }
 
@@ -10428,7 +10902,7 @@
 .workshop-settings-card > header p {
     margin-top: .2rem;
     color: var(--muted-foreground);
-    font-size: .66rem;
+    font-size: 0.8125rem;
 }
 
 .workshop-settings-card.danger {
@@ -10448,7 +10922,7 @@
 .workshop-settings-form label {
     display: grid;
     gap: .4rem;
-    font-size: .7rem;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 
@@ -10486,7 +10960,7 @@
     gap: .25rem;
     margin-right: auto;
     color: var(--muted-foreground);
-    font-size: .66rem;
+    font-size: 0.75rem;
 }
 
 .workshop-settings-saved svg {
@@ -10527,7 +11001,7 @@
 
 .workshop-settings-stats small {
     color: var(--muted-foreground);
-    font-size: .6rem;
+    font-size: 0.75rem;
 }
 
 .workshop-settings-row {
@@ -10541,7 +11015,7 @@
 }
 
 .workshop-settings-row strong {
-    font-size: .74rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -10561,13 +11035,13 @@
 
 .workshop-settings-footnote {
     color: var(--muted-foreground);
-    font-size: .64rem;
+    font-size: 0.8125rem;
 }
 
 .workshop-settings-empty {
     padding: 1.5rem;
     color: var(--muted-foreground);
-    font-size: .72rem;
+    font-size: 0.75rem;
     text-align: center;
 }
 
@@ -10579,7 +11053,7 @@
 }
 
 .workshop-settings-empty-card strong {
-    font-size: .76rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -10587,7 +11061,7 @@
     max-width: 28rem;
     margin: .3rem auto 0;
     color: var(--muted-foreground);
-    font-size: .66rem;
+    font-size: 0.8125rem;
     line-height: 1.5;
 }
 
@@ -10623,7 +11097,7 @@
     border-bottom: 1px solid var(--border);
     background: var(--muted);
     color: var(--muted-foreground);
-    font-size: .58rem;
+    font-size: 0.75rem;
     font-weight: 650;
     letter-spacing: .06em;
     text-transform: uppercase;
@@ -10663,7 +11137,7 @@
     align-items: center;
     gap: .35rem;
     overflow: hidden;
-    font-size: .74rem;
+    font-size: 0.875rem;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -10673,7 +11147,7 @@
     background: var(--secondary);
     padding: .05rem .35rem;
     color: var(--secondary-foreground);
-    font-size: .54rem;
+    font-size: 0.75rem;
     font-style: normal;
     font-weight: 600;
 }
@@ -10681,7 +11155,7 @@
 .workshop-settings-member-identity small {
     overflow: hidden;
     color: var(--muted-foreground);
-    font-size: .64rem;
+    font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -10702,7 +11176,7 @@
     border-radius: 999px;
     background: color-mix(in oklab, var(--role-color) 10%, transparent);
     padding: 0 .5rem;
-    font-size: .62rem;
+    font-size: 0.75rem;
     font-weight: 550;
     white-space: nowrap;
 }
@@ -10721,7 +11195,7 @@
 
 .workshop-settings-member-joined {
     color: var(--muted-foreground);
-    font-size: .66rem;
+    font-size: 0.75rem;
 }
 
 .workshop-settings-role-dot {
@@ -10748,7 +11222,7 @@
     align-items: center;
     gap: .3rem;
     color: var(--primary);
-    font-size: .58rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
@@ -10770,7 +11244,7 @@
     background: var(--muted);
     padding: .3rem .65rem;
     color: var(--muted-foreground);
-    font-size: .66rem;
+    font-size: 0.8125rem;
 }
 
 .workshop-appearance-disclaimer svg {
@@ -10792,14 +11266,14 @@
 }
 
 .workshop-appearance-section h3 {
-    font-size: .82rem;
+    font-size: 0.875rem;
     font-weight: 650;
 }
 
 .workshop-appearance-section header p {
     margin-top: .15rem;
     color: var(--muted-foreground);
-    font-size: .64rem;
+    font-size: 0.8125rem;
 }
 
 .workshop-scheme-grid {
@@ -10846,7 +11320,7 @@
     align-items: center;
     gap: .35rem;
     overflow: hidden;
-    font-size: .74rem;
+    font-size: 0.875rem;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -10856,7 +11330,7 @@
     background: var(--secondary);
     padding: .05rem .35rem;
     color: var(--secondary-foreground);
-    font-size: .52rem;
+    font-size: 0.75rem;
     font-style: normal;
     font-weight: 650;
     letter-spacing: .05em;
@@ -10886,7 +11360,7 @@
     border-radius: .5rem;
     background: color-mix(in oklab, var(--primary) 14%, transparent);
     padding: 0 .55rem;
-    font-size: .66rem;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
@@ -10926,7 +11400,7 @@
     height: 1.9em;
     margin-bottom: .4em;
     border-radius: .45em;
-    background: var(--primary);
+    background: var(--sidebar-primary);
 }
 
 .workshop-scheme-preview-sidebar i {
@@ -10937,7 +11411,7 @@
 
 .workshop-scheme-preview-sidebar i.active {
     background: var(--sidebar-accent);
-    box-shadow: inset .2em 0 var(--primary);
+    box-shadow: none;
 }
 
 .workshop-scheme-preview-main {
@@ -11042,7 +11516,7 @@
 .workshop-scheme-editor-fields > label {
     display: grid;
     gap: .38rem;
-    font-size: .7rem;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 
@@ -11063,7 +11537,7 @@
     gap: .35rem;
     border-radius: .45rem;
     color: var(--muted-foreground);
-    font-size: .68rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     transition: background-color .15s ease, color .15s ease;
 }
@@ -11124,14 +11598,14 @@
 }
 
 .workshop-scheme-color-field strong {
-    font-size: .7rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
 .workshop-scheme-color-field small {
     overflow: hidden;
     color: var(--muted-foreground);
-    font-size: .6rem;
+    font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -11140,7 +11614,7 @@
     height: 2rem;
     padding: .35rem .5rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: .7rem;
+    font-size: 0.875rem;
 }
 
 .workshop-scheme-editor-aside {
@@ -11169,7 +11643,7 @@
     display: flex;
     align-items: center;
     gap: .3rem;
-    font-size: .68rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -11179,7 +11653,7 @@
 
 .workshop-scheme-preview-toggle small {
     color: var(--muted-foreground);
-    font-size: .6rem;
+    font-size: 0.75rem;
 }
 
 .workshop-scheme-issues {
@@ -11197,7 +11671,7 @@
     background: #fef3c7;
     padding: .45rem .55rem;
     color: #78350f;
-    font-size: .62rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
 }
 
@@ -11212,7 +11686,7 @@
     background: var(--muted);
     padding: .5rem .6rem;
     color: var(--muted-foreground);
-    font-size: .62rem;
+    font-size: 0.75rem;
     line-height: 1.45;
 }
 
@@ -11306,16 +11780,16 @@
 }
 
 .workshop-shape-sections h3 {
-    font-size: .65rem;
+    font-size: 0.875rem;
 }
 
 .workshop-shape-sections section button small {
-    font-size: .65rem;
+    font-size: 0.75rem;
     white-space: normal;
 }
 
 .workshop-shape-menu > label input {
-    font-size: .75rem;
+    font-size: 0.875rem;
 }
 
 .workshop-shape-sections section button > .workshop-preset-preview {
@@ -11336,3 +11810,546 @@
     font-size: .8rem;
     color: var(--muted-foreground);
 }
+/* Project tools: shared canvas workspaces and Waterfall constellation. */
+@layer components {
+    .project-tools-heading { display: flex; align-items: center; gap: 2px; }
+    .project-tools-heading .workshop-nav-group-trigger { flex: 1; min-width: 0; }
+    .project-tools-settings { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; border-radius: 6px; color: var(--muted-foreground); cursor: pointer; }
+    .project-tools-settings:hover, .project-tools-settings[data-state="open"] { background: var(--secondary); color: var(--foreground); }
+    .project-tools-settings svg { width: 14px; height: 14px; }
+    .project-tools-menu { width: 292px; padding: 14px; }
+    .project-tools-menu > strong { font-size: 14px; }
+    .project-tools-menu > p { font-size: 13px; color: var(--muted-foreground); margin: 4px 0 12px; }
+    .project-tool-option { display: flex; align-items: center; gap: 4px; min-height: 38px; }
+    .project-tool-option label { display: flex; gap: 9px; align-items: center; flex: 1; font-size: 14px; cursor: pointer; }
+    .project-tool-option input { accent-color: var(--sidebar-primary); width: 14px; height: 14px; }
+    .project-tool-option svg { width: 14px; height: 14px; }
+    .project-tool-option button { padding: 5px; border-radius: 5px; cursor: pointer; }
+    .project-tool-option button:hover { background: var(--secondary); }
+    .project-tool-option button:disabled { opacity: .25; cursor: default; }
+    .project-tools-reset { padding: 8px 4px; margin-top: 8px; color: var(--muted-foreground); font-size: 12px; cursor: pointer; }
+    .project-tools-reset:hover { color: var(--primary); }
+    .project-tool-workspace { height: 100%; min-height: 0; display: flex; flex-direction: column; color: var(--foreground); }
+    .project-tool-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--background); }
+    .project-tool-header > div:first-child { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .project-tool-header strong { font-size: 14px; }
+    .project-tool-header small { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted-foreground); }
+    .project-tool-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .tool-save-status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted-foreground); }
+    .tool-save-status svg { width: 12px; height: 12px; }
+    .tool-save-status.error, .tool-save-status.conflict, .tool-save-status.load-error { color: var(--destructive); }
+    .tool-document-error { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; color: var(--destructive); background: color-mix(in oklab, var(--destructive) 8%, var(--background)); font-size: 13px; }
+    .tool-editor-body { display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+    .tool-layer-panel { display: flex; flex-direction: column; width: 180px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--background); padding: 12px 8px; overflow: auto; gap: 10px; }
+    .tool-layer-panel > header { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-size: 14px; }
+    .tool-layer-panel > header svg { width: 15px; height: 15px; color: var(--muted-foreground); }
+    .tool-layer-panel > header > span { margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+    .tool-layer-panel > footer, .tool-layer-panel .erd-panel-content > footer { color: var(--muted-foreground); font-size: 13px; line-height: 1.7; padding: 8px; margin-top: auto; }
+    .tool-layer-list { display: flex; flex-direction: column; gap: 3px; }
+    .tool-layer-list > button { display: flex; align-items: center; gap: 8px; padding: 9px 8px; border-radius: 6px; text-align: left; font-size: 13px; cursor: pointer; }
+    .tool-layer-list > button.active, .design-layer-entry.active { background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); }
+    .tool-layer-list > button:hover, .design-layer-entry:hover { background: var(--secondary); }
+    .tool-layer-list svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .tool-layer-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tool-layer-list small { margin-left: auto; color: var(--muted-foreground); }
+    .tool-canvas.workshop-ideation { flex: 1; min-width: 0; min-height: 0; width: auto; height: auto; outline: none; }
+    .tool-world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+    .tool-node { position: absolute; touch-action: none; cursor: move; }
+    .tool-node.locked { cursor: default; }
+    .tool-node.selected { outline: 2px solid #a78bfa; outline-offset: 3px; }
+    .hand-tool .tool-node, .hand-tool .tool-node * { cursor: grab; }
+    .tool-canvas-actions { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; position: absolute; left: 12px; right: 12px; top: 12px; width: fit-content; max-width: calc(100% - 24px); z-index: 10; border: 1px solid var(--border); border-radius: 10px; background: var(--popover); color: var(--popover-foreground); padding: 5px; box-shadow: 0 6px 24px #0002; }
+    .tool-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; pointer-events: none; padding: 24px; text-align: center; }
+    .tool-canvas-empty strong { font-size: 17px; color: var(--foreground); }
+    .tool-canvas-empty span { font-size: 12px; color: var(--muted-foreground); }
+    .tool-canvas .workshop-zoom-control { bottom: 12px; right: 12px; left: auto; width: fit-content; z-index: 10; }
+    .tool-resize-handle { position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px; background: white; border: 2px solid #8b5cf6; cursor: nwse-resize; z-index: 2; }
+    .tool-marquee { position: absolute; border: 1px solid #a78bfa; background: #8b5cf622; pointer-events: none; }
+    .tool-inspector { width: 270px; flex-shrink: 0; background: var(--background); border-left: 1px solid var(--border); overflow: auto; padding: 16px; font-size: 12px; }
+    .tool-inspector > header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; }
+    .tool-inspector > header strong { font-size: 14px; }
+    .tool-inspector > header small { color: var(--muted-foreground); font-size: 12px; text-transform: capitalize; }
+    .tool-inspector fieldset { display: flex; flex-direction: column; gap: 10px; border: 0; min-width: 0; }
+    .tool-inspector label { display: flex; flex-direction: column; gap: 6px; color: var(--muted-foreground); font-size: 13px; font-weight: 500; min-width: 0; }
+    .tool-inspector input:not([type="checkbox"]):not([type="range"]), .tool-inspector select, .tool-inspector textarea { width: 100%; min-width: 0; border: 1px solid var(--border); background: var(--secondary); color: var(--foreground); padding: 7px 8px; border-radius: 6px; font: inherit; font-size: 14px; }
+    .tool-inspector input[type="color"] { height: 32px; padding: 3px !important; cursor: pointer; }
+    .tool-inspector textarea { resize: vertical; line-height: 1.7; }
+    .tool-inspector input[type="range"] { accent-color: var(--primary); }
+    .tool-inspector input:disabled, .tool-inspector select:disabled, .tool-inspector textarea:disabled, .tool-inspector fieldset:disabled { opacity: .65; }
+    .tool-property-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tool-section-heading { display: flex; align-items: center; justify-content: space-between; font-size: 14px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .tool-section-heading svg { width: 13px; height: 13px; }
+    .tool-section-heading button { padding: 4px; border-radius: 4px; cursor: pointer; }
+    .tool-section-heading button:hover { background: var(--secondary); }
+    .tool-inspector .tool-checkbox { flex-direction: row; align-items: center; color: var(--foreground); gap: 8px; font-size: 12px; }
+    .tool-checkbox input { accent-color: var(--primary); }
+    .tool-delete { color: var(--destructive); }
+    .tool-help { color: var(--muted-foreground); font-size: 13px; line-height: 1.8; margin: 10px 0; }
+    .tool-inline-error { font-size: 13px; color: var(--destructive); line-height: 1.6; }
+    .tool-inspector-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tool-inspector-empty { color: var(--muted-foreground); line-height: 1.8; }
+    .tool-inspector-empty > svg { width: 28px; height: 28px; margin: 20px 0; color: var(--primary); }
+    .tool-inspector-empty small { display: block; font-size: 12px; margin-top: 18px; }
+    .erd-table { width: 100%; height: 100%; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 25px #0002; }
+    .erd-table > header { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; background: color-mix(in oklab, var(--primary) 13%, var(--popover)); border-bottom: 1px solid var(--border); }
+    .erd-table > header svg { width: 15px; height: 15px; color: var(--primary); }
+    .erd-table > header strong { font-size: 14px; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .erd-table > header small { margin-left: auto; font-size: 11px; color: var(--muted-foreground); }
+    .erd-table > .erd-field-row { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; width: 100%; text-align: left; border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent); cursor: pointer; }
+    .erd-table > .erd-field-row:hover, .erd-table > .erd-field-row.active { background: color-mix(in oklab, var(--primary) 10%, var(--popover)); }
+    .erd-table > .erd-field-row > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 13px monospace; }
+    .erd-table > .erd-field-row small { font: 12px monospace; color: var(--muted-foreground); }
+    .erd-table > .erd-field-row i { font-size: 12px; color: var(--muted-foreground); }
+    .erd-table > p { font-size: 13px; padding: 8px 14px; color: var(--muted-foreground); }
+    .erd-field-key { width: 14px; color: #a78bfa; }
+    .erd-field-key svg { width: 12px; height: 12px; }
+    .erd-connections { position: absolute; top: 0; left: 0; z-index: 2; overflow: visible; pointer-events: none; --erd-connector: color-mix(in oklab, #8b5cf6 75%, var(--foreground)); }
+    .erd-connections .erd-connection-line { stroke: var(--erd-connector); stroke-width: 1.5; stroke-linejoin: round; }
+    .erd-connections .erd-end-symbol path, .erd-connections .erd-end-symbol circle { stroke: var(--erd-connector); stroke-width: 2.2; }
+    .erd-relationship-entry { display: flex; gap: 6px; align-items: flex-start; border: 1px solid var(--border); border-radius: 7px; padding: 8px; font-size: 12px; }
+    .erd-relationship-entry > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .erd-relationship-entry strong, .erd-relationship-entry small { display: block; }
+    .erd-relationship-entry small { margin-top: 5px; color: var(--muted-foreground); font-size: 12px; }
+    .erd-relationship-entry button { padding: 2px; color: var(--destructive); cursor: pointer; }
+    .erd-relationship-entry button svg { width: 13px; height: 13px; }
+    .tool-frame-presets { display: flex; align-items: center; gap: 3px; }
+    .design-layer-entry { display: flex; align-items: center; gap: 2px; border-radius: 6px; padding: 4px; font-size: 13px; min-width: 0; }
+    .design-layer-entry.nested { padding-left: 12px; }
+    .design-layer-entry button { padding: 4px; cursor: pointer; }
+    .design-layer-entry button:disabled { opacity: .4; }
+    .design-layer-entry > button:first-child { display: flex; flex: 1; gap: 6px; align-items: center; min-width: 0; text-align: left; }
+    .design-layer-entry svg { width: 11px; height: 11px; }
+    .design-shape { width: 100%; height: 100%; overflow: hidden; white-space: pre-wrap; line-height: 1.4; padding: 12px; }
+    .design-button { display: flex; align-items: center; justify-content: center; padding: 0 10px; text-align: center; }
+    .design-frame-label { position: absolute; left: 0; top: -24px; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; }
+    .design-preview .tool-canvas { background-image: none; }
+    .sdlc-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    .sdlc-universe { position: relative; flex: 1; min-width: 0; overflow: auto; color: #e3e5fa; background: radial-gradient(ellipse at 70% 50%, #32234f77, transparent 50%), radial-gradient(ellipse at 15% 20%, #1d466655, transparent 50%), #080d1b; }
+    .sdlc-starfield { position: absolute; inset: 0; width: 100%; height: 100%; fill: #d9e4ff; pointer-events: none; }
+    .sdlc-universe-heading { position: relative; padding: 32px 32px 0; min-width: 600px; }
+    .sdlc-universe-heading > span { display: flex; align-items: center; gap: 8px; color: #c4b5fd; font-size: 12px; letter-spacing: 2px; }
+    .sdlc-universe-heading > span svg { width: 16px; height: 16px; }
+    .sdlc-universe-heading h2 { font-size: clamp(20px, 2vw, 30px); font-weight: 600; letter-spacing: -.6px; margin: 14px 0 7px; }
+    .sdlc-universe-heading > p { color: #8593b1; font-size: 13px; }
+    .sdlc-model-control { display: flex; gap: 16px; align-items: center; margin-top: 22px; }
+    .sdlc-model-control label { display: flex; flex-direction: column; gap: 6px; color: #8e9bb9; font-size: 13px; }
+    .sdlc-model-control select { background: #151b30; border: 1px solid #313751; border-radius: 7px; padding: 7px 30px 7px 10px; color: #e4e7fa; font-size: 14px; }
+    .sdlc-constellation { position: relative; height: clamp(310px, 43vh, 480px); width: max(100%, 750px); }
+    .sdlc-constellation > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .sdlc-constellation > svg path { stroke: #555273; stroke-width: 1; stroke-dasharray: 5 6; fill: none; opacity: .65; }
+    .sdlc-constellation > svg path.completed { stroke: #8ad5c2; stroke-dasharray: none; }
+    .sdlc-satellite-stars path { stroke-width: .8; stroke-dasharray: none; opacity: .6; }
+    .sdlc-satellite-stars circle { fill: #9eabc9; }
+    .sdlc-satellite-stars.completed circle { fill: #8ad5c2; }
+    .sdlc-phase-star { position: absolute; transform: translate(-50%, -26px); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; width: 120px; color: #8b94ad; }
+    .sdlc-star-core { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 1px solid #5c5775; background: #131b32; box-shadow: 0 0 24px #a78bfa16; transition: box-shadow .2s, transform .2s; }
+    .sdlc-star-core svg { width: 18px; height: 18px; }
+    .sdlc-phase-star:hover .sdlc-star-core { transform: scale(1.12); }
+    .sdlc-phase-star.selected .sdlc-star-core { outline: 2px solid #c4b5fd88; outline-offset: 5px; }
+    .sdlc-phase-star.current { color: #e7ddff; }
+    .sdlc-phase-star.current .sdlc-star-core { color: #eee7ff; background: #6140a6; border-color: #c4b5fd; box-shadow: 0 0 45px #a78bfa70; }
+    .sdlc-phase-star.completed { color: #91cbbd; }
+    .sdlc-phase-star.completed .sdlc-star-core { border-color: #67b7a5; background: #173333; color: #a4f3dd; }
+    .sdlc-phase-star small { font-size: 12px; letter-spacing: 1px; margin-top: 9px; }
+    .sdlc-phase-star strong { font-size: 13px; white-space: nowrap; font-weight: 500; }
+    .sdlc-phase-star em { font-style: normal; font-size: 12px; opacity: .7; }
+    .sdlc-progress-card { position: relative; margin: 0 32px 28px; max-width: 500px; min-width: 400px; padding: 16px 18px; border: 1px solid #3e3b5966; border-radius: 12px; background: #12172caa; }
+    .sdlc-progress-card > div { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+    .sdlc-progress-card strong { color: #c4b5fd; font-size: 14px; }
+    .sdlc-progress-card progress { width: 100%; height: 4px; display: block; margin: 12px 0; accent-color: #a78bfa; border-radius: 8px; overflow: hidden; }
+    .sdlc-progress-card progress::-webkit-progress-bar { background: #282d45; }
+    .sdlc-progress-card progress::-webkit-progress-value { background: #a78bfa; }
+    .sdlc-progress-card small { color: #8593b1; font-size: 12px; }
+    .sdlc-phase-inspector { width: 280px; }
+    .sdlc-phase-number { display: grid; place-items: center; width: 38px; height: 38px; background: color-mix(in oklab, var(--primary) 13%, var(--background)); color: var(--primary); border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
+    .sdlc-phase-description { font-size: 13px; line-height: 1.8; color: var(--muted-foreground); margin-bottom: 22px; }
+    .sdlc-deliverables { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 24px; }
+    .sdlc-deliverables li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted-foreground); line-height: 1.5; }
+    .sdlc-deliverables svg { width: 13px; height: 13px; color: var(--primary); flex-shrink: 0; }
+    .sdlc-phase-inspector > button { width: 100%; margin-top: 18px; font-size: 13px; }
+    .sdlc-phase-list { display: flex; flex-direction: column; gap: 6px; padding-top: 20px; border-top: 1px solid var(--border); margin-top: 22px; }
+    .sdlc-phase-list > button { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 7px; cursor: pointer; font-size: 13px; text-align: left; }
+    .sdlc-phase-list > button.active, .sdlc-phase-list > button:hover { background: var(--secondary); }
+    .sdlc-phase-list > button > span { display: grid; place-items: center; width: 22px; height: 22px; color: var(--muted-foreground); border: 1px solid var(--border); border-radius: 50%; font-size: 13px; }
+    .sdlc-phase-list svg { width: 12px; height: 12px; color: var(--primary); }
+    .sdlc-phase-list i { margin-left: auto; background: var(--primary); width: 5px; height: 5px; border-radius: 50%; }
+    .project-tools-settings:focus-visible, .project-tool-option button:focus-visible, .project-tool-option input:focus-visible, .tool-inspector input:focus-visible, .tool-inspector textarea:focus-visible, .tool-inspector select:focus-visible, .sdlc-phase-star:focus-visible, .sdlc-model-control select:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+    @media (max-width: 1200px) {
+        .tool-layer-panel { width: 145px; }
+        .tool-inspector { width: 240px; padding: 12px; }
+        .project-tool-header { padding: 10px 12px; gap: 6px; }
+        .project-tool-header-actions { gap: 3px; }
+    }
+    @media (max-width: 950px) {
+        .tool-layer-panel { display: none; }
+        .project-tool-header-actions .tool-save-status { width: 100%; justify-content: flex-end; }
+        .sdlc-layout { flex-direction: column; overflow: auto; }
+        .sdlc-universe { flex: none; min-height: 570px; }
+        .sdlc-phase-inspector { width: 100%; overflow: visible; }
+    }
+    @media (max-width: 640px) {
+        .project-tools-heading { width: auto; }
+        .project-tools-heading .workshop-nav-group-trigger { width: auto; }
+        .project-tool-header { align-items: flex-start; }
+        .project-tool-header strong { font-size: 14px; }
+        .project-tool-header-actions { max-width: 60%; }
+        .project-tool-header-actions button { font-size: 13px; padding-inline: 5px; }
+        .tool-editor-body { overflow: auto; flex-direction: column; }
+        .tool-canvas.workshop-ideation { flex: none; min-height: 400px; }
+        .tool-inspector { width: 100%; flex: none; overflow: visible; border-top: 1px solid var(--border); border-left: 0; }
+        .sdlc-universe-heading { padding: 22px 20px 0; }
+        .sdlc-progress-card { margin-left: 20px; }
+    }
+}
+@layer components {
+    .erd-end-symbol path, .erd-end-symbol circle { fill: none; stroke: #9b87e8; stroke-width: 1.8; stroke-linecap: round; }
+    .erd-end-symbol .erd-end-open { fill: var(--background); }
+    .erd-end-preview { display: flex; align-items: center; justify-content: center; min-height: 20px; }
+    .erd-end-preview svg { width: 32px; height: 20px; overflow: visible; }
+    .erd-end-preview .erd-end-symbol path, .erd-end-preview .erd-end-symbol circle { stroke-width: 1.3; }
+    .erd-end-preview > svg > path { fill: none; stroke: #9b87e8; stroke-width: 1.4; }
+    .erd-relationship-entry .tool-property-grid { margin-top: 10px; }
+    .erd-relationship-entry .tool-property-grid select { font-size: 14px; padding-inline: 4px; }
+    .erd-import-warning { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #d99c3855; border-radius: 8px; background: #d99c3810; }
+    .erd-import-warning > svg { flex-shrink: 0; width: 18px; height: 18px; color: #d99c38; }
+    .erd-import-warning p { font-size: 13px; line-height: 1.7; }
+    .erd-import-warning strong { display: block; margin-bottom: 3px; }
+    .erd-import-file { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+    .erd-import-file input { border: 1px solid var(--border); padding: 9px; border-radius: 6px; background: var(--secondary); font-size: 14px; }
+    .erd-import-file input::file-selector-button { border: 0; background: var(--background); color: var(--foreground); padding: 5px 8px; margin-right: 8px; border-radius: 4px; cursor: pointer; }
+    .erd-import-reading { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted-foreground); }
+    .erd-import-reading svg { width: 14px; height: 14px; }
+    .erd-import-preview { border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; overflow-wrap: anywhere; max-height: 200px; overflow: auto; }
+    .erd-import-preview p { margin: 6px 0 10px; color: var(--muted-foreground); }
+    .erd-import-preview ul { margin: 8px 0 0 15px; list-style: disc; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; }
+}
+@layer components {
+    .project-tools-sort-list { position: relative; display: flex; flex-direction: column; gap: 3px; }
+    .project-tool-option { position: relative; min-height: 42px; border-radius: 6px; padding: 0 4px; }
+    .project-tool-option.dragging { opacity: .3; }
+    .project-tool-option.keyboard-dragging { outline: 1px solid var(--sidebar-primary); background: color-mix(in oklab, var(--sidebar-primary) 8%, transparent); }
+    .project-tool-option .project-tool-drag-handle { flex-shrink: 0; color: var(--muted-foreground); cursor: grab; touch-action: none; padding: 6px 4px; }
+    .project-tool-drag-handle:active { cursor: grabbing; }
+    .project-tool-drop-indicator { position: absolute; left: 0; right: 0; z-index: 2; height: 2px; border-radius: 2px; background: var(--primary); box-shadow: 0 0 0 1px var(--popover); transform: translateY(-1px); pointer-events: none; }
+    .project-tool-drag-preview { position: absolute; left: 0; right: 0; z-index: 1; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 10px; border: 1px solid var(--primary); border-radius: 6px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 5px 20px #0003; pointer-events: none; font-size: 12px; }
+    .project-tool-drag-preview svg { width: 14px; height: 14px; color: var(--muted-foreground); }
+}
+
+.erd-editable-name { display: inline-block; min-width: 0; }
+.erd-editable-name input { width: 100%; min-width: 40px; height: 25px; padding: 2px 4px; border: 1px solid var(--primary); border-radius: 4px; background: var(--background); color: var(--foreground); font: inherit; outline: none; }
+.erd-editable-name:focus-visible { outline: 1px solid var(--primary); outline-offset: 2px; }
+
+.workshop-task-edit-dialog {
+    width: min(520px, calc(100vw - 32px)); max-width: 520px; max-height: calc(100svh - 32px);
+    overflow-y: auto; padding: 0; gap: 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--popover); color: var(--popover-foreground); box-shadow: 0 24px 80px #0003;
+}
+.task-edit-header { display: flex; flex-direction: row; align-items: flex-start; gap: 14px; padding: 28px 28px 24px; text-align: left; }
+.task-edit-icon { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; color: var(--primary); background: color-mix(in oklab, var(--primary) 12%, transparent); }
+.task-edit-icon svg { width: 21px; height: 21px; }
+.task-edit-header [data-slot="dialog-title"] { margin: 0 0 6px; font-size: 18px; font-weight: 650; letter-spacing: -.025em; }
+.task-edit-header [data-slot="dialog-description"] { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.task-edit-form { display: grid; gap: 0; min-width: 0; }
+.task-edit-fields { display: grid; gap: 22px; min-width: 0; margin: 0; padding: 0 28px 28px; border: 0; }
+.task-edit-field { display: grid; align-content: start; gap: 9px; min-width: 0; }
+.task-edit-field [data-slot="label"] { font-size: 13px; line-height: 1.2; color: var(--foreground); }
+.task-edit-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.task-edit-label > span { font-size: 13px; color: var(--muted-foreground); }
+.task-edit-field input, .task-edit-field textarea, .task-edit-select select {
+    width: 100%; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground);
+    padding: 10px 12px; font-size: 14px; line-height: 1.5; outline: none; box-shadow: none;
+}
+.task-edit-field input, .task-edit-select select { height: 42px; }
+.task-edit-field textarea { min-height: 112px; resize: vertical; }
+.task-edit-field input:focus, .task-edit-field textarea:focus, .task-edit-select select:focus {
+    border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 15%, transparent);
+}
+.task-edit-metadata { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.task-edit-select { position: relative; }
+.task-edit-select select { appearance: none; padding-right: 36px; cursor: pointer; }
+.task-edit-select > svg { position: absolute; right: 12px; top: 13px; width: 16px; height: 16px; color: var(--muted-foreground); pointer-events: none; }
+.task-edit-assignees { display: flex; align-items: center; min-height: 42px; }
+.task-edit-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); background: color-mix(in oklab, var(--muted) 35%, transparent); padding: 18px 28px; }
+.task-edit-footer button { height: 38px; padding-inline: 16px; border-radius: 8px; }
+@media (max-width: 480px) {
+    .task-edit-header { padding: 24px 20px 20px; gap: 12px; }
+    .task-edit-fields { padding: 0 20px 24px; gap: 20px; }
+    .task-edit-metadata { grid-template-columns: 1fr; gap: 20px; }
+    .task-edit-footer { padding: 16px 20px; }
+}
+
+.erd-side-panel.tool-layer-panel { display: flex; }
+.erd-side-panel > .erd-panel-heading { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 14px; padding: 0; }
+.erd-panel-heading > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.erd-panel-heading strong { font-size: 14px; }
+.erd-panel-heading small { color: var(--muted-foreground); font-size: 12px; }
+.erd-panel-heading > button { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; color: var(--muted-foreground); border-radius: 6px; cursor: pointer; }
+.erd-panel-heading > button:hover, .erd-panel-heading > button:focus-visible { background: var(--secondary); color: var(--foreground); }
+.erd-panel-heading > button svg { width: 15px; height: 15px; }
+.erd-panel-content { display: grid; gap: 10px; min-width: 0; }
+.erd-panel-content[hidden] { display: none; }
+.erd-side-panel.erd-panel-collapsed { display: flex; flex-direction: column; align-items: center; width: 38px; padding: 12px 4px; overflow: hidden; gap: 12px; }
+.erd-panel-collapsed > .erd-panel-heading { margin: 0; }
+.erd-panel-rail-label { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: var(--muted-foreground); }
+.erd-connection-side { display: grid; gap: 18px; }
+.erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label { display: flex; flex-direction: column; gap: 9px; min-width: 0; font-size: 13px; color: var(--foreground); }
+.erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label > select { width: 100%; height: 42px; padding: 10px 12px; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground); font-size: 14px; }
+.tool-connect-handle { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border: 3px solid var(--popover); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 65%, var(--border)); cursor: crosshair; touch-action: none; z-index: 4; opacity: .6; }
+.tool-connect-handle.left { left: -8px; }
+.tool-connect-handle.right { right: -8px; }
+.tool-node:hover > .tool-connect-handle, .tool-node.selected > .tool-connect-handle, .tool-connect-handle:focus-visible { opacity: 1; }
+.tool-connect-handle:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.tool-node.connection-target { outline: 2px solid var(--primary); outline-offset: 5px; }
+.tool-connection-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 3; }
+.tool-connection-preview path { fill: none; stroke: var(--primary); stroke-width: 2; stroke-dasharray: 5 4; }
+.tool-connection-preview circle { fill: var(--primary); }
+.erd-relationship-hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: pointer; outline: none; }
+.erd-connections:has(.erd-relationship.selected) { z-index: 5; }
+.erd-relationship { outline: none; }
+.erd-relationship.selected, .erd-relationship:has(.erd-relationship-hit:focus-visible) { --erd-connector: var(--primary); }
+.erd-relationship.selected .erd-connection-line, .erd-relationship:has(.erd-relationship-hit:focus-visible) .erd-connection-line { stroke-width: 2.5px; }
+.erd-endpoint { outline: none; }
+.erd-endpoint-hit { fill: transparent; stroke: none; pointer-events: all; cursor: pointer; touch-action: none; }
+.erd-endpoint-drag { fill: transparent; stroke: none; pointer-events: all; cursor: grab; touch-action: none; }
+.erd-connections[data-connection-dragging="true"] .erd-endpoint-drag { cursor: grabbing; }
+.erd-endpoint-grip { fill: transparent; stroke: var(--erd-connector); stroke-width: 1.5px; stroke-dasharray: 3 2; pointer-events: none; }
+.erd-database-target { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
+.erd-database-target select, .erd-import-file select { min-width: 120px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); color: var(--foreground); }
+.erd-schema-issues { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; overflow-wrap: anywhere; }
+.erd-schema-issues summary { cursor: pointer; color: var(--foreground); }
+.erd-schema-issues ul { padding-left: 16px; margin: 8px 0 0; color: var(--muted-foreground); }
+.erd-schema-issues li + li { margin-top: 6px; }
+.erd-constraints { display: grid; gap: 10px; min-width: 0; }
+.erd-constraint-entry { display: flex; align-items: start; justify-content: space-between; gap: 8px; padding-block: 6px; }
+.erd-constraint-entry span { min-width: 0; }
+.erd-constraint-entry strong, .erd-constraint-entry small { display: block; font-size: 12px; overflow-wrap: anywhere; }
+.erd-constraint-entry small { color: var(--muted-foreground); }
+.erd-constraint-entry button { font-size: 11px; color: var(--muted-foreground); }
+.erd-column-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.erd-relationship-dialog { max-height: 90dvh; overflow-y: auto; }
+.erd-endpoint:focus-visible .erd-endpoint-hit { stroke: var(--erd-connector); stroke-width: 1px; stroke-dasharray: 3 3; }
+.erd-relationship.selected .erd-connection-line { stroke-dasharray: 5 4; }
+.erd-attachment-target { fill: var(--popover); stroke: var(--primary); stroke-width: 3px; pointer-events: none; }
+
+/* Responsive workshop: retain the desktop workspace, open panels on demand on smaller devices. */
+.workshop-shell { height: 100dvh; min-height: 0; }
+.workshop-sidebar { min-height: 0; }
+.workshop-nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent; }
+.workshop-sidebar-footer { flex-shrink: 0; }
+.workshop-drawer[data-slot="dialog-content"] {
+    top: 0; bottom: 0; left: 0; width: min(340px, calc(100vw - 28px)); max-width: none;
+    height: 100dvh; max-height: 100dvh; transform: none; translate: none; border-radius: 0;
+    display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden;
+    animation: none; background: var(--sidebar); color: var(--sidebar-foreground);
+}
+.workshop-drawer-right[data-slot="dialog-content"] { left: auto; right: 0; }
+.workshop-drawer-title { flex-shrink: 0; padding: 20px 52px 20px 20px; border-bottom: 1px solid var(--border); font-size: 15px; }
+.workshop-drawer > [data-slot="dialog-close"] { width: 40px; height: 40px; top: 8px; right: 8px; }
+.workshop-drawer .workshop-sidebar, .workshop-drawer .workshop-members {
+    position: relative; inset: auto; display: flex; flex: 1; width: 100%; height: auto; min-height: 0;
+    border: 0; overflow: hidden; padding: 0; flex-direction: column;
+}
+.workshop-drawer .workshop-sidebar::after { display: none; }
+.workshop-drawer .workshop-org-header { display: flex; height: auto; min-height: 72px; }
+.workshop-drawer .workshop-org-switcher > span:nth-child(2), .workshop-drawer .workshop-sidebar-user > span:nth-child(2) { display: flex; }
+.workshop-drawer .workshop-org-switcher > svg, .workshop-drawer .workshop-status-chevron { display: block; }
+.workshop-drawer .workshop-sidebar-footer { display: block; padding: 16px; }
+.workshop-drawer .workshop-sidebar-footer > a { justify-content: flex-start; min-height: 44px; }
+.workshop-drawer .workshop-sidebar-footer > a span { display: inline; }
+.workshop-drawer .workshop-sidebar-user { width: 100%; padding: 10px; justify-content: flex-start; }
+.workshop-drawer .workshop-member strong { font-size: 14px; }
+.workshop-drawer .workshop-member small { font-size: 12px; }
+.workshop-drawer .workshop-member { min-height: 48px; }
+.workshop-drawer .workshop-nav { display: block; height: auto; padding: 12px; flex: 1; }
+.workshop-drawer .workshop-nav-group { display: block; }
+.workshop-drawer .workshop-nav-submenu { display: none; padding-left: 12px; }
+.workshop-drawer .workshop-nav-group.open .workshop-nav-submenu { display: block; }
+.workshop-drawer .workshop-nav-group-trigger, .workshop-drawer .workshop-nav-link { display: flex; min-height: 44px; font-size: 15px; padding-inline: 12px; }
+.workshop-drawer .workshop-project-entry { display: flex; }
+.workshop-drawer .project-tools-heading { width: 100%; }
+.workshop-drawer .project-tools-heading .workshop-nav-group-trigger { width: auto; flex: 1; }
+.workshop-drawer .workshop-current-project-dot { position: static; margin-left: auto; }
+.workshop-drawer .erd-side-panel {
+    display: flex; flex: 1; width: 100%; min-height: 0; overflow-y: auto; border: 0;
+    padding: 20px; flex-direction: column; background: var(--background); color: var(--foreground);
+}
+.workshop-drawer .erd-panel-content { gap: 16px; }
+.workshop-drawer .erd-panel-heading strong { font-size: 16px; }
+.workshop-drawer .erd-panel-heading > button { width: 40px; height: 40px; }
+.workshop-drawer .tool-inspector label { font-size: 13px; }
+.workshop-drawer .tool-section-heading { font-size: 14px; }
+.workshop-drawer .tool-layer-list > button { min-height: 44px; font-size: 14px; }
+.workshop-drawer .design-layer-entry { font-size: 13px; }
+.workshop-drawer .design-layer-entry button { min-height: 40px; min-width: 32px; }
+.workshop-drawer .design-layer-entry svg { width: 15px; height: 15px; }
+.workshop-drawer .tool-frame-presets { flex-wrap: wrap; }
+.workshop-drawer .tool-layer-panel footer { font-size: 12px; line-height: 1.6; color: var(--muted-foreground); }
+.workshop-drawer .workshop-shape-properties { position: static; width: 100%; max-height: none; flex: 1; min-height: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none; padding: 20px; }
+.tool-panel-launcher { position: absolute; z-index: 12; top: 6px; display: flex; align-items: center; gap: 8px; min-height: 36px; max-width: calc(50% - 18px); border: 1px solid var(--border); border-radius: 7px; background: var(--background); color: var(--foreground); padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.tool-panel-launcher svg { width: 14px; height: 14px; }
+.tool-panel-launcher-left { left: 12px; }
+.tool-panel-launcher-right { right: 12px; }
+.workshop-ideas-properties-toggle { position: absolute; z-index: 9; top: 72px; right: 12px; }
+.workshop-modal, .workshop-task-edit-dialog { max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.chat-modal { height: min(48rem, calc(100dvh - 2rem)); }
+.workshop-settings-content, .workshop-settings-sidebar, .workshop-page-heading > div { min-width: 0; }
+.workshop-settings { align-content: start; }
+.workshop-task-actions-trigger { position: absolute; right: 8px; top: 8px; z-index: 2; display: none; }
+
+@media (max-width: 1100px) {
+    .workshop-shell, .workshop-shell.members-collapsed { display: grid; height: 100dvh; min-height: 0; padding: 0; grid-template-columns: minmax(0, 1fr); }
+    .workshop-main-column { height: 100%; min-height: 0; }
+    .workshop-topbar { flex-wrap: wrap; min-height: 72px; height: auto; flex-shrink: 0; gap: 12px; padding: 12px 20px; }
+    .workshop-topbar > div:first-of-type { min-width: 0; flex: 1; }
+    .workshop-topbar h1 { font-size: 17px; overflow-wrap: anywhere; }
+    .workshop-topbar-actions { gap: 8px; margin-left: auto; }
+    .workshop-topbar .workshop-icon-button { display: inline-flex; width: 40px; height: 40px; }
+    .workshop-navigation-toggle { width: 40px; height: 40px; flex-shrink: 0; }
+    .workshop-navigation-toggle svg { width: 20px; height: 20px; }
+    .workshop-project-select { width: min(32vw, 220px); min-width: 0; grid-template-columns: minmax(0, 1fr); padding: 0; }
+    .workshop-project-select > span { display: none; }
+    .workshop-project-select [data-slot="select-trigger"] { min-height: 40px; font-size: 14px; }
+    .tool-editor-body { position: relative; flex-direction: row; overflow: hidden; padding-top: 48px; }
+    .tool-editor-body.design-preview { padding-top: 0; }
+    .tool-canvas.workshop-ideation { flex: 1; min-height: 0; height: auto; }
+    .project-tool-header { align-items: center; flex-wrap: wrap; padding: 12px 16px; gap: 12px; }
+    .project-tool-header strong { font-size: 15px; }
+    .project-tool-header small { font-size: 12px; }
+    .project-tool-header-actions { max-width: none; gap: 8px; flex: 1; }
+    .project-tool-header-actions button { min-height: 36px; font-size: 13px; padding-inline: 10px; }
+    .project-tool-header-actions .tool-save-status { width: auto; font-size: 12px; }
+    .tool-canvas-actions { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+    .tool-canvas-actions > button { flex-shrink: 0; min-height: 36px; }
+    .workshop-zoom-control { display: flex; }
+    .workshop-page-heading, .workshop-project-detail-heading { gap: 16px; flex-wrap: wrap; }
+    .workshop-page-heading h2 { overflow-wrap: anywhere; }
+    .workshop-board { overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+    .workshop-board-column { scroll-snap-align: start; }
+    .workshop-form-grid > label, .workshop-project-edit-grid > label, .workshop-role-fields > label,
+    .workshop-modal form > label:has(> input:not([type="checkbox"]):not([type="radio"]), > textarea, > [data-slot="select-trigger"]) {
+        display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; font-size: 14px; line-height: 1.4;
+    }
+    .workshop-form-grid [data-slot="select-trigger"] { min-height: 40px; font-size: 14px; }
+    .workshop-modal [data-slot="dialog-header"] { text-align: left; }
+}
+@media (max-width: 800px) {
+    .sdlc-layout { display: flex; flex-direction: column; overflow-y: auto; }
+    .sdlc-universe { flex: none; min-height: 0; overflow: hidden; }
+    .sdlc-universe-heading { min-width: 0; padding: 28px 24px 0; }
+    .sdlc-universe-heading h2 { font-size: 25px; max-width: 380px; line-height: 1.2; }
+    .sdlc-universe-heading > p { font-size: 13px; line-height: 1.6; }
+    .sdlc-model-control { flex-wrap: wrap; gap: 12px; }
+    .sdlc-model-control label { min-width: 0; flex: 1; font-size: 13px; }
+    .sdlc-model-control select { max-width: 100%; min-height: 40px; font-size: 14px; padding-right: 12px; }
+    .sdlc-constellation { width: 100%; height: auto; padding: 32px 24px; display: grid; gap: 22px; }
+    .sdlc-constellation > svg { display: none; }
+    .sdlc-constellation::before { content: ""; position: absolute; top: 48px; bottom: 58px; left: 47px; width: 1px; background: linear-gradient(#8ad5c2, #a78bfa88, #555273); }
+    .sdlc-phase-star { position: relative; left: auto !important; top: auto !important; width: 100%; transform: none; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 3px 18px; align-items: center; text-align: left; }
+    .sdlc-star-core { grid-row: 1 / 4; }
+    .sdlc-phase-star small { margin: 0; font-size: 12px; }
+    .sdlc-phase-star strong { font-size: 15px; white-space: normal; }
+    .sdlc-phase-star em { font-size: 12px; }
+    .sdlc-progress-card { min-width: 0; margin: 0 24px 28px; padding: 18px; }
+    .sdlc-progress-card small { font-size: 12px; line-height: 1.6; }
+    .sdlc-phase-inspector.tool-inspector { width: 100%; flex: none; overflow: visible; padding: 24px; border-left: 0; border-top: 1px solid var(--border); }
+    .sdlc-phase-inspector label, .sdlc-deliverables li { font-size: 13px; }
+}
+@media (max-width: 640px) {
+    .workshop-topbar { padding: 10px 12px; gap: 8px 12px; }
+    .workshop-topbar > div:first-of-type { flex-basis: calc(100% - 84px); }
+    .workshop-topbar-actions { width: 100%; justify-content: flex-end; }
+    .workshop-project-select { flex: 1; width: auto; margin-right: auto; }
+    .workshop-project-select [data-slot="select-trigger"] { width: 100%; }
+    .workshop-page { padding: 20px 16px; }
+    .workshop-page-heading h2 { font-size: 24px; }
+    .workshop-page-heading p { font-size: 13px; line-height: 1.6; }
+    .workshop-page-heading.compact { align-items: stretch; }
+    .workshop-todo-actions { width: 100%; }
+    .workshop-todo-actions > button { flex: 1; min-height: 40px; }
+    .workshop-task { padding: 20px 16px; }
+    .workshop-task h3 { padding-right: 30px; font-size: 15px; line-height: 1.4; }
+    .workshop-task p { font-size: 13px; line-height: 1.6; }
+    .workshop-board-column > header strong { font-size: 14px; }
+    .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
+    .workshop-board, .workshop-board.workshop-todo-board { grid-template-columns: repeat(var(--todo-column-count, 3), minmax(min(78vw, 300px), 1fr)); }
+    .workshop-widget-grid { gap: 16px; }
+    .workshop-widget { min-width: 0; }
+    .workshop-project-detail-actions, .workshop-dashboard-heading-actions { flex-wrap: wrap; }
+    .workshop-team-summary, .workshop-stat-grid { gap: 10px; }
+    .workshop-role-summary, .workshop-project-detail-sidebar { grid-template-columns: minmax(0, 1fr); }
+    .workshop-project-detail-hero { overflow-wrap: anywhere; }
+    .workshop-project-grid h3, .workshop-team-grid h3 { font-size: 18px; }
+    .workshop-project-grid p, .workshop-team-grid p { font-size: 13px; line-height: 1.6; }
+    .workshop-project-meta strong { font-size: 14px; }
+    .workshop-project-meta small, .workshop-project-grid > article > footer span { font-size: 12px; }
+    .workshop-project-form-actions { bottom: 0; padding-block: 12px; background: var(--popover); }
+    .workshop-chart-canvas { min-height: 0; padding: 68px 16px 24px; }
+    .workshop-chart-tree { min-width: 0; }
+    .workshop-chart-tree section > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+    .workshop-chart-tree article { width: 100%; }
+    .workshop-chart-tree article strong { font-size: 14px; }
+    .workshop-chart-tree article small, .workshop-chart-tree article p { font-size: 12px; }
+    .workshop-chart-tree > section > h3 { max-width: 100%; font-size: 14px; flex-wrap: wrap; justify-content: center; }
+    .workshop-chart-tree > section > h3 small { font-size: 12px; }
+    .workshop-chart-toolbar { max-width: calc(100% - 24px); white-space: nowrap; font-size: 12px; }
+    .workshop-role-list > article { flex-wrap: wrap; gap: 12px; }
+    .workshop-role-copy { min-width: 0; flex-basis: calc(100% - 44px); }
+    .workshop-role-copy header { flex-wrap: wrap; }
+    .workshop-role-copy header h3 { font-size: 15px; overflow-wrap: anywhere; }
+    .workshop-role-leave { flex-direction: column; align-items: stretch; }
+    .workshop-settings-card { padding: 18px; }
+    .workshop-settings-heading h2 { font-size: 24px; }
+    .workshop-settings-dialog-actions { flex-wrap: wrap; }
+    .project-tool-header { padding: 12px; gap: 10px; }
+    .project-tool-header > div:first-child { width: 100%; flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .project-tool-header small { max-width: 55%; }
+    .project-tool-header-actions { flex-basis: 100%; justify-content: flex-start; gap: 6px; }
+    .project-tool-header-actions .tool-save-status { flex-basis: 100%; justify-content: flex-start; }
+    .tool-canvas-actions { left: 8px; right: 8px; max-width: calc(100% - 16px); top: 8px; padding: 4px; }
+    .workshop-canvas-toolbar { top: auto; bottom: 12px; max-width: calc(100% - 24px); overflow-x: auto; height: 48px; }
+    .workshop-canvas-toolbar > button { flex-shrink: 0; min-height: 38px; }
+    .workshop-ideation > .workshop-zoom-control { display: flex; top: 12px; bottom: auto; right: 12px; left: auto; transform: none; }
+    .tool-canvas.workshop-ideation > .workshop-zoom-control { top: auto; bottom: 12px; left: 12px; right: auto; }
+    .workshop-canvas-meta { top: 12px; left: 12px; max-width: calc(100% - 200px); }
+    .workshop-canvas-meta small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .workshop-shape-menu { top: 64px; bottom: 74px; left: 12px; width: calc(100% - 24px); max-height: none; }
+    .workshop-canvas-meta > span, .workshop-canvas-meta > i { display: none; }
+    .workshop-canvas-minimap { display: none; }
+    .workshop-modal input, .workshop-modal select, .workshop-modal textarea,
+    .workshop-page input, .workshop-page select, .workshop-page textarea, .sdlc-phase-inspector textarea,
+    .chat-modal input, .chat-modal textarea,
+    .workshop-task-edit-dialog input, .workshop-task-edit-dialog select, .workshop-task-edit-dialog textarea,
+    .workshop-drawer .tool-inspector input:not([type="checkbox"]):not([type="range"]), .workshop-drawer .tool-inspector select, .workshop-drawer .tool-inspector textarea,
+    .workshop-shape-properties input:not([type="checkbox"]):not([type="range"]), .workshop-shape-properties select, .workshop-shape-properties textarea,
+    .workshop-settings input, .workshop-settings select, .workshop-settings textarea { font-size: 16px; }
+    .chat-modal { height: calc(100dvh - 16px); }
+    .workshop-messages-button { bottom: max(16px, env(safe-area-inset-bottom)); right: max(16px, env(safe-area-inset-right)); }
+}
+@media (max-height: 500px) and (max-width: 1100px) {
+    .workshop-topbar { min-height: 52px; flex-wrap: nowrap; padding: 6px 12px; }
+    .workshop-topbar > div:first-of-type { flex: 1; }
+    .workshop-topbar small, .workshop-topbar-actions > [data-slot="button"]:not(.workshop-icon-button) { display: none; }
+    .workshop-topbar-actions { width: auto; }
+    .workshop-project-select { width: 180px; }
+    .project-tool-header { padding: 6px 12px; }
+    .project-tool-header > div:first-child { width: auto; }
+    .project-tool-header-actions { flex-basis: auto; justify-content: flex-end; }
+    .project-tool-header-actions .tool-save-status { display: none; }
+    .tool-canvas-actions { top: 4px; }
+}
+@media (pointer: coarse) {
+    .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
+    .workshop-task h3 { padding-right: 30px; }
+    .workshop-task-edge { opacity: 1; }
+    .tool-connect-handle::after, .tool-resize-handle::after { content: ""; position: absolute; inset: -12px; }
+    .workshop-zoom-control button { min-width: 36px; min-height: 36px; }
+}
+
+.workshop-construction-label { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.under-construction-indicator { position: relative; display: inline-block; flex: 0 0 22px; width: 22px; height: 22px; vertical-align: middle; }
+.under-construction-indicator::before, .under-construction-indicator::after { content: ""; position: absolute; bottom: 3px; width: 3px; height: 8px; border-radius: 1px; background: #d99c38; }
+.under-construction-indicator::before { left: 5px; }
+.under-construction-indicator::after { right: 5px; }
+.under-construction-bar { position: absolute; z-index: 1; top: 4px; left: 1px; width: 20px; height: 9px; border: 1px solid #d99c38; border-radius: 2px; background: repeating-linear-gradient(-55deg, #f6bf56 0 4px, #30240f 4px 8px); background-size: 20px 100%; animation: construction-stripes 1.8s linear infinite; }
+@keyframes construction-stripes { to { background-position: 20px 0; } }
+@media (prefers-reduced-motion: reduce) { .under-construction-bar { animation: none; } }
