@@ -52,10 +52,16 @@ export function CanvasMinimap({items, viewport, onNavigate}: {
                  }} onPointerMove={(event) => {
                 if (pointer.current === event.pointerId) navigate(event)
             }} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop}>
-                {items.map((item) => <rect key={item.id} {...mapped(item)} rx={item.cornerRadius * scale}
-                                           fill={item.appearance === "fill" ? item.fillColor : "none"}
-                                           stroke={item.outlineStyle === "none" ? "none" : item.outlineColor}
-                                           strokeWidth={1}/>)}
+                {items.map((item) => {
+                    const rect = mapped(item)
+                    const centerX = rect.x + rect.width / 2
+                    const centerY = rect.y + rect.height / 2
+                    return <rect key={item.id} {...rect} rx={item.cornerRadius * scale}
+                                 transform={`rotate(${item.rotation} ${centerX} ${centerY})`}
+                                 fill={item.appearance === "fill" ? item.fillColor : "none"}
+                                 stroke={item.outlineStyle === "none" ? "none" : item.outlineColor}
+                                 strokeWidth={1}/>
+                })}
                 <rect {...mapped(viewport)} fill="#818cf81a" stroke="#818cf8" strokeWidth={1}/>
             </svg>
             <span><Maximize2/> Drag to navigate</span>

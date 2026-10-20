@@ -1,13 +1,15 @@
-import {AlignCenter, AlignLeft, AlignRight, ChevronRight, Group, Ungroup} from "lucide-react"
+import {AlignCenter, AlignLeft, AlignRight, ChevronRight, FlipHorizontal2, FlipVertical2, Group, RotateCcw, RotateCw, Ungroup} from "lucide-react"
 import {createContext, type ReactNode, useContext, useState} from "react"
 
 import {Button} from "@/components/ui/button"
+import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
+import {ResponsiveWorkshopPanel} from "../responsive-workshop-panel"
 import {googleFonts, systemFonts} from "../shape-fonts"
-import type {CanvasItem, NoteTextStyle} from "../shape-clipboard"
+import {normalizeRotation, type CanvasItem, type NoteTextStyle} from "../shape-clipboard"
 import type {CharacterStyleChanges, SelectedCharacterStyle, TextPart} from "./rich-text"
 import {groupMemberLabel, shapeTextColor} from "./shape-presentation"
 
-export type ShapeStyleChanges = Partial<Pick<CanvasItem, "width" | "height" | "appearance" | "fillColor" | "outlineColor" | "outlineWidth" | "outlineStyle" | "cornerRadius" | "text" | "textAlign" | "verticalAlign" | "fontFamily" | "fontSize" | "bold" | "italic" | "underline" | "strikethrough" | "textColor" | "letterSpacing" | "lineHeight" | "textIndent" | "textRuns" | "noteHeaderRuns" | "noteBodyRuns" | "noteHeader" | "noteBody" | "noteHeaderStyle" | "noteBodyStyle">>
+export type ShapeStyleChanges = Partial<Pick<CanvasItem, "width" | "height" | "rotation" | "flipHorizontal" | "flipVertical" | "appearance" | "fillColor" | "outlineColor" | "outlineWidth" | "outlineStyle" | "cornerRadius" | "text" | "textAlign" | "verticalAlign" | "fontFamily" | "fontSize" | "bold" | "italic" | "underline" | "strikethrough" | "textColor" | "letterSpacing" | "lineHeight" | "textIndent" | "textRuns" | "noteHeaderRuns" | "noteBodyRuns" | "noteHeader" | "noteBody" | "noteHeaderStyle" | "noteBodyStyle">>
 
 type ShapePropertiesPanelProps = {
     allItemsCount: number
@@ -44,9 +46,9 @@ export function ShapePropertiesPanel({
                                          onGroup,
                                          onUngroup
                                      }: ShapePropertiesPanelProps) {
-    return (
-        <PropertiesShapeContext.Provider value={selectedItem.id}>
-            <aside aria-label="Properties" className="workshop-shape-properties" data-shape-properties
+    const compact = useCompactWorkshop()
+    const [open, setOpen] = useState(false)
+    const panel = <aside aria-label="Properties" className="workshop-shape-properties" data-shape-properties
                    onPointerDown={(event) => event.stopPropagation()} onWheel={(event) => event.stopPropagation()}>
                 <strong>Properties{selectedGroupId ? " · Group" : selectedIds.length > 1 ? ` · ${selectedIds.length} selected` : ""}</strong>
                 {selectedGroupId &&
@@ -96,7 +98,34 @@ export function ShapePropertiesPanel({
                                                                                               }}/></label>
                 </PropertySection>
 
-                <PropertySection title="Outline">
+                <PropertySection title="Transform" defaultOpen>
+                    <label className="workshop-property-field"><span>Rotation (°)</span><input
+                        aria-label="Shape rotation in degrees" type="number" step={1}
+                        value={Math.round(selectedItem.rotation)} onChange={(event) => {
+                        const value = event.target.valueAsNumber
+                        if (Number.isFinite(value)) onUpdate({rotation: normalizeRotation(Math.round(value))})
+                    }}/></label>
+                    <div className="workshop-transform-options" role="group" aria-label="Rotate shape">
+                        <Button aria-label="Rotate left 90 degrees" title="Rotate left 90°"
+                                onClick={() => onUpdate({rotation: normalizeRotation(selectedItem.rotation - 90)})}
+                                size="sm" type="button" variant="outline"><RotateCcw/> Left 90°</Button>
+                        <Button aria-label="Rotate right 90 degrees" title="Rotate right 90°"
+                                onClick={() => onUpdate({rotation: normalizeRotation(selectedItem.rotation + 90)})}
+                                size="sm" type="button" variant="outline"><RotateCw/> Right 90°</Button>
+                    </div>
+                    <div className="workshop-transform-options" role="group" aria-label="Flip shape">
+                        <Button aria-pressed={selectedItem.flipHorizontal} title="Flip horizontally"
+                                onClick={() => onUpdate({flipHorizontal: !selectedItem.flipHorizontal})}
+                                size="sm" type="button"
+                                variant={selectedItem.flipHorizontal ? "secondary" : "outline"}><FlipHorizontal2/> Horizontal</Button>
+                        <Button aria-pressed={selectedItem.flipVertical} title="Flip vertically"
+                                onClick={() => onUpdate({flipVertical: !selectedItem.flipVertical})}
+                                size="sm" type="button"
+                                variant={selectedItem.flipVertical ? "secondary" : "outline"}><FlipVertical2/> Vertical</Button>
+                    </div>
+                </PropertySection>
+
+                <PropertySection title="Outline" defaultOpen>
                     <ColorField label="Outline color" value={selectedItem.outlineColor}
                                 onChange={(outlineColor) => onUpdate({outlineColor})}/>
                     <label className="workshop-property-field"><span>Thickness (px)</span><input
@@ -145,8 +174,12 @@ export function ShapePropertiesPanel({
                     </div>
                 </PropertySection>
             </aside>
-        </PropertiesShapeContext.Provider>
-    )
+    return <PropertiesShapeContext.Provider value={selectedItem.id}>
+        {compact ? <>
+            <Button className="workshop-ideas-properties-toggle" variant="outline" onPointerDown={event => event.stopPropagation()} onClick={() => setOpen(true)}>Properties</Button>
+            <ResponsiveWorkshopPanel compact open={open} onOpenChange={setOpen} title="Shape properties" side="right">{panel}</ResponsiveWorkshopPanel>
+        </> : panel}
+    </PropertiesShapeContext.Provider>
 }
 
 function NoteProperties({item, onUpdate}: { item: CanvasItem; onUpdate: (changes: ShapeStyleChanges) => void }) {

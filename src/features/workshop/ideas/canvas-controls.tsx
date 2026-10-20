@@ -37,7 +37,7 @@ export function CanvasToolbar({
         <Button aria-label="Hand tool" className={tool === "hand" ? "active" : ""} onClick={onHandTool} size="icon"
                 type="button" variant="ghost"><Hand/></Button>
         <span/>
-        {canEdit && <Button aria-expanded={shapeMenuOpen} className={shapeMenuOpen ? "active h-8" : "h-8"}
+        {canEdit && <Button aria-label="Shapes and text" aria-expanded={shapeMenuOpen} className={shapeMenuOpen ? "active h-8" : "h-8"}
                             onClick={onToggleShapes} type="button" variant="ghost"><Shapes/> <b>Shapes</b></Button>}
         {canEdit &&
             <Button aria-pressed={snapping} title="Snap to shape edges and centers. Hold Alt to bypass while dragging."

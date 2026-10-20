@@ -1,6 +1,6 @@
 import * as React from "react"
 import {ContextMenu as ContextMenuPrimitive} from "radix-ui"
-import {CheckIcon} from "lucide-react"
+import {CheckIcon, ChevronRightIcon} from "lucide-react"
 import {cn} from "@/lib/utils"
 
 export const ContextMenu = ContextMenuPrimitive.Root
@@ -51,20 +51,58 @@ export function ContextMenuSeparator({
     return <ContextMenuPrimitive.Separator className={cn("-mx-1 my-1 h-px bg-border", className)} {...props} />
 }
 
-export const ContextMenuSub = ContextMenuPrimitive.Sub
+type SubmenuSide = "left" | "right"
+const SubmenuSideContext = React.createContext<{side: SubmenuSide; setSide: React.Dispatch<React.SetStateAction<SubmenuSide>>} | null>(null)
+
+export function ContextMenuSub({children, ...props}: React.ComponentProps<typeof ContextMenuPrimitive.Sub>) {
+    const [side, setSide] = React.useState<SubmenuSide>("right")
+    const value = React.useMemo(() => ({side, setSide}), [side])
+    return <SubmenuSideContext value={value}><ContextMenuPrimitive.Sub {...props}>{children}</ContextMenuPrimitive.Sub></SubmenuSideContext>
+}
 export const ContextMenuSubTrigger = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger>>(({
                                                                                                                                                                                              className,
                                                                                                                                                                                              children,
                                                                                                                                                                                              ...props
-                                                                                                                                                                                         }, ref) =>
-    <ContextMenuPrimitive.SubTrigger ref={ref}
-                                     className={cn("flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-hidden focus:bg-accent data-open:bg-accent data-disabled:pointer-events-none data-disabled:opacity-45", className)} {...props}>{children}<span
-        className="ml-auto">›</span></ContextMenuPrimitive.SubTrigger>)
+                                                                                                                                                                                         }, ref) => {
+    const submenu = React.useContext(SubmenuSideContext), side = submenu?.side ?? "right", setSide = submenu?.setSide
+    const trigger = React.useRef<React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>>(null)
+    React.useImperativeHandle(ref, () => trigger.current!, [])
+    React.useLayoutEffect(() => {
+        if (!setSide) return
+        // Predict the collapsed arrow from available space; the open content reports its exact side.
+        const update = () => {
+            const element = trigger.current
+            if (!element || element.dataset.state === "open") return
+            const rect = element.getBoundingClientRect(), width = element.closest('[role="menu"]')?.getBoundingClientRect().width ?? 192
+            const right = window.innerWidth - rect.right, left = rect.left
+            setSide(right >= width + 14 || right >= left ? "right" : "left")
+        }
+        const frame = requestAnimationFrame(update)
+        window.addEventListener("resize", update)
+        window.addEventListener("scroll", update, true)
+        return () => {cancelAnimationFrame(frame); window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true)}
+    }, [setSide])
+    return <ContextMenuPrimitive.SubTrigger ref={trigger} data-slot="context-menu-sub-trigger" data-submenu-side={side}
+                                     className={cn("flex cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden focus:bg-accent data-[state=open]:bg-accent data-disabled:pointer-events-none data-disabled:opacity-45", className)} {...props}>{children}<ChevronRightIcon
+        className="context-menu-submenu-arrow ml-auto size-3.5 shrink-0" aria-hidden="true" style={{transform: side === "left" ? "rotate(180deg)" : undefined}}/></ContextMenuPrimitive.SubTrigger>
+})
 
 export function ContextMenuSubContent({
                                           className,
                                           ...props
                                       }: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>) {
+    const [content, setContent] = React.useState<HTMLDivElement | null>(null)
+    const setSide = React.useContext(SubmenuSideContext)?.setSide
+    React.useLayoutEffect(() => {
+        if (!content || !setSide) return
+        // Radix can flip a portaled submenu after measuring available space.
+        const update = () => {const side = content.dataset.side; if (side === "left" || side === "right") setSide(side)}
+        update()
+        const observer = new MutationObserver(update)
+        observer.observe(content, {attributes: true, attributeFilter: ["data-side"]})
+        return () => observer.disconnect()
+    }, [content, setSide])
     return <ContextMenuPrimitive.Portal><ContextMenuPrimitive.SubContent
+        ref={setContent} data-slot="context-menu-sub-content" sideOffset={6} collisionPadding={8}
         className={cn("z-50 min-w-48 overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-xl", className)} {...props} /></ContextMenuPrimitive.Portal>
 }

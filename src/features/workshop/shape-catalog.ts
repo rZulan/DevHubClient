@@ -17,23 +17,6 @@ export const shapePresets: ShapePreset[] = [
         category: "Basic shapes",
         kind
     })),
-    {
-        id: "note",
-        label: "Note",
-        category: "Basic shapes",
-        kind: "note",
-        changes: {
-            width: 240,
-            height: 180,
-            appearance: "fill",
-            fillColor: "#fef3c7",
-            outlineColor: "#f59e0b",
-            cornerRadius: 12,
-            noteHeader: "New note",
-            noteBody: "Add your idea here.",
-            textAlign: "left"
-        }
-    },
     {id: "process", label: "Process", category: "Diagrams", kind: "rectangle", changes: {text: "Process"}},
     {id: "decision", label: "Decision", category: "Diagrams", kind: "diamond", changes: {text: "Decision"}},
     {id: "terminator", label: "Start / End", category: "Diagrams", kind: "terminator", changes: {text: "Start"}},
@@ -84,6 +67,7 @@ export const shapePresets: ShapePreset[] = [
 
 export function shapeLabel(kind: ShapeKind) {
     if (kind === "text") return "Text"
+    if (kind === "note") return "Note"
     return shapePresets.find(preset => preset.kind === kind)?.label ?? "Shape"
 }
 

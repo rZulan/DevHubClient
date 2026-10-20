@@ -15,7 +15,7 @@ import {
 } from "react"
 
 import {type ResizeDirection, resizeRectangle} from "../resize-rectangle"
-import type {CanvasItem} from "../shape-clipboard"
+import {normalizeRotation, type CanvasItem} from "../shape-clipboard"
 import {ensureGoogleFont, shapeFontStack} from "../shape-fonts"
 import {RichTextContent} from "./rich-text-content"
 import {
@@ -36,6 +36,7 @@ type CanvasCardProps = {
     canDrag: boolean
     item: CanvasItem
     onChange: (next: CanvasItem) => void
+    onRotateChange?: (next: CanvasItem) => void
     onDragChange: (next: CanvasItem, direction: ResizeDirection | undefined, bypass: boolean) => void
     onDragEnd: () => void
     onSelect: (toggle: boolean, resizing: boolean) => boolean
@@ -56,6 +57,7 @@ export function CanvasCard({
                                canDrag,
                                item,
                                onChange,
+                               onRotateChange,
                                onDragChange,
                                onDragEnd,
                                onSelect,
@@ -74,13 +76,25 @@ export function CanvasCard({
         zoom: number;
         direction?: ResizeDirection
     } | null>(null)
+    const rotateStart = useRef<{
+        pointerId: number;
+        centerX: number;
+        centerY: number;
+        pointerAngle: number;
+        rotation: number;
+    } | null>(null)
+    const rotationGuideHide = useRef<number | undefined>(undefined)
     const editRef = useRef<HTMLElement | null>(null)
     const editingInitialRuns = useRef(runsFor(item, "text"))
     const savedSelection = useRef<TextSelection | undefined>(undefined)
     const appliedTextStyleCommand = useRef(0)
     const [resizing, setResizing] = useState<ResizeDirection>()
+    const [rotating, setRotating] = useState(false)
+    const [rotationAngle, setRotationAngle] = useState(item.rotation)
+    const [rotationGuideAngle, setRotationGuideAngle] = useState<number>()
     const [editingPart, setEditingPart] = useState<TextPart>()
     const screenScale = 1 / zoom
+    const rotationGuideDiameter = Math.hypot(item.width, item.height) + 36 * screenScale
 
     useEffect(() => ensureGoogleFont(item.fontFamily), [item.fontFamily])
     useEffect(() => {
@@ -185,6 +199,78 @@ export function CanvasCard({
         if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
     }
 
+    function beginRotate(event: PointerEvent<Element>) {
+        if (editingPart || event.button !== 0 || !event.isPrimary || !canDrag || rotateStart.current) return
+        event.preventDefault()
+        event.stopPropagation()
+        if (!onSelect(false, false)) return
+        const shape = event.currentTarget.closest<HTMLElement>(".workshop-diagram-node")
+        if (!shape) return
+        const bounds = shape.getBoundingClientRect()
+        const centerX = bounds.left + bounds.width / 2
+        const centerY = bounds.top + bounds.height / 2
+        event.currentTarget.setPointerCapture(event.pointerId)
+        rotateStart.current = {
+            pointerId: event.pointerId,
+            centerX,
+            centerY,
+            pointerAngle: Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180 / Math.PI,
+            rotation: item.rotation,
+        }
+        updateRotationGuide(event, shape)
+        setRotationAngle(item.rotation)
+        setRotating(true)
+    }
+
+    function moveRotate(event: PointerEvent<Element>) {
+        updateRotationGuide(event)
+        const start = rotateStart.current
+        if (!start || start.pointerId !== event.pointerId) return
+        event.preventDefault()
+        event.stopPropagation()
+        const angle = Math.atan2(event.clientY - start.centerY, event.clientX - start.centerX) * 180 / Math.PI
+        const unsnapped = normalizeRotation(start.rotation + angle - start.pointerAngle)
+        const rotation = event.shiftKey ? Math.round(unsnapped / 15) * 15 : Math.round(unsnapped);
+        setRotationAngle(normalizeRotation(rotation));
+        (onRotateChange ?? onChange)({...item, rotation: normalizeRotation(rotation)})
+    }
+
+    function endRotate(event: PointerEvent<Element>) {
+        if (rotateStart.current?.pointerId !== event.pointerId) return
+        event.preventDefault()
+        event.stopPropagation()
+        rotateStart.current = null
+        setRotating(false)
+        onDragEnd()
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+        if (document.elementFromPoint(event.clientX, event.clientY)?.closest(".workshop-rotation-hit-ring")) updateRotationGuide(event)
+        else scheduleRotationGuideHide()
+    }
+
+    function updateRotationGuide(event: PointerEvent<Element>, shape = event.currentTarget.closest<HTMLElement>(".workshop-diagram-node")) {
+        window.clearTimeout(rotationGuideHide.current)
+        if (!shape) return
+        const bounds = shape.getBoundingClientRect()
+        const screenAngle = Math.atan2(event.clientY - (bounds.top + bounds.height / 2), event.clientX - (bounds.left + bounds.width / 2)) * 180 / Math.PI
+        const unrotated = (screenAngle - item.rotation) * Math.PI / 180
+        const localX = Math.cos(unrotated) * (item.flipHorizontal ? -1 : 1)
+        const localY = Math.sin(unrotated) * (item.flipVertical ? -1 : 1)
+        const angle = Math.atan2(localY, localX) * 180 / Math.PI
+        setRotationGuideAngle(previous => {
+            if (previous === undefined) return angle
+            let continuousAngle = angle
+            while (continuousAngle - previous > 180) continuousAngle -= 360
+            while (continuousAngle - previous < -180) continuousAngle += 360
+            return continuousAngle
+        })
+    }
+
+    function scheduleRotationGuideHide() {
+        if (rotateStart.current) return
+        window.clearTimeout(rotationGuideHide.current)
+        rotationGuideHide.current = window.setTimeout(() => setRotationGuideAngle(undefined), 100)
+    }
+
     const dragHandlers = {
         onLostPointerCapture: endDrag,
         onPointerCancel: endDrag,
@@ -239,6 +325,7 @@ export function CanvasCard({
     function editorProps(part: TextPart, maxLength: number) {
         const active = editingPart === part
         return {
+            key: active ? `${part}-editing` : `${part}-display`,
             ref: active ? (element: HTMLElement | null) => {
                 editRef.current = element
             } : undefined,
@@ -291,6 +378,8 @@ export function CanvasCard({
         background: (selectionBox || ["rectangle", "note", "entity", "text"].includes(item.kind)) && item.appearance === "fill" ? item.fillColor : "transparent",
         boxShadow: "none",
         zIndex: layer,
+        transform: `rotate(${item.rotation}deg) scaleX(${item.flipHorizontal ? -1 : 1}) scaleY(${item.flipVertical ? -1 : 1})`,
+        transformOrigin: "center",
     }
 
     return (
@@ -367,6 +456,46 @@ export function CanvasCard({
                     padding: Math.max(8, item.outlineStyle === "none" ? 0 : item.outlineWidth + 4),
                 }}><span {...editorProps("text", 100000)}><RichTextContent
                     runs={editingPart === "text" ? editingInitialRuns.current : runsFor(item, "text")}/></span></div>}
+            {selected && canDrag && !editingPart && showResizeHandles && rotationGuideAngle !== undefined &&
+                <svg aria-hidden="true" className="workshop-rotation-guide" viewBox="0 0 100 100" style={{
+                    "--canvas-ui-scale": screenScale,
+                    "--rotation-guide-angle": `${rotationGuideAngle + 90}deg`,
+                    width: rotationGuideDiameter,
+                    height: rotationGuideDiameter,
+                } as CSSProperties}>
+                    <circle className="workshop-rotation-track" cx="50" cy="50" r="48"/>
+                    <circle className="workshop-rotation-hit-ring" cx="50" cy="50" r="48"
+                            onLostPointerCapture={endRotate}
+                            onPointerCancel={endRotate}
+                            onPointerDown={beginRotate}
+                            onPointerEnter={updateRotationGuide}
+                            onPointerLeave={scheduleRotationGuideHide}
+                            onPointerMove={moveRotate}
+                            onPointerUp={endRotate}/>
+                    <line className="workshop-rotation-tracker" x1="44" y1="2" x2="56" y2="2"/>
+                </svg>}
+            {selected && canDrag && !editingPart && showResizeHandles && rotationCorners.map(({corner, label}) => <button
+                aria-label={`Rotate ${selectionBox ? "selection" : shapeLabel(item.kind).toLowerCase()} from ${label}`}
+                className="workshop-rotate-corner"
+                data-corner={corner}
+                key={corner}
+                title="Drag to rotate · Hold Shift to snap to 15°"
+                type="button"
+                style={{"--canvas-ui-scale": screenScale} as CSSProperties}
+                onLostPointerCapture={endRotate}
+                onPointerCancel={endRotate}
+                onPointerDown={beginRotate}
+                onPointerEnter={updateRotationGuide}
+                onPointerLeave={scheduleRotationGuideHide}
+                onPointerMove={moveRotate}
+                onPointerUp={endRotate}
+                onKeyDown={(event) => {
+                    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
+                    event.preventDefault()
+                    event.stopPropagation()
+                    const step = event.shiftKey ? 15 : 1;
+                    (onRotateChange ?? onChange)({...item, rotation: normalizeRotation(item.rotation + (event.key === "ArrowLeft" ? -step : step))})
+                }}/>) }
             {selected && canDrag && !editingPart && showResizeHandles && resizeHandles.map(({direction, label}) => (
                 <button
                     aria-label={`Resize ${selectionBox ? "selection" : shapeLabel(item.kind).toLowerCase()} ${label}`}
@@ -389,6 +518,8 @@ export function CanvasCard({
             ))}
             {resizing && <span className="workshop-resize-size"
                                style={{"--canvas-ui-scale": screenScale} as CSSProperties}>{Math.round(item.width)} × {Math.round(item.height)}</span>}
+            {rotating && <span className="workshop-rotation-angle"
+                              style={{"--canvas-ui-scale": screenScale} as CSSProperties}>{Math.round(rotationAngle)}°</span>}
         </section>
     )
 }
@@ -399,6 +530,13 @@ const resizeHandles: { direction: ResizeDirection; label: string }[] = [
     {direction: "nw", label: "top left"}, {direction: "ne", label: "top right"},
     {direction: "sw", label: "bottom left"}, {direction: "se", label: "bottom right"},
 ]
+
+const rotationCorners = [
+    {corner: "nw", label: "top left"},
+    {corner: "ne", label: "top right"},
+    {corner: "sw", label: "bottom left"},
+    {corner: "se", label: "bottom right"},
+] as const
 
 function restoreTextSelection(root: HTMLElement, start: number, end: number) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)

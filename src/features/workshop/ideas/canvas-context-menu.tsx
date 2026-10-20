@@ -2,6 +2,8 @@ import {
     Clipboard,
     ClipboardPaste,
     Copy,
+    FlipHorizontal2,
+    FlipVertical2,
     Group,
     Layers,
     Maximize2,
@@ -24,14 +26,15 @@ type CanvasContextMenuProps = {
 }
 
 export type CanvasContextAction =
-    "add-note"
-    | "add-rectangle"
+    "add-rectangle"
     | "back"
     | "copy"
     | "cut"
     | "delete"
     | "duplicate"
     | "fit"
+    | "flip-horizontal"
+    | "flip-vertical"
     | "front"
     | "group"
     | "paste"
@@ -58,13 +61,17 @@ export function CanvasContextMenu({
             <MenuButton icon={<Layers/>} label="Select all" shortcut="Ctrl+A" onClick={() => onAction("select-all")}/>
             <MenuButton icon={<Maximize2/>} label="Fit canvas" onClick={() => onAction("fit")}/>
             {canEdit && <><MenuSeparator/><MenuButton icon={<Plus/>} label="Add rectangle"
-                                                      onClick={() => onAction("add-rectangle")}/><MenuButton
-                icon={<Plus/>} label="Add note" onClick={() => onAction("add-note")}/></>}
+                                                      onClick={() => onAction("add-rectangle")}/></>}
         </> : <>
             <MenuButton icon={<Copy/>} label="Copy" shortcut="Ctrl+C" onClick={() => onAction("copy")}/>
             {canEdit && <>
                 <MenuButton icon={<Clipboard/>} label="Cut" shortcut="Ctrl+X" onClick={() => onAction("cut")}/>
                 <MenuButton icon={<Copy/>} label="Duplicate" shortcut="Ctrl+D" onClick={() => onAction("duplicate")}/>
+                <MenuSeparator/>
+                <MenuButton icon={<FlipHorizontal2/>} label="Flip horizontally"
+                            onClick={() => onAction("flip-horizontal")}/>
+                <MenuButton icon={<FlipVertical2/>} label="Flip vertically"
+                            onClick={() => onAction("flip-vertical")}/>
                 <MenuSeparator/>
                 <MenuButton icon={<Group/>} label="Group" shortcut="Ctrl+G" disabled={selectionCount < 2}
                             onClick={() => onAction("group")}/>

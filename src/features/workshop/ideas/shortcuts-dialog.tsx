@@ -2,6 +2,8 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/
 
 const shortcuts = [
     {keys: ["Ctrl/⌘", "S"], label: "Save changes"},
+    {keys: ["Ctrl/⌘", "Z"], label: "Undo canvas change"},
+    {keys: ["Ctrl/⌘", "Y"], label: "Redo canvas change"},
     {keys: ["Ctrl/⌘", "A"], label: "Select all shapes"},
     {keys: ["Ctrl/⌘", "C"], label: "Copy selected shapes"},
     {keys: ["Ctrl/⌘", "X"], label: "Cut selected shapes"},

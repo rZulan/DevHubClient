@@ -57,6 +57,7 @@ export function ensureGoogleFont(font: ShapeFont) {
 }
 
 export function shapeFontStack(font: ShapeFont) {
+    if (font === "Geist") return '"Geist Variable", sans-serif'
     const fallback = monospaceFonts.has(font) ? "monospace" : serifFonts.has(font) ? "serif" : "sans-serif"
     return `"${font}", ${fallback}`
 }

@@ -49,6 +49,9 @@ export type CanvasItem = {
     y: number
     width: number
     height: number
+    rotation: number
+    flipHorizontal: boolean
+    flipVertical: boolean
     appearance: "fill" | "outlined"
     fillColor: string
     outlineColor: string
@@ -88,8 +91,9 @@ export function decodeShapes(text: string): CanvasItem[] {
         data.items = data.items.map(normalizeCanvasItem)
         const color = /^#[0-9a-f]{6}$/i
         if (!data.items.every((item: CanvasItem) => item && typeof item.id === "string"
-            && [item.x, item.y, item.width, item.height, item.cornerRadius, item.outlineWidth].every((value) => typeof value === "number" && Number.isFinite(value))
+            && [item.x, item.y, item.width, item.height, item.rotation, item.cornerRadius, item.outlineWidth].every((value) => typeof value === "number" && Number.isFinite(value))
             && item.width >= 24 && item.height >= 24 && item.cornerRadius >= 0 && item.outlineWidth >= 1 && item.outlineWidth <= 20
+            && [item.flipHorizontal, item.flipVertical].every((value) => typeof value === "boolean")
             && shapeKinds.includes(item.kind) && (item.groupId === undefined || (typeof item.groupId === "string" && item.groupId.length > 0 && item.groupId.length <= 100))
             && ["fill", "outlined"].includes(item.appearance) && ["solid", "dashed", "dotted", "double", "none"].includes(item.outlineStyle)
             && typeof item.text === "string" && typeof item.noteHeader === "string" && typeof item.noteBody === "string"
@@ -117,13 +121,25 @@ export function normalizeCanvasItem(item: Partial<CanvasItem>): CanvasItem {
         text: "",
         textAlign: "center",
         verticalAlign: "center",
+        rotation: 0,
+        flipHorizontal: false,
+        flipVertical: false,
         noteHeader: "",
         noteBody: "", ...item
     } as CanvasItem
+    normalized.rotation = normalizeRotation(normalized.rotation)
+    normalized.flipHorizontal = normalized.flipHorizontal === true
+    normalized.flipVertical = normalized.flipVertical === true
     const shared = noteTextStyleFromItem(normalized)
     normalized.noteHeaderStyle = {...shared, ...item.noteHeaderStyle}
     normalized.noteBodyStyle = {...shared, ...item.noteBodyStyle}
     return normalized
+}
+
+export function normalizeRotation(value: number) {
+    if (!Number.isFinite(value)) return 0
+    const normalized = value % 360
+    return Object.is(normalized, -0) ? 0 : normalized
 }
 
 export function noteTextStyleFromItem(item: Pick<CanvasItem, "fontFamily" | "fontSize" | "bold" | "italic" | "underline" | "strikethrough" | "textColor" | "letterSpacing" | "lineHeight" | "textIndent" | "textAlign">): NoteTextStyle {

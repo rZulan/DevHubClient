@@ -3,6 +3,12 @@ import assert from 'node:assert/strict'
 
 import { googleFontStylesheet, isGoogleFont, isShapeFont, shapeFontStack } from '../src/features/workshop/shape-fonts.ts'
 
+test('the default canvas font resolves to the bundled Geist font family', () => {
+  assert.equal(shapeFontStack('Geist'), '"Geist Variable", sans-serif')
+  assert.equal(isGoogleFont('Geist'), false)
+  assert.equal(googleFontStylesheet('Geist'), undefined)
+})
+
 test('Google fonts produce a CSS2 stylesheet URL and safe fallback stack', () => {
   assert.equal(isGoogleFont('Playfair Display'), true)
   assert.equal(googleFontStylesheet('Playfair Display'), 'https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap')

@@ -8,6 +8,15 @@ test('clipboard round trip preserves all shape properties', () => {
   assert.deepEqual(decodeShapes(encodeShapes([shape])), [shape])
 })
 
+test('rotation and flip transforms normalize and survive clipboard round trips', () => {
+  const transformed = normalizeCanvasItem({...shape, rotation: 450, flipHorizontal: true, flipVertical: true})
+  assert.equal(transformed.rotation, 90)
+  assert.equal(transformed.flipHorizontal, true)
+  assert.equal(transformed.flipVertical, true)
+  assert.deepEqual(decodeShapes(encodeShapes([transformed])), [transformed])
+  assert.deepEqual(normalizeCanvasItem({...shape, rotation: -360}), {...shape, rotation: 0})
+})
+
 test('formatting and alignment survive copy and duplication together', () => {
   const formatted = {
     ...shape,
