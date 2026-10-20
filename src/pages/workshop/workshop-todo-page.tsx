@@ -4,28 +4,32 @@ import {
     ArrowRight,
     CalendarDays,
     CheckCircle2,
-    ChevronsLeft,
-    ChevronsRight,
     Circle,
     Clock3,
-    GripHorizontal,
     Plus,
     Settings2
 } from "lucide-react"
 import {useOutletContext, useSearchParams} from "react-router-dom"
-import {useAppSelector} from "@/app/hooks"
+import {useAppDispatch, useAppSelector} from "@/app/hooks"
+import {useProjectToolUpdates} from "@/features/workshop/use-project-tool-updates"
 import {Button} from "@/components/ui/button"
-import {Card} from "@/components/ui/card"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {TodoAssignees} from "@/features/workshop/todo-assignees"
 import {TodoBoardSettings} from "@/features/workshop/todo-board-settings"
+import {TodoTaskCard} from "@/features/workshop/todo-task-card"
+import {TodoTaskEditDialog, TodoTaskDeleteDialog} from "@/features/workshop/todo-task-dialogs"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {
     defaultTodoColumns,
+    todoApi,
     type Todo,
+    type TodoTask,
+    type TodoTaskDetails,
+    useUpdateTodoTaskMutation,
+    useDeleteTodoTaskMutation,
     useAssignTodoTaskMutation,
     useCreateTodoMutation,
     useCreateTodoTaskMutation,
@@ -84,12 +88,16 @@ export function WorkshopTodoPage() {
                             project={context.project}/>
 }
 
-function TodoPageContent({organization, project}: WorkshopOutletContext & {
+function TodoPageContent({organization, project, isPersistedOrganization}: WorkshopOutletContext & {
     project: NonNullable<WorkshopOutletContext["project"]>
 }) {
     const userId = useAppSelector((state) => state.auth.user?.id)
     const [params, setParams] = useSearchParams()
     const scope = {organizationId: organization.id, projectId: project.id}
+    const dispatch = useAppDispatch()
+    useProjectToolUpdates({...scope, tool: "todo"}, isPersistedOrganization, () => {
+        dispatch(todoApi.util.invalidateTags([{type: "Todos", id: `/organizations/${organization.id}/projects/${project.id}/todos`}]))
+    })
     const headingRef = useRef<HTMLElement>(null)
     const [columnCount, setColumnCount] = useState<number | null>(null)
     useLayoutEffect(() => {
@@ -130,6 +138,10 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
     const [createTask, {isLoading: creatingTask}] = useCreateTodoTaskMutation()
     const [moveTask, {isLoading: movingTask}] = useMoveTodoTaskMutation()
     const [assignTask, {isLoading: assigningTask}] = useAssignTodoTaskMutation()
+    const [updateTask, {isLoading: updatingTask}] = useUpdateTodoTaskMutation()
+    const [deleteTask, {isLoading: deletingTask}] = useDeleteTodoTaskMutation()
+    const [editing, setEditing] = useState<{task: TodoTask; boardRevision: number} | null>(null)
+    const [deleting, setDeleting] = useState<{task: TodoTask; boardRevision: number} | null>(null)
     const members = [...organization.members].sort((a, b) => a.name.localeCompare(b.name))
     const [creating, setCreating] = useState(false)
     const [customizing, setCustomizing] = useState(false)
@@ -189,7 +201,7 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
 
     const saving = useRef(false)
     const canManage = hasWorkshopPermission(organization, userId ?? "current", "Manage tasks")
-    const busy = creatingTodo || creatingTask || movingTask || assigningTask
+    const busy = creatingTodo || creatingTask || movingTask || assigningTask || updatingTask || deletingTask
 
     function openTodo(id: string | null) {
         setError("")
@@ -289,6 +301,29 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
         }
     }
 
+    async function saveTask(details: TodoTaskDetails) {
+        if (!editing || !canManage || saving.current) throw new Error("Task unavailable")
+        saving.current = true
+        try {await updateTask({...scope, todoId: editing.task.todoId, taskId: editing.task.id, boardRevision: editing.boardRevision, ...details}).unwrap()}
+        finally {saving.current = false}
+    }
+
+    async function removeTask() {
+        if (!deleting || !canManage || saving.current) throw new Error("Task unavailable")
+        saving.current = true
+        try {await deleteTask({...scope, todoId: deleting.task.todoId, taskId: deleting.task.id, boardRevision: deleting.boardRevision}).unwrap()}
+        finally {saving.current = false}
+    }
+
+    async function duplicateTask(task: TodoTask) {
+        if (!selected || !canManage || saving.current) return
+        saving.current = true; setError("")
+        try {await createTask({...scope, todoId: selected.id, title: `${task.title.slice(0, 145)} copy`, description: task.description, status: task.status,
+            assigneeIds: (task.assigneeIds ?? []).filter(id => members.some(member => member.id === id))}).unwrap()}
+        catch {setError("The task could not be duplicated. Please try again.")}
+        finally {saving.current = false}
+    }
+
     return (
         <div className="workshop-page workshop-board-page">
             <section className="workshop-page-heading workshop-todo-heading compact" ref={headingRef}>
@@ -327,8 +362,6 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
                                 {columns.map(({id, name}, columnIndex) => {
                                     const isComplete = columnIndex === columns.length - 1
                                     const Icon = isComplete ? CheckCircle2 : columnIndex === 0 ? Circle : Clock3
-                                    const previous = columns[columnIndex - 1]
-                                    const next = columns[columnIndex + 1]
                                     const tasks = selected.tasks.filter(t => t.status === id)
                                     return <section
                                         className={`workshop-board-column${dropColumn === id && draggedId ? " workshop-board-column-drop" : ""}`}
@@ -354,37 +387,13 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
                                                    title="Tasks in this column count as complete">Complete</small>}
                                         </header>
                                         <div className="workshop-task-list">
-                                            {tasks.map(task => <Card
-                                                className={`workshop-task${draggedId === task.id ? " workshop-task-dragging" : ""}`}
-                                                key={task.id} draggable={canManage && !busy}
-                                                onDragStart={event => startDrag(event, task.id)} onDragEnd={() => {
-                                                setDraggedId(null);
-                                                setDropColumn(null)
-                                            }}>
-                                                <h3>{task.title}</h3>
-                                                {task.description && <p>{task.description}</p>}
-                                                <TodoAssignees
-                                                    ids={task.assigneeIds ?? (task.assigneeId ? [task.assigneeId] : [])}
-                                                    members={members} editable={canManage} disabled={busy || isFetching}
-                                                    taskTitle={task.title}
-                                                    onAdd={id => void changeAssignee(task.id, id, false)}
-                                                    onRemove={id => void changeAssignee(task.id, id, true)}/>
-                                                {canManage && <>
-                                                    {previous &&
-                                                        <Button aria-label={`Move ${task.title} to ${previous.name}`}
-                                                                title={`Move to ${previous.name}`}
-                                                                className="workshop-task-edge workshop-task-edge-left"
-                                                                disabled={busy} variant="ghost"
-                                                                onClick={() => void changeStatus(task.id, previous.id)}><ChevronsLeft/></Button>}
-                                                    {next && <Button aria-label={`Move ${task.title} to ${next.name}`}
-                                                                     title={`Move to ${next.name}`}
-                                                                     className="workshop-task-edge workshop-task-edge-right"
-                                                                     disabled={busy} variant="ghost"
-                                                                     onClick={() => void changeStatus(task.id, next.id)}><ChevronsRight/></Button>}
-                                                    <span className="workshop-task-drag-handle"
-                                                          title="Drag task to another column"
-                                                          aria-hidden="true"><GripHorizontal/></span></>}
-                                            </Card>)}
+                                            {tasks.map(task => <TodoTaskCard key={task.id} task={task} columns={columns} members={members} userId={userId}
+                                                canManage={canManage} disabled={busy || isFetching} dragging={draggedId === task.id}
+                                                onEdit={() => setEditing({task, boardRevision: selected.boardRevision})}
+                                                onDelete={() => setDeleting({task, boardRevision: selected.boardRevision})}
+                                                onDuplicate={() => void duplicateTask(task)} onMove={status => void changeStatus(task.id, status)}
+                                                onAssign={(id, remove) => void changeAssignee(task.id, id, remove)} onError={setError}
+                                                onDragStart={event => startDrag(event, task.id)} onDragEnd={() => {setDraggedId(null); setDropColumn(null)}}/>)}
                                             {!tasks.length &&
                                                 <p className="workshop-todo-empty-column">No tasks yet</p>}
                                             {canManage &&
@@ -432,6 +441,11 @@ function TodoPageContent({organization, project}: WorkshopOutletContext & {
             {customizing && selected &&
                 <TodoBoardSettings key={selected.id} todo={selected} organizationId={organization.id}
                                    onClose={() => setCustomizing(false)}/>}
+
+            {editing && <TodoTaskEditDialog key={editing.task.id} task={editing.task} columns={columns} members={members} disabled={!canManage || busy}
+                onClose={() => setEditing(null)} onSave={saveTask}/>}
+            {deleting && <TodoTaskDeleteDialog key={deleting.task.id} task={deleting.task} disabled={!canManage || busy}
+                onClose={() => setDeleting(null)} onDelete={removeTask}/>}
 
             <Dialog open={creating || addingTo !== null} onOpenChange={open => {
                 if (!open && !busy) {

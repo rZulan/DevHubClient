@@ -27,9 +27,22 @@ export type Todo = {
     boardRevision: number
 }
 type Scope = { organizationId: string; projectId: string }
+export type TodoTaskDetails = {title: string; description: string; status: string; assigneeIds: string[]}
 const path = ({organizationId, projectId}: Scope) => `/organizations/${organizationId}/projects/${projectId}/todos`
-const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndpoints({
+export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndpoints({
     endpoints: (builder) => ({
+        updateTodoTask: builder.mutation<TodoTask, Scope & TodoTaskDetails & {todoId: string; taskId: string; boardRevision: number}>({
+            query: ({todoId, taskId, title, description, status, assigneeIds, boardRevision, ...scope}) => ({
+                url: `${path(scope)}/${todoId}/tasks/${taskId}`, method: "PUT", body: {title, description, status, assigneeIds, boardRevision}
+            }),
+            invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
+        }),
+        deleteTodoTask: builder.mutation<void, Scope & {todoId: string; taskId: string; boardRevision: number}>({
+            query: ({todoId, taskId, boardRevision, ...scope}) => ({
+                url: `${path(scope)}/${todoId}/tasks/${taskId}`, method: "DELETE", body: {boardRevision}
+            }),
+            invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
+        }),
         todoPages: builder.infiniteQuery<{ items: Todo[]; hasMore: boolean }, Scope & { pageSize: number }, number>({
             infiniteQueryOptions: {
                 initialPageParam: 0,
@@ -117,6 +130,8 @@ const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndpoints({
     }),
 })
 export const {
+    useUpdateTodoTaskMutation,
+    useDeleteTodoTaskMutation,
     useTodoPagesInfiniteQuery,
     useGetTodoQuery,
     useListTodosQuery,
