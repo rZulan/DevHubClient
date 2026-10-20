@@ -109,30 +109,33 @@ export function MemberSidebarEntry({organization, member, children}: {
 
     const trigger = <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
     return <>
-        {hasActions ? <ContextMenu>{trigger}<ContextMenuContent className="w-60">
-            <ContextMenuLabel>{member.name}</ContextMenuLabel>
+        {hasActions ? <ContextMenu>{trigger}<ContextMenuContent className="workshop-member-menu" collisionPadding={8}>
+            <ContextMenuLabel className="workshop-member-menu-heading"><strong>{member.name}</strong><small>@{member.username}</small></ContextMenuLabel>
+            <ContextMenuSeparator/>
             {canChangeRoles && roles.length > 0 && <ContextMenuSub>
-                <ContextMenuSubTrigger><ShieldCheck className="mr-2 size-4"/> Assign/remove role</ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-56">
+                <ContextMenuSubTrigger><ShieldCheck/> Assign/remove role</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="workshop-member-menu workshop-member-submenu">
+                    <ContextMenuLabel>Roles</ContextMenuLabel><ContextMenuSeparator/>
                     {roles.map(role => <ContextMenuCheckboxItem
                         checked={(member.roleIds ?? [member.roleId]).includes(role.id)} disabled={busy} key={role.id}
                         onCheckedChange={checked => void toggleRole(role.id, checked === true)}
                         onSelect={event => event.preventDefault()}>
-                        <i className="size-2 rounded-full" style={{background: role.color}}/>{role.name}
+                        <i className="workshop-member-menu-dot" style={{background: role.color}}/><span className="workshop-member-menu-name">{role.name}</span>
                     </ContextMenuCheckboxItem>)}
                 </ContextMenuSubContent>
             </ContextMenuSub>}
             {canChangeTeams && teams.length > 0 && <ContextMenuSub>
-                <ContextMenuSubTrigger><Users className="mr-2 size-4"/> Assign/remove team</ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-56">
+                <ContextMenuSubTrigger><Users/> Assign/remove team</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="workshop-member-menu workshop-member-submenu">
+                    <ContextMenuLabel>Teams</ContextMenuLabel><ContextMenuSeparator/>
                     {teams.map(team => {
                         const assigned = team.memberIds.includes(member.id)
                         const isLeader = team.leaderId === member.id
-                        return <ContextMenuCheckboxItem checked={assigned} disabled={busy || isLeader} key={team.id}
+                        return <ContextMenuCheckboxItem className={isLeader ? "data-disabled:opacity-80" : undefined} checked={assigned} disabled={busy || isLeader} key={team.id}
                                                         onCheckedChange={checked => void toggleTeam(team.id, checked === true)}
                                                         onSelect={event => event.preventDefault()}>
-                            <i className="size-2 rounded-full" style={{background: team.color}}/>{team.name}{isLeader &&
-                            <small className="ml-auto text-muted-foreground">Leader</small>}
+                            <i className="workshop-member-menu-dot" style={{background: team.color}}/><span className="workshop-member-menu-name">{team.name}</span>{isLeader &&
+                            <small className="workshop-member-menu-badge">Leader</small>}
                         </ContextMenuCheckboxItem>
                     })}
                 </ContextMenuSubContent>

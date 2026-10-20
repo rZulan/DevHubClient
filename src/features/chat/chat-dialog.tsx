@@ -88,7 +88,7 @@ function ConversationIcon({kind}: { kind: ChatKind }) {
 }
 
 export function ChatDialog({organizationId, currentUserId, members}: ChatDialogProps) {
-    const launcherPosition = useChatLauncherPosition()
+    const launcherPosition = useChatLauncherPosition(currentUserId)
     const [open, setOpen] = useState(false)
     const [selectedId, setSelectedId] = useState<string>()
     const [composeMode, setComposeMode] = useState<ComposeMode>(null)

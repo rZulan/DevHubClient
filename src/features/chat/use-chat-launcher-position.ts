@@ -1,60 +1,60 @@
-import {type MouseEvent, type PointerEvent, useLayoutEffect, useRef, useState} from "react"
+import {type MouseEvent, type PointerEvent, useCallback, useLayoutEffect, useRef, useState} from "react"
+import {fitLauncherPosition, isLauncherPosition, launcherSize, readLauncherPositions, type LauncherPositions} from "./chat-launcher-position"
 
 type Position = { x: number; y: number }
 type Drag = { pointerId: number; start: Position; origin: Position; moved: boolean }
 
-const storageKey = "devhub.chat-launcher-position"
-
-export function useChatLauncherPosition() {
+export function useChatLauncherPosition(userId = "guest") {
+    const storageKey = `devhub.chat-launcher-positions.v2:${userId}`
     const ref = useRef<HTMLButtonElement>(null)
     const drag = useRef<Drag | null>(null)
     const suppressClick = useRef(false)
     const currentPosition = useRef<Position | null>(null)
+    const preferred = useRef<LauncherPositions>({})
     const [position, setPosition] = useState<Position | null>(null)
     const [dragging, setDragging] = useState(false)
 
-    function moveTo(next: Position) {
+    const moveTo = useCallback((next: Position) => {
         const button = ref.current
         if (!button) return
-        const margin = 8
-        const clamped = {
-            x: Math.max(margin, Math.min(next.x, window.innerWidth - button.offsetWidth - margin)),
-            y: Math.max(margin, Math.min(next.y, window.innerHeight - button.offsetHeight - margin)),
-        }
+        const clamped = fitLauncherPosition(next, {width: window.innerWidth, height: window.innerHeight}, {width: button.offsetWidth, height: button.offsetHeight})
         currentPosition.current = clamped
         setPosition(clamped)
-    }
+    }, [])
 
     function savePosition() {
         if (!currentPosition.current) return
+        preferred.current[launcherSize(window.innerWidth)] = currentPosition.current
         try {
-            localStorage.setItem(storageKey, JSON.stringify(currentPosition.current))
+            localStorage.setItem(storageKey, JSON.stringify(preferred.current))
         } catch { /* Dragging still works when browser storage is unavailable. */
         }
     }
 
     useLayoutEffect(() => {
+        preferred.current = {}
         try {
-            const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "null")
-            if (saved && typeof saved === "object" && "x" in saved && "y" in saved
-                && typeof saved.x === "number" && Number.isFinite(saved.x)
-                && typeof saved.y === "number" && Number.isFinite(saved.y)) {
-                moveTo({x: saved.x, y: saved.y})
-                savePosition()
+            preferred.current = readLauncherPositions(localStorage.getItem(storageKey))
+            const legacy: unknown = JSON.parse(localStorage.getItem("devhub.chat-launcher-position") ?? "null")
+            if (!Object.keys(preferred.current).length && isLauncherPosition(legacy)) {
+                preferred.current[launcherSize(window.innerWidth)] = legacy
+                localStorage.setItem(storageKey, JSON.stringify(preferred.current))
+                localStorage.removeItem("devhub.chat-launcher-position")
             }
         } catch { /* Ignore malformed or unavailable storage. */
         }
 
         function handleResize() {
-            if (currentPosition.current) {
-                moveTo(currentPosition.current)
-                savePosition()
-            }
+            drag.current = null
+            setDragging(false)
+            const saved = preferred.current[launcherSize(window.innerWidth)]
+            if (saved) moveTo(saved)
+            else {currentPosition.current = null; setPosition(null)}
         }
-
+        handleResize()
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
-    }, [])
+    }, [storageKey, moveTo])
 
     function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
         if (!event.isPrimary || event.button !== 0 || drag.current) return
