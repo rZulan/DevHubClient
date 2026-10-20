@@ -25,3 +25,4 @@
 
 ### Validation
 - Client build and lint pass; 189 regression tests cover documents, Markdown, highlighting, imports/exports, geometry, realtime updates, and gestures.
+- Refresh compatible dependency patches and classify the shadcn CLI as development tooling. Production dependencies have no reported advisories; seven development dependency audit entries remain in the shadcn globbing chain, whose suggested remediation is a breaking downgrade.
