@@ -25,6 +25,12 @@ export const router = createBrowserRouter([
                         }),
                     },
                     {
+                        path: "changelogs",
+                        lazy: async () => ({
+                            Component: (await import("@/pages/general/changelogs-page")).ChangelogsPage,
+                        }),
+                    },
+                    {
                         loader: anonymousOnlyLoader,
                         children: [
                             {

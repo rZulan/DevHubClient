@@ -1,36 +1,50 @@
-import {ArrowRight} from "lucide-react"
-import {memo} from "react"
+import {ArrowRight, Compass, LayoutGrid} from "lucide-react"
+import {memo, useEffect, useState} from "react"
 import {Link} from "react-router-dom"
-
 import {useAppSelector} from "@/app/hooks"
-import {Badge} from "@/components/ui/badge"
-import {Button} from "@/components/ui/button"
+import {DiscoveryOrbitPreview, WorkshopScene, WorkshopTour} from "@/components/home-product-previews"
 
-const stack = ["shadcn/ui", "Redux Toolkit", "RTK Query", "React Router"]
+type Preview = "workshop" | "discovery"
 
 export const WelcomeHero = memo(function WelcomeHero() {
-    const user = useAppSelector((state) => state.auth.user)
+    const user = useAppSelector(state => state.auth.user)
+    const [hovered, setHovered] = useState<Preview | null>(null)
+    const [focused, setFocused] = useState<Preview | null>(null)
+    const [preview, setPreview] = useState<Preview | null>(null)
+    const target = hovered ?? focused
 
-    return (
-        <section className="space-y-6">
-            <div className="flex flex-wrap gap-2">
-                {stack.map((item) => (
-                    <Badge key={item} variant="secondary">
-                        {item}
-                    </Badge>
-                ))}
+    useEffect(() => {
+        setPreview(null)
+        if (!target) return
+        const timer = window.setTimeout(() => setPreview(target), 350)
+        return () => window.clearTimeout(timer)
+    }, [target])
+
+    const previewEvents = (name: Preview) => ({
+        onPointerEnter: (event: React.PointerEvent) => { if (event.pointerType !== "touch") setHovered(name) },
+        onPointerLeave: () => setHovered(null),
+        onFocus: () => setFocused(name),
+        onBlur: () => setFocused(null),
+        onKeyDown: (event: React.KeyboardEvent) => {
+            if (event.key === "Escape") { setHovered(null); setFocused(null) }
+        },
+        "data-waiting": target === name && preview !== name,
+        "data-preview-active": preview === name,
+    })
+
+    return <section className="landing-hero" aria-labelledby="landing-title">
+        <div className="landing-hero-copy">
+            <h1 id="landing-title">Build<br/>with your<br/><span>people.</span></h1>
+            <p>Plan in Workshop. Explore in Discovery.</p>
+            <div className="landing-actions" aria-label="Choose your space">
+                <Link className="landing-button landing-button-primary landing-preview-trigger" to="/workshop" {...previewEvents("workshop")}><LayoutGrid/><span>Workshop</span><ArrowRight/></Link>
+                <Link className="landing-button landing-button-secondary landing-preview-trigger" to="/discovery" {...previewEvents("discovery")}><Compass/><span>Discovery</span><ArrowRight/></Link>
             </div>
-            <div className="space-y-4">
-                <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
-                    {user ? `Welcome back, ${user.firstName}.` : "Your frontend stack is ready."}
-                </h1>
+        </div>
+        <div className="landing-hero-preview" data-preview={preview ?? "idle"}>
+            <div className="landing-preview-frame" key={preview ?? "idle"}>
+                {preview === "workshop" ? <WorkshopTour/> : preview === "discovery" ? <DiscoveryOrbitPreview user={user}/> : <WorkshopScene hero/>}
             </div>
-            <Button asChild size="lg">
-                <Link to={user ? "/account/profile" : "/register"}>
-                    {user ? "View your account" : "Create your account"}
-                    <ArrowRight data-icon="inline-end"/>
-                </Link>
-            </Button>
-        </section>
-    )
+        </div>
+    </section>
 })

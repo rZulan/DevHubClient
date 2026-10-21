@@ -1,4 +1,5 @@
 import {createClientId} from "../../lib/create-client-id.ts"
+import {validNoteEmoji} from "./note-emojis.ts"
 
 export const dataTypes = ["UUID", "INT", "BIGINT", "VARCHAR", "TEXT", "BOOLEAN", "DATE", "TIMESTAMP", "DECIMAL", "FLOAT", "JSON", "BLOB"] as const
 export type DataType = typeof dataTypes[number]
@@ -29,7 +30,7 @@ export const waterfallPhases = [
     {id: "maintenance", title: "Maintenance", description: "Monitor, support and improve the released system.", deliverables: "Monitoring, support log, maintenance releases"},
 ] as const
 export type SdlcDocument = {model: "waterfall"; currentPhase: number; completed: boolean; notes: Record<string, string>}
-export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string}
+export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string; emoji?: string | null}
 export type NotesDocument = {notes: StickyNote[]}
 export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument}
 export type DocumentTool = keyof ToolDocumentMap
@@ -46,7 +47,7 @@ export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
         return Array.isArray(value.notes) && value.notes.length <= 1000 && value.notes.every(note => {
             if (!record(note) || !["id", "title", "body", "color", "updatedAt"].every(key => text(note, key))) return false
             const {id, title, body, color, updatedAt} = note as StickyNote
-            if (!id.trim() || id.length > 100 || ids.has(id) || !title.trim() || title.length > 150 || body.length > 10000 || !/^#[a-fA-F0-9]{6}$/.test(color) || updatedAt.length > 100 || !Number.isFinite(Date.parse(updatedAt))) return false
+            if (!id.trim() || id.length > 100 || ids.has(id) || !title.trim() || title.length > 150 || body.length > 10000 || !/^#[a-fA-F0-9]{6}$/.test(color) || !validNoteEmoji(note.emoji) || updatedAt.length > 100 || !Number.isFinite(Date.parse(updatedAt))) return false
             ids.add(id)
             return true
         })

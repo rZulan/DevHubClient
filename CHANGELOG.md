@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-21
+
+### Home and Discovery
+- Redesign the homepage around Workshop and Discovery while preserving its background and scroll effects.
+- Add a 350 ms clockwise hover indicator and animated Workshop and Discovery previews; clicks still open each page immediately.
+- Show task dragging, ERD relationships, and note editing in the Workshop preview, with a cursor that follows the dragged task.
+- Center Discovery's orbiting profiles on the signed-in user's avatar and name, with initials and visitor fallbacks.
+- Add a hard-hat avatar with a construction notice linking to the public changelogs page.
+
+### Workshop
+- Save note drafts while writing and restore them after a refresh, keeping them until the shared note finishes saving.
+- Add the full searchable emoji catalog, skin tones, and a None option; allow scrolling inside the picker while editing a note.
+- Replace the note card corner action with a delete button and confirmation.
+- Animate selected ERD relationships like a conveyor belt, respecting reduced-motion preferences.
+- Refresh the organization chooser with a concise workbench layout.
+
+### Validation
+- Pass all 203 client regression tests, including note draft recovery, emoji persistence, and catalog coverage.
+- Client production build and lint pass; API schema checks cover emoji and None values, older notes, and malformed values.
+
 ## 2026-10-20
 
 ### Project tools and Notes

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {validToolDocument, emptyDocuments} from '../src/features/workshop/tool-documents.ts'
 import {noteTextColor, noteColors} from '../src/features/workshop/sticky-notes.ts'
+import {defaultNoteEmoji, noteEmoji} from '../src/features/workshop/note-emojis.ts'
 
 const note = {id: 'note-1', title: 'Next release', body: 'Review onboarding', color: '#f6e7a6', updatedAt: '2026-10-20T00:00:00.000Z'}
 test('notes recovery accepts valid notes and rejects corrupt drafts', () => {
@@ -19,5 +20,20 @@ test('preset and custom note colors retain accessible text contrast', () => {
         }
         const values = [luminance(color), luminance(noteTextColor(color))].sort((a, b) => b - a)
         assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, color)
+    }
+})
+
+test('older notes get the default emoji and None removes it explicitly', () => {
+    assert.equal(noteEmoji(note), defaultNoteEmoji)
+    assert.equal(noteEmoji({...note, emoji: '🚀'}), '🚀')
+    assert.equal(noteEmoji({...note, emoji: null}), null)
+})
+
+test('saved notes accept emoji, combined emoji, and None without breaking old notes', () => {
+    for (const emoji of [undefined, null, '📝', '🚀', '👩🏽‍💻', '🇵🇭']) {
+        assert.equal(validToolDocument('notes', {notes: [{...note, emoji}]}), true)
+    }
+    for (const emoji of ['', 42, false, {}, [], 'x'.repeat(33)]) {
+        assert.equal(validToolDocument('notes', {notes: [{...note, emoji}]}), false)
     }
 })
