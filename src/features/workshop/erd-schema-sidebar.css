@@ -1,0 +1,42 @@
+.erd-schema-sidebar:not(.erd-panel-collapsed) { position: relative; width: clamp(280px, var(--erd-sidebar-width, 360px), min(640px, 50vw)); padding: 14px 12px; overflow: hidden; }
+.erd-schema-sidebar:not(.erd-panel-collapsed) > .erd-panel-heading { flex-shrink: 0; margin-bottom: 4px; }
+.erd-schema-sidebar > .erd-panel-content { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.erd-schema-sidebar > .erd-panel-content[hidden] { display: none; }
+.erd-schema-tabs { display: flex; flex: 1; flex-direction: column; min-height: 0; gap: 14px; }
+.erd-schema-tab-list { display: flex; flex-shrink: 0; padding: 4px; gap: 4px; border: 1px solid var(--border); border-radius: 9px; background: var(--secondary); }
+.erd-schema-tab-list > button { display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 7px; padding: 8px 10px; border-radius: 6px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; cursor: pointer; }
+.erd-schema-tab-list > button[data-state="active"] { background: var(--background); color: var(--foreground); box-shadow: 0 1px 4px #00000015; }
+.erd-schema-tab-list > button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.erd-schema-tab-list svg { width: 14px; height: 14px; }
+.erd-schema-tab-list i { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+.erd-schema-tab { display: flex; flex: 1; flex-direction: column; min-height: 0; gap: 10px; outline: none; }
+.erd-schema-tab[data-state="inactive"] { display: none; }
+.erd-schema-tables { overflow: hidden; }
+.erd-schema-code { overflow-y: auto; overflow-x: hidden; }
+.erd-schema-tables > button { flex-shrink: 0; }
+.erd-schema-tables > .erd-schema-table-list { flex: 1; min-height: 0; overflow-y: auto; }
+.erd-schema-table-actions { flex-shrink: 0; padding-top: 10px; border-top: 1px solid var(--border); }
+.erd-schema-table-actions > button { width: 100%; }
+.erd-schema-tables .tool-layer-list > button { display: flex; justify-content: space-between; gap: 12px; padding: 12px 10px; }
+.erd-schema-tables .tool-layer-list > button > span { min-width: 0; overflow-wrap: anywhere; }
+.erd-schema-tables .tool-layer-list > button > small { flex-shrink: 0; color: var(--muted-foreground); }
+.erd-sql-help, .erd-sql-shortcut { flex-shrink: 0; color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
+.erd-sql-source { position: relative; flex: 1; min-width: 0; min-height: 180px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.erd-sql-source > pre, .erd-sql-source > textarea { position: absolute; inset: 0; display: block; width: 100%; height: 100%; margin: 0; padding: 14px; font: 12px/1.75 var(--workshop-font-code); letter-spacing: normal; tab-size: 2; white-space: pre; overflow-wrap: normal; word-break: normal; border: 0; border-radius: inherit; }
+.erd-sql-source > pre { overflow: hidden; pointer-events: none; }
+.erd-sql-source code { font: inherit; }
+.erd-sql-source > textarea { overflow: auto; resize: none; color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--erd-sql-ink); background: transparent; outline: none; }
+.erd-sql-source:focus-within { border-color: var(--ring); box-shadow: 0 0 0 1px var(--ring); }
+.erd-sql-source > textarea::selection { background: #80808066; }
+.erd-sql-source > textarea::placeholder { -webkit-text-fill-color: #969696; color: #969696; }
+.erd-sql-actions { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.erd-sql-error, .erd-sql-conflict { flex-shrink: 0; max-height: 100px; overflow: auto; color: var(--destructive); font-size: 12px; line-height: 1.6; white-space: pre-line; }
+.erd-sql-notice { color: var(--muted-foreground); font-size: 11px; }
+.erd-sql-warnings { flex-shrink: 0; max-height: 120px; overflow: auto; padding: 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
+.erd-sql-warnings summary { cursor: pointer; font-weight: 600; color: var(--foreground); }
+.erd-sql-warnings ul { padding-left: 16px; list-style: disc; }
+.erd-schema-resizer { position: absolute; z-index: 3; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; }
+.erd-schema-resizer:hover, .erd-schema-resizer:focus-visible { background: color-mix(in srgb, var(--primary) 35%, transparent); outline: none; }
+.workshop-drawer .erd-schema-sidebar:not(.erd-panel-collapsed) { width: 100%; min-width: 0; max-width: none; }
+.workshop-drawer .erd-schema-resizer { display: none; }
+@media (max-height: 620px) { .erd-sql-source { min-height: 100px; } }

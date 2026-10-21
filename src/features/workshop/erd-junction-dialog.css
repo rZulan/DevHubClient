@@ -1,0 +1,21 @@
+.erd-junction-form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.erd-junction-name { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 600; }
+.erd-junction-name > input { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--background); color: var(--foreground); font-family: var(--workshop-font-code); font-size: 13px; font-weight: 400; }
+.erd-junction-name > input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.erd-junction-preview { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; font-family: var(--workshop-font-code); font-size: 12px; }
+.erd-junction-preview > header, .erd-junction-preview > div { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.erd-junction-preview > header { background: var(--secondary); }
+.erd-junction-preview > header > strong { overflow-wrap: anywhere; font-size: 13px; }
+.erd-junction-preview > header > span { flex-shrink: 0; margin-left: auto; font-size: 10px; color: var(--muted-foreground); }
+.erd-junction-preview > div { border-top: 1px solid var(--border); }
+.erd-junction-preview svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--primary); }
+.erd-junction-preview > div > span { min-width: 0; overflow-wrap: anywhere; }
+.erd-junction-preview small { margin-left: auto; font-size: 10px; color: var(--muted-foreground); }
+.erd-junction-notations { display: flex; flex-direction: column; gap: 12px; }
+.erd-junction-notations > div { display: grid; grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1.3fr); align-items: center; gap: 8px; font-size: 11px; }
+.erd-junction-notations span { overflow-wrap: anywhere; }
+.erd-junction-notations svg { width: 110px; height: 24px; fill: none; stroke: var(--primary); stroke-width: 1.5; }
+.erd-junction-notations .erd-end-open { fill: var(--popover); }
+.erd-junction-hint { font-size: 11px; line-height: 1.6; color: var(--muted-foreground); }
+.erd-junction-actions { margin-top: 4px; }
+@media (max-width: 480px) { .erd-junction-actions { flex-wrap: wrap; } }

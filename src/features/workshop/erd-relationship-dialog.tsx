@@ -23,6 +23,14 @@ export function ErdRelationshipDialog({document, fromId, toId, initial, canEdit,
     const [onDelete, setOnDelete] = useState<ErdRelationship["onDelete"]>(initial?.onDelete ?? "RESTRICT"), [error, setError] = useState("")
     const source = document.tables.find(table => table.id === fromTable), target = document.tables.find(table => table.id === toTable)
     const cardinality = cardinalityForEnds(leftEnd, rightEnd)
+    function chooseCardinality(value: ErdRelationship["cardinality"]) {
+        const ends = relationshipEnds({cardinality: value})
+        setLeftEnd(ends.leftEnd); setRightEnd(ends.rightEnd); setError("")
+        if (value === "N:M" && (!columns.fromField || !columns.toField)) {
+            const key = (table: typeof source) => table?.fields.find(field => field.primary)?.id ?? table?.fields.find(field => field.unique)?.id ?? table?.fields[0]?.id ?? ""
+            setColumns({fromField: columns.fromField || key(source), toField: columns.toField || key(target)})
+        }
+    }
     function chooseTable(side: "left" | "right", id: string) {
         if (side === "left") setFromTable(id); else setToTable(id)
         setExtraColumns([])
@@ -51,7 +59,7 @@ export function ErdRelationshipDialog({document, fromId, toId, initial, canEdit,
                     </div>
                 </div>
                 <div className="task-edit-metadata">
-                    <RelationshipSelect label="Cardinality" value={cardinality} onChange={value => {const ends = relationshipEnds({cardinality: value as ErdRelationship["cardinality"]}); setLeftEnd(ends.leftEnd); setRightEnd(ends.rightEnd); setError("")}}><option value="1:1">One to one</option><option value="1:N">One to many</option><option value="N:1">Many to one</option><option value="N:M">Many to many</option></RelationshipSelect>
+                    <RelationshipSelect label="Cardinality" value={cardinality} onChange={value => chooseCardinality(value as ErdRelationship["cardinality"])}><option value="1:1">One to one</option><option value="1:N">One to many</option><option value="N:1">Many to one</option><option value="N:M">Many to many</option></RelationshipSelect>
                     <RelationshipSelect label="On delete" value={onDelete} onChange={value => {setOnDelete(value as ErdRelationship["onDelete"]); setError("")}}><option>RESTRICT</option><option>CASCADE</option><option>SET NULL</option></RelationshipSelect>
                 </div>
                 {extraColumns.map((pair, index) => <div className="erd-column-pair" key={index}>
@@ -61,7 +69,7 @@ export function ErdRelationshipDialog({document, fromId, toId, initial, canEdit,
                 </div>)}
                 <Button type="button" size="sm" variant="secondary" disabled={extraColumns.length >= Math.min(source?.fields.length ?? 0, target?.fields.length ?? 0) - 1} onClick={() => setExtraColumns(current => [...current, {fromField: "", toField: ""}])}>Add column pair</Button>
                 <div className="task-edit-metadata"><RelationshipEndSelect label="Left end" value={leftEnd} onChange={value => {setLeftEnd(value); setError("")}}/><RelationshipEndSelect right label="Right end" value={rightEnd} onChange={value => {setRightEnd(value); setError("")}}/></div>
-                {cardinality === "N:M" && <p className="tool-help">A many-to-many relationship needs a junction table in a physical database.</p>}
+                {cardinality === "N:M" && <p className="tool-help">Saving will offer to create a junction table using both keys.</p>}
                 {(!source?.fields.length || !target?.fields.length) && <p className="tool-help">Add columns to both tables before connecting them.</p>}
                 {error && <p className="workshop-form-error" role="alert">{error}</p>}
             </fieldset>

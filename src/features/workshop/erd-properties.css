@@ -1,0 +1,36 @@
+.erd-properties-panel.tool-inspector:not(.erd-panel-collapsed) { width: clamp(340px, 26vw, 380px); padding: 16px; scrollbar-gutter: stable; font-size: 12px; }
+.erd-properties-panel .erd-panel-heading { margin-bottom: 16px; }
+.erd-properties-panel .erd-panel-heading strong, .erd-properties-panel .tool-section-heading { font-size: 13px; }
+.erd-properties-panel .erd-panel-heading small { font-size: 11px; }
+.erd-properties-panel fieldset { gap: 12px; }
+.erd-properties-panel.tool-inspector label { gap: 6px; line-height: 1.5; font-size: 12px; }
+.erd-properties-panel input:not([type="checkbox"]):not([type="range"]), .erd-properties-panel select, .erd-properties-panel textarea { min-height: 34px; padding: 7px 9px; font-size: 12px; }
+.erd-properties-panel button { font-size: 12px; }
+.erd-properties-panel .tool-property-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: end; }
+.erd-properties-panel .tool-section-heading { margin-top: 6px; padding-top: 16px; }
+.erd-properties-panel .erd-constraints { gap: 12px; }
+.erd-properties-panel .erd-constraints > .tool-section-heading { margin-bottom: 0; }
+.erd-properties-panel .erd-relationship-entry { display: block; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; font-size: 12px; }
+.erd-relationship-entry > summary { display: flex; align-items: center; gap: 10px; padding: 12px; list-style: none; cursor: pointer; background: color-mix(in oklab, var(--secondary) 50%, transparent); }
+.erd-relationship-entry > summary::-webkit-details-marker { display: none; }
+.erd-relationship-entry > summary > span { display: flex; align-items: start; gap: 10px; flex: 1; min-width: 0; }
+.erd-relationship-entry > summary strong { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.6; }
+.erd-relationship-entry > summary small { flex-shrink: 0; margin: 2px 0 0; color: var(--muted-foreground); font: 11px/1.6 var(--workshop-font-code); }
+.erd-relationship-entry > summary > svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--muted-foreground); transition: transform .15s; }
+.erd-relationship-entry[open] > summary > svg { transform: rotate(180deg); }
+.erd-relationship-entry > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: -3px; }
+.erd-relationship-fields { display: flex; flex-direction: column; gap: 14px; padding: 12px; border-top: 1px solid var(--border); }
+.erd-properties-panel .erd-relationship-fields .tool-property-grid { margin: 0; }
+.erd-properties-panel .erd-relationship-fields select { padding-inline: 10px; }
+.erd-properties-panel .erd-relationship-fields button { min-height: 30px; padding: 6px 10px; color: var(--foreground); }
+.erd-relationship-columns { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.erd-relationship-columns code { max-width: 100%; color: var(--muted-foreground); font: 11px/1.7 var(--workshop-font-code); overflow-wrap: anywhere; }
+.erd-relationship-end { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.erd-relationship-end h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-weight: 600; }
+.erd-relationship-end h4 > span { color: var(--muted-foreground); font-weight: 400; overflow-wrap: anywhere; }
+.erd-relationship-end .erd-end-preview { justify-content: flex-start; }
+.erd-relationship-fields > footer { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.erd-properties-panel .erd-relationship-fields .tool-delete { color: var(--destructive); }
+.workshop-drawer .erd-properties-panel.tool-inspector:not(.erd-panel-collapsed) { width: 100%; padding: 16px; }
+.workshop-drawer .erd-properties-panel.tool-inspector label { font-size: 12px; }
+.workshop-drawer .erd-properties-panel input:not([type="checkbox"]):not([type="range"]), .workshop-drawer .erd-properties-panel select { min-height: 40px; }

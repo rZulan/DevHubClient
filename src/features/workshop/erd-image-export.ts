@@ -1,6 +1,6 @@
 import {combinedBounds} from "./canvas-view.ts"
 import {erdConnectionBounds, erdPortAngles, routeErdRelationship} from "./erd-connection.ts"
-import {erdSqlType} from "./erd-schema.ts"
+import {erdDisplayType} from "./erd-schema.ts"
 import {relationshipColumns, relationshipEnds, tableHeight, type ErdDocument, type RelationshipEnd} from "./tool-documents.ts"
 
 type ErdImagePalette = {background: string; surface: string; header: string; text: string; muted: string; border: string; connector: string; accent: string}
@@ -46,7 +46,7 @@ export function erdDiagramImage(document: ErdDocument, palette: ErdImagePalette 
                 <text x="14" y="29" font-size="14" font-weight="600" clip-path="url(#name-${index})">${escape(table.name)}</text><text x="286" y="29" font-size="11" fill="${colors.muted}" text-anchor="end">${table.fields.length} columns</text>
                 ${table.fields.map((field, fieldIndex) => {
                     const y = 48 + fieldIndex * 32, key = field.primary ? "PK" : foreignKeys.has(`${table.id}\0${field.id}`) ? "FK" : ""
-                    return `<path d="M0 ${y + 32}H300" stroke="${colors.border}" stroke-opacity=".5"/><text x="12" y="${y + 21}" font-size="10" font-weight="600" fill="${colors.accent}">${key}</text><text x="42" y="${y + 21}" font-family="monospace" font-size="13" clip-path="url(#fields-${index})">${escape(field.name)}</text><text x="280" y="${y + 21}" font-family="monospace" font-size="12" fill="${colors.muted}" text-anchor="end" clip-path="url(#types-${index})">${escape(erdSqlType(field, document.dialect))}${field.autoIncrement ? " ↗" : ""}</text>${field.nullable ? `<text x="288" y="${y + 21}" font-size="12" fill="${colors.muted}">?</text>` : ""}`
+                    return `<path d="M0 ${y + 32}H300" stroke="${colors.border}" stroke-opacity=".5"/><text x="12" y="${y + 21}" font-size="10" font-weight="600" fill="${colors.accent}">${key}</text><text x="42" y="${y + 21}" font-family="monospace" font-size="13" clip-path="url(#fields-${index})">${escape(field.name)}</text><text x="280" y="${y + 21}" font-family="monospace" font-size="12" fill="${colors.muted}" text-anchor="end" clip-path="url(#types-${index})">${escape(erdDisplayType(field))}${field.autoIncrement ? " ↗" : ""}</text>${field.nullable ? `<text x="288" y="${y + 21}" font-size="12" fill="${colors.muted}">?</text>` : ""}`
                 }).join("")}
                 ${!table.fields.length ? `<text x="14" y="69" font-size="13" fill="${colors.muted}">No columns yet</text>` : ""}
             </g><rect width="300" height="${height}" rx="10" fill="none" stroke="${colors.border}"/>

@@ -142,7 +142,50 @@ function names(tokens: Token[], index: number) {
 }
 type ForeignKey = {table: string; fields: string[]; parent: string; parentFields: string[]; onDelete: ErdRelationship["onDelete"]}
 type Key = {table: string; fields: string[]; primary: boolean; name?: string; unique?: boolean}
-export function importErdSql(source: string, dialect: ErdDialect = "postgresql"): ErdImportResult {
+function validateColumnAttributes(tokens: Token[], start: number, label: string) {
+    const starters = ["NOT", "NULL", "PRIMARY", "UNIQUE", "REFERENCES", "CONSTRAINT", "CHECK", "COLLATE", "GENERATED", "COMMENT", "AUTO_INCREMENT", "AUTOINCREMENT"]
+    for (let i = start; i < tokens.length;) {
+        const token = tokens[i]
+        if (keyword(token, "NOT") && keyword(tokens[i + 1], "NULL") || keyword(token, "PRIMARY") && keyword(tokens[i + 1], "KEY")) {i += 2; continue}
+        if (["NULL", "UNIQUE", "AUTO_INCREMENT", "AUTOINCREMENT", "UNSIGNED", "ZEROFILL"].some(word => keyword(token, word))) {i++; continue}
+        if (keyword(token, "IDENTITY")) {i++; if (tokens[i]?.value === "(") i = parenthesized(tokens, i).next; continue}
+        if (keyword(token, "CONSTRAINT") || keyword(token, "COLLATE")) {i = identifier(tokens, i + 1).next; continue}
+        if (keyword(token, "COMMENT") && tokens[i + 1]?.kind === "string") {i += 2; continue}
+        if ((keyword(token, "WITH") || keyword(token, "WITHOUT")) && keyword(tokens[i + 1], "TIME") && keyword(tokens[i + 2], "ZONE")) {i += 3; continue}
+        if (keyword(token, "CHECK")) {i = parenthesized(tokens, i + 1).next; continue}
+        if (keyword(token, "GENERATED")) {
+            i++
+            if (keyword(tokens[i], "BY") && keyword(tokens[i + 1], "DEFAULT")) i += 2
+            else if (keyword(tokens[i], "ALWAYS")) i++
+            if (!keyword(tokens[i], "AS") || !keyword(tokens[i + 1], "IDENTITY")) throw new Error(`${label}: only generated integer identities are supported.`)
+            i += 2; if (tokens[i]?.value === "(") i = parenthesized(tokens, i).next
+            continue
+        }
+        if (keyword(token, "REFERENCES")) {
+            const table = identifier(tokens, i + 1); i = names(tokens, table.next).next
+            while (keyword(tokens[i], "ON") && (keyword(tokens[i + 1], "DELETE") || keyword(tokens[i + 1], "UPDATE"))) {
+                i += 2
+                if (keyword(tokens[i], "SET") || keyword(tokens[i], "NO")) i += 2
+                else if (keyword(tokens[i], "CASCADE") || keyword(tokens[i], "RESTRICT")) i++
+                else throw new Error(`${label}: invalid foreign key action.`)
+            }
+            continue
+        }
+        if (keyword(token, "DEFAULT") || keyword(token, "ON") && keyword(tokens[i + 1], "UPDATE")) {
+            i += keyword(token, "ON") ? 2 : 1
+            const expressionStart = i; let depth = 0
+            for (; i < tokens.length; i++) {
+                if (depth === 0 && i > expressionStart && starters.some(word => keyword(tokens[i], word))) break
+                if (tokens[i].kind === "symbol") {if (tokens[i].value === "(") depth++; if (tokens[i].value === ")") depth--}
+            }
+            if (i === expressionStart) throw new Error(`${label}: missing default expression.`)
+            continue
+        }
+        throw new Error(`${label}: unexpected ${token.raw}. Separate column definitions with commas.`)
+    }
+}
+
+export function importErdSql(source: string, dialect: ErdDialect = "postgresql", options: {strict?: boolean; sqlTypes?: Map<string, Map<string, string>>} = {}): ErdImportResult {
     const document: ErdDocument = {dialect, tables: [], relationships: []}, warnings = new Set<string>(), keys: Key[] = [], foreignKeys: ForeignKey[] = []
     const checks: {table: string; name?: string; expression: string}[] = []
     const aliases: Record<string, DataType> = {
@@ -229,11 +272,14 @@ export function importErdSql(source: string, dialect: ErdDialect = "postgresql")
             if (document.tables.length >= 500) throw new Error("An ERD can contain up to 500 tables.")
             if (document.tables.some(table => table.name.toLowerCase() === tableName.name.toLowerCase())) throw new Error(`Duplicate table definition: ${tableName.name}.`)
             const fields: ErdField[] = []
+            const sqlTypes = new Map<string, string>()
+            options.sqlTypes?.set(tableName.name.toLowerCase(), sqlTypes)
             for (const part of split(body.body, ",")) {
                 if (constraint(part, tableName.name)) continue
                 if (fields.length >= 200) throw new Error(`Table ${tableName.name} exceeds the limit of 200 columns.`)
                 const column = identifier(part, 0)
                 let typeIndex = column.next, typeToken = part[typeIndex]
+                const typeStart = typeIndex
                 if (!typeToken || !["word", "quoted"].includes(typeToken.kind)) throw new Error(`Missing data type for ${tableName.name}.${column.name}.`)
                 if (part[typeIndex + 1]?.value === ".") {
                     const qualified = identifier(part, typeIndex)
@@ -276,6 +322,8 @@ export function importErdSql(source: string, dialect: ErdDialect = "postgresql")
                     else warnings.add(`Type parameters for ${tableName.name}.${column.name} were omitted.`)
                     cursor = size.next
                 }
+                sqlTypes.set(column.name.toLowerCase(), part.slice(typeStart, cursor).map(token => token.kind === "word" ? token.value.toUpperCase() : token.raw).join(" "))
+                if (options.strict) validateColumnAttributes(part, cursor, `${tableName.name}.${column.name}`)
                 const attributesEnd = part.findIndex((token, index) => index >= cursor && ["DEFAULT", "NOT", "NULL", "PRIMARY", "UNIQUE", "REFERENCES", "CONSTRAINT", "CHECK", "GENERATED"].some(word => keyword(token, word)))
                 const attributes = part.slice(cursor, attributesEnd < 0 ? part.length : attributesEnd)
                 if (attributes.some(token => /^\[\d*\]$/.test(token.raw) || keyword(token, "ARRAY"))) throw new Error("SQL array column types are not supported by this ERD import; convert them explicitly in a copy of the schema first.")

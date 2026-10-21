@@ -19,18 +19,19 @@ function ConnectionPreview({connection, zoom}: {connection: ConnectionDraft; zoo
     </svg>
 }
 export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, renderNode, connections, canEdit, beginTransaction, endTransaction,
-    undo, redo, canUndo, canRedo, onDelete, onDuplicate, children, contentBounds, onConnect, fitViewKey, cullNodes = false, deferMoves = false, renderConnections}: {
+    undo, redo, canUndo, canRedo, onDelete, onDuplicate, onCopy, onPaste, children, contentBounds, onConnect, fitViewKey, cullNodes = false, deferMoves = false, renderConnections}: {
     nodes: ToolCanvasNode[]; selectedIds: string[]; onSelect: (ids: string[]) => void
     onMove: (positions: NodePosition[]) => void; onResize?: (id: string, width: number, height: number) => void
     renderNode: (node: ToolCanvasNode) => ReactNode; connections?: ReactNode; canEdit: boolean
     beginTransaction: () => void; endTransaction: () => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean
-    onDelete: () => void; onDuplicate?: () => void; children?: ReactNode
+    onDelete: () => void; onDuplicate?: (offset: number) => void; onCopy?: () => string; onPaste?: (text: string, offset: number) => boolean; children?: ReactNode
     contentBounds?: Bounds[]
     fitViewKey?: number
     onConnect?: (fromId: string, toId: string) => void
     cullNodes?: boolean; deferMoves?: boolean; renderConnections?: (positions: NodePosition[], viewport?: Bounds) => ReactNode
 }) {
     const root = useRef<HTMLDivElement>(null)
+    const lastPaste = useRef({text: "", count: 0})
     const [zoom, setZoom] = useState(.85), [pan, setPan] = useState({x: 50, y: 100})
     const [hand, setHand] = useState(false), [space, setSpace] = useState(false), [snapping, setSnapping] = useState(true)
     const [marquee, setMarquee] = useState<Bounds>()
@@ -181,14 +182,39 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
                 style={{"--canvas-pan-x": `${pan.x}px`, "--canvas-pan-y": `${pan.y}px`, "--canvas-zoom": zoom, ...canvasGridBackground(zoom, pan)} as CSSProperties}
                 onPointerDown={event => start(event)} onPointerMove={move} onPointerUp={end} onPointerCancel={() => end()} onLostPointerCapture={() => end()}
                 onAuxClick={event => {if (event.button === 1) event.preventDefault()}}
+                onCopy={event => {
+                    if ((event.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]") || gesture.current) return
+                    const text = onCopy?.()
+                    if (!text) return
+                    event.clipboardData.setData("text/plain", text); event.preventDefault(); lastPaste.current = {text, count: 0}
+                }}
+                onCut={event => {
+                    if (!canEdit || (event.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]") || gesture.current) return
+                    const text = onCopy?.()
+                    if (!text) return
+                    event.clipboardData.setData("text/plain", text); event.preventDefault(); lastPaste.current = {text, count: 0}; onDelete()
+                }}
+                onPaste={event => {
+                    if (!canEdit || !onPaste || (event.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]") || gesture.current) return
+                    const text = event.clipboardData.getData("text/plain")
+                    const count = lastPaste.current.text === text ? lastPaste.current.count + 1 : 1
+                    if (onPaste(text, 24 * count / zoom)) {event.preventDefault(); lastPaste.current = {text, count}}
+                }}
                 onKeyDown={event => {
                     if ((event.target as HTMLElement).closest("input, textarea, select, button, [contenteditable=true]")) return
+                    if (event.defaultPrevented) return
+                    const modified = event.ctrlKey || event.metaKey, key = event.key.toLowerCase()
                     if (event.code === "Space") {event.preventDefault(); setSpace(true)}
                     if (event.key === "Escape") {end(); onSelect([]); setHand(false)}
-                    if (event.key.toLowerCase() === "h") setHand(true)
-                    if (event.key.toLowerCase() === "v") setHand(false)
+                    if (!modified && !event.altKey && key === "h") setHand(true)
+                    if (!modified && !event.altKey && key === "v") setHand(false)
                     if (event.key === "0" && (event.ctrlKey || event.metaKey)) {event.preventDefault(); fit()}
+                    if (modified && ["+", "=", "-"].includes(event.key)) {event.preventDefault(); changeZoom(zoom * (event.key === "-" ? 1 / 1.2 : 1.2)); return}
+                    if (modified && key === "a") {event.preventDefault(); if (!gesture.current) onSelect(nodes.map(node => node.id)); return}
                     if (!canEdit) return
+                    if (modified && (key === "z" || key === "y")) {event.preventDefault(); if (!event.repeat && !gesture.current) {if (key === "y" || event.shiftKey) redo(); else undo()} return}
+                    if (modified && key === "d" && onDuplicate) {event.preventDefault(); if (!event.repeat && !gesture.current) onDuplicate(24 / zoom); return}
+                    if (gesture.current) return
                     if (event.key === "Delete" || event.key === "Backspace") {event.preventDefault(); onDelete()}
                     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
                         event.preventDefault()
@@ -197,9 +223,6 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
                             x: node.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
                             y: node.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0)})))
                     }
-                    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {event.preventDefault(); if (event.shiftKey) redo(); else undo()}
-                    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {event.preventDefault(); onDuplicate?.()}
-                    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {event.preventDefault(); onSelect(nodes.map(node => node.id))}
                 }} onKeyUp={event => {if (event.code === "Space") setSpace(false)}}>
         <div className="tool-canvas-actions" onPointerDown={event => event.stopPropagation()}>
             <Button size="icon-sm" variant={hand ? "ghost" : "secondary"} aria-label="Select tool" onClick={() => setHand(false)}><MousePointer2/></Button>

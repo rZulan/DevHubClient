@@ -1,8 +1,14 @@
 import {createClientId} from "../../lib/create-client-id.ts"
-import {erdDialectLabels, isErdKey, newField, relationshipColumns, relationshipFieldIds, type ErdDialect, type ErdDocument, type ErdField, type ErdRelationship} from "./tool-documents.ts"
+import {erdDialectLabels, isErdKey, newField, relationshipColumns, relationshipEnds, relationshipFieldIds, type ErdDialect, type ErdDocument, type ErdField, type ErdRelationship, type RelationshipEnd} from "./tool-documents.ts"
 import {erdRelationshipError} from "./erd-relationship-draft.ts"
 
-/** Display and export use the same mapping; stored column types remain portable. */
+/** Concise portable type codes for the canvas and visual previews. */
+export function erdDisplayType(field: ErdField) {
+    const length = field.length.trim()
+    return field.type + (field.type === "VARCHAR" ? `(${length || "255"})` : field.type === "DECIMAL" ? `(${length || "10,2"})` : "")
+}
+
+/** Database-specific type mapping for SQL export. */
 export function erdSqlType(field: ErdField, dialect: ErdDialect = "postgresql") {
     const length = field.length.trim()
     if (dialect === "sqlite") return ({UUID: "TEXT", INT: "INTEGER", BIGINT: "INTEGER", VARCHAR: "TEXT", TEXT: "TEXT", BOOLEAN: "INTEGER", DATE: "TEXT", TIMESTAMP: "TEXT", DECIMAL: "NUMERIC", FLOAT: "REAL", JSON: "TEXT", BLOB: "BLOB"})[field.type]
@@ -109,12 +115,14 @@ export function erdSql(document: ErdDocument): string {
 }
 
 /** Replace the conceptual N:M edge with an editable physical junction and two FKs. */
-export function createErdJunction(document: ErdDocument, relation: ErdRelationship): ErdDocument {
-    if (relation.cardinality !== "N:M" || document.tables.length >= 500 || document.relationships.length >= 2000) throw new Error("Cannot add a junction table: check the relationship and diagram limits.")
+export function createErdJunction(document: ErdDocument, relation: ErdRelationship, requestedName?: string): ErdDocument {
+    const replacing = document.relationships.some(item => item.id === relation.id)
+    if (relation.cardinality !== "N:M" || document.tables.length >= 500 || document.relationships.length - Number(replacing) + 2 > 2000) throw new Error("Cannot add a junction table: check the 500-table and 2,000-relationship limits.")
     const from = document.tables.find(table => table.id === relation.fromTable), to = document.tables.find(table => table.id === relation.toTable)
     const key = (table: typeof from, selected: string[]) => isErdKey(table, selected) ? selected : table?.fields.filter(field => field.primary).map(field => field.id) ?? []
     const fromIds = key(from, relationshipFieldIds(relation, "from")), toIds = key(to, relationshipFieldIds(relation, "to"))
     if (!from || !to || !isErdKey(from, fromIds) || !isErdKey(to, toIds)) throw new Error("Both tables need a primary or unique key before creating a junction table.")
+    if (fromIds.length + toIds.length > 200) throw new Error("The combined keys exceed the junction table's 200-column limit.")
     const fields: ErdField[] = [], names = new Set<string>()
     const copy = (table: typeof from, ids: string[]) => ids.map(id => {
         const original = table!.fields.find(field => field.id === id)!
@@ -128,7 +136,14 @@ export function createErdJunction(document: ErdDocument, relation: ErdRelationsh
     const left = copy(from, fromIds), right = copy(to, toIds), base = `${from.name}_${to.name}`.slice(0, 130)
     let name = base, suffix = 2
     while (document.tables.some(table => table.name.toLowerCase() === name.toLowerCase())) name = `${base}_${suffix++}`
+    if (requestedName !== undefined) {
+        name = requestedName.trim()
+        if (!name || name.length > 150) throw new Error("Enter a junction table name of up to 150 characters.")
+        if (document.tables.some(table => table.name.toLowerCase() === name.toLowerCase())) throw new Error("A table with this name already exists.")
+    }
     const table = {id: createClientId(), name, x: (from.x + to.x) / 2, y: Math.max(from.y + 50 + from.fields.length * 32, to.y + 50 + to.fields.length * 32) + 100, fields}
-    const connect = (parent: typeof from, parents: string[], children: string[]): ErdRelationship => ({id: createClientId(), fromTable: parent!.id, fromField: parents[0], toTable: table.id, toField: children[0], ...(parents.length > 1 ? {fromFields: parents, toFields: children} : {}), cardinality: "1:N", leftEnd: "one", rightEnd: "zero-many", onDelete: relation.onDelete === "SET NULL" ? "RESTRICT" : relation.onDelete})
-    return {...document, tables: [...document.tables, table], relationships: [...document.relationships.filter(item => item.id !== relation.id), connect(from, fromIds, left), connect(to, toIds, right)]}
+    const ends = relationshipEnds(relation)
+    const many = (end: RelationshipEnd) => end === "zero-many" ? "zero-many" : "many"
+    const connect = (parent: typeof from, parents: string[], children: string[], rightEnd: RelationshipEnd, fromAnchor?: ErdRelationship["fromAnchor"]): ErdRelationship => ({id: createClientId(), fromTable: parent!.id, fromField: parents[0], toTable: table.id, toField: children[0], ...(parents.length > 1 ? {fromFields: parents, toFields: children} : {}), cardinality: "1:N", leftEnd: "one", rightEnd, ...(fromAnchor ? {fromAnchor} : {}), onDelete: relation.onDelete === "SET NULL" ? "RESTRICT" : relation.onDelete})
+    return {...document, tables: [...document.tables, table], relationships: [...document.relationships.filter(item => item.id !== relation.id), connect(from, fromIds, left, many(ends.rightEnd), relation.fromAnchor), connect(to, toIds, right, many(ends.leftEnd), relation.toAnchor)]}
 }

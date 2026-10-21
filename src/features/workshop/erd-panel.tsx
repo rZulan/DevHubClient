@@ -1,10 +1,10 @@
-import {useId, useState, type ReactNode} from "react"
+import {useId, useState, type CSSProperties, type ReactNode} from "react"
 import {ChevronLeft, ChevronRight} from "lucide-react"
 import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
 import {ResponsiveWorkshopPanel} from "./responsive-workshop-panel"
 
-export function ErdPanel({side, title, detail, collapsed, onToggle, children}: {
-    side: "left" | "right"; title: string; detail?: ReactNode; collapsed: boolean; onToggle: () => void; children: ReactNode
+export function ErdPanel({side, title, detail, collapsed, onToggle, children, className = "", style}: {
+    side: "left" | "right"; title: string; detail?: ReactNode; collapsed: boolean; onToggle: () => void; children: ReactNode; className?: string; style?: CSSProperties
 }) {
     const contentId = useId()
     const compact = useCompactWorkshop()
@@ -12,7 +12,7 @@ export function ErdPanel({side, title, detail, collapsed, onToggle, children}: {
     const isCollapsed = !compact && collapsed
     const toggle = compact ? () => setOpen(false) : onToggle
     const Chevron = side === "left" ? isCollapsed ? ChevronRight : ChevronLeft : isCollapsed ? ChevronLeft : ChevronRight
-    const panel = <aside className={`${side === "left" ? "tool-layer-panel" : "tool-inspector"} erd-side-panel ${isCollapsed ? "erd-panel-collapsed" : ""}`} aria-label={`${title} sidebar`}>
+    const panel = <aside style={style} className={`${side === "left" ? "tool-layer-panel" : "tool-inspector"} erd-side-panel ${isCollapsed ? "erd-panel-collapsed" : ""} ${className}`} aria-label={`${title} sidebar`}>
         <header className="erd-panel-heading">
             {!isCollapsed && <div><strong>{title}</strong>{detail !== undefined && <small>{detail}</small>}</div>}
             <button type="button" aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${title} panel`} aria-expanded={!isCollapsed} aria-controls={contentId} onClick={toggle}><Chevron/></button>

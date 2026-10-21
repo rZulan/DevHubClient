@@ -13,7 +13,7 @@ const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX},
 }).outputText
 
-function canvas(deferMoves = true) {
+function canvas(deferMoves = true, overrides = {}) {
     const states = [], frames = new Map(), commits = [], history = []
     let cursor = 0, frameId = 0, selected = []
     const react = {
@@ -42,7 +42,7 @@ function canvas(deferMoves = true) {
     function render() {
         cursor = 0
         const result = exports.ToolCanvas({nodes: [{id: 'table', x: 0, y: 0, width: 300, height: 100}], selectedIds: selected, onSelect: ids => {selected = ids}, onMove: moves => commits.push(moves),
-            renderNode: () => null, canEdit: true, deferMoves, beginTransaction: () => history.push('begin'), endTransaction: () => history.push('end')})
+            renderNode: () => null, canEdit: true, deferMoves, beginTransaction: () => history.push('begin'), endTransaction: () => history.push('end'), ...overrides})
         result.props.ref.current = root
         return result
     }
@@ -53,6 +53,19 @@ function canvas(deferMoves = true) {
         cancel() {render().props.onPointerCancel()},
         flush() {const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach(callback => callback())},
         previewX() {return all(render()).find(node => node.props.className?.startsWith('tool-node ')).props.style.left},
+        key(key, options = {}) {
+            const event = {key, code: key === ' ' ? 'Space' : '', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, repeat: false, defaultPrevented: false, target: {closest: () => options.editing ? {} : null}, preventDefault() {this.defaultPrevented = true}, ...options}
+            render().props.onKeyDown(event)
+            return event.defaultPrevented
+        },
+        clipboard(kind, text = '', editing = false) {
+            let copied = ''
+            const event = {target: {closest: () => editing ? {} : null}, clipboardData: {getData: () => text, setData: (_type, value) => {copied = value}}, defaultPrevented: false, preventDefault() {this.defaultPrevented = true}}
+            render().props[kind](event)
+            return {copied, prevented: event.defaultPrevented}
+        },
+        isHand() {return render().props.className.includes('hand-tool')},
+        selection() {return selected},
         frames, commits, history,
     }
 }
@@ -89,4 +102,47 @@ test('a click does not commit a move, and other canvas tools retain immediate mo
     immediate.start(); immediate.move(185)
     assert.equal(immediate.commits.length, 1)
     assert.equal(immediate.commits[0][0].x, 104)
+})
+
+test('canvas shortcuts support both platforms and do not duplicate repeats or hijack text fields', () => {
+    const actions = []
+    const c = canvas(true, {onDuplicate: offset => actions.push(['duplicate', offset]), undo: () => actions.push(['undo']), redo: () => actions.push(['redo']), onDelete: () => actions.push(['delete'])})
+    assert.equal(c.key('d', {ctrlKey: true}), true)
+    c.key('d', {ctrlKey: true, repeat: true})
+    c.key('d', {metaKey: true})
+    c.key('z', {ctrlKey: true}); c.key('z', {metaKey: true, shiftKey: true}); c.key('y', {ctrlKey: true})
+    c.key('Delete')
+    assert.deepEqual(actions.map(action => action[0]), ['duplicate', 'duplicate', 'undo', 'redo', 'redo', 'delete'])
+    assert.equal(actions[0][1], 24 / .85)
+    for (const key of ['d', 'a', 'z', 'y', 'Delete']) assert.equal(c.key(key, {ctrlKey: true, editing: true}), false)
+    assert.equal(actions.length, 6)
+    c.key('h'); assert.equal(c.isHand(), true)
+    c.key('v', {ctrlKey: true}); assert.equal(c.isHand(), true)
+    c.key('v'); assert.equal(c.isHand(), false)
+    c.start(); c.key('d', {ctrlKey: true}); assert.equal(actions.length, 6)
+})
+
+test('clipboard events preserve native text editing, cut only after copying, and offset repeated pastes', () => {
+    const actions = [], offsets = []
+    const c = canvas(true, {onCopy: () => 'erd-clipboard', onDelete: () => actions.push('delete'), onPaste: (_text, offset) => {offsets.push(offset); return true}})
+    assert.deepEqual(c.clipboard('onCopy'), {copied: 'erd-clipboard', prevented: true})
+    assert.equal(c.clipboard('onPaste', 'erd-clipboard').prevented, true)
+    c.clipboard('onPaste', 'erd-clipboard')
+    assert.deepEqual(offsets, [24 / .85, 48 / .85])
+    assert.deepEqual(c.clipboard('onCut'), {copied: 'erd-clipboard', prevented: true})
+    assert.deepEqual(actions, ['delete'])
+    for (const kind of ['onCopy', 'onCut', 'onPaste']) assert.deepEqual(c.clipboard(kind, '', true), {copied: '', prevented: false})
+    assert.equal(offsets.length, 2)
+    assert.equal(actions.length, 1)
+})
+
+test('read-only canvas permits copying and selecting but blocks cut, paste and duplicate', () => {
+    const actions = []
+    const c = canvas(true, {canEdit: false, onCopy: () => 'schema', onDelete: () => actions.push('delete'), onPaste: () => {actions.push('paste'); return true}, onDuplicate: () => actions.push('duplicate')})
+    assert.equal(c.clipboard('onCopy').copied, 'schema')
+    assert.equal(c.clipboard('onCut').prevented, false)
+    assert.equal(c.clipboard('onPaste', 'schema').prevented, false)
+    c.key('d', {ctrlKey: true}); c.key('Delete'); c.key('a', {ctrlKey: true})
+    assert.deepEqual(actions, [])
+    assert.deepEqual(c.selection(), ['table'])
 })

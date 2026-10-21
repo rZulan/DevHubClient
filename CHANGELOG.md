@@ -16,8 +16,17 @@
 - Animate selected ERD relationships like a conveyor belt, respecting reduced-motion preferences.
 - Refresh the organization chooser with a concise workbench layout.
 
+### ERD editing
+- Reorganize Properties with compact 12 px controls, clearer spacing, and collapsible relationship cards with readable endpoint controls and separate removal actions.
+- Use concise type codes such as UUID on the canvas, previews, and PNG exports; simplify the type picker to codes only.
+- Widen the Schema sidebar, add drag/keyboard resizing, and split Tables and SQL into tabs.
+- Edit highlighted SQL and apply it to the canvas with validation, draft conflict protection, and undo support; preserve existing positions, identities, and relationship attachments.
+- Pin + Add Table to the bottom of the table list.
+- Add table duplication, copy/cut/paste, redo, and zoom shortcuts while preserving native shortcuts in text fields.
+- Offer a junction table when connecting tables as many-to-many, with matching foreign keys, a composite primary key, and two one-to-many links in one undoable step.
+
 ### Validation
-- Pass all 203 client regression tests, including note draft recovery, emoji persistence, and catalog coverage.
+- Pass all 226 client regression tests, including junction tables, SQL editing, ERD clipboard operations, keyboard scoping, note draft recovery, and emoji coverage.
 - Client production build and lint pass; API schema checks cover emoji and None values, older notes, and malformed values.
 
 ## 2026-10-20

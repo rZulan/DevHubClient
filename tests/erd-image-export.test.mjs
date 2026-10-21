@@ -35,10 +35,11 @@ test('PNG diagram includes self relationships, cardinality symbols and empty tab
     assert.match(svg, /No columns yet/)
 })
 
-test('PNG uses the selected SQL dialect and escapes user-supplied labels as literal text', () => {
+test('PNG uses concise type codes across dialects and escapes user-supplied labels as literal text', () => {
     const document = {dialect: 'sqlserver', tables: [{...table('users', 0, 0, [field('id', {name: '<script>alert("x")</script> & data'})]), name: 'users "<&'}], relationships: []}
     const {svg} = erdDiagramImage(document)
-    assert.match(svg, /UNIQUEIDENTIFIER/)
+    assert.match(svg, />UUID<\/text>/)
+    assert.doesNotMatch(svg, /UNIQUEIDENTIFIER/)
     assert.match(svg, /&lt;script&gt;alert\(&quot;x&quot;\)&lt;\/script&gt; &amp; data/)
     assert.match(svg, /users &quot;&lt;&amp;/)
     assert.doesNotMatch(svg, /<script>/)
