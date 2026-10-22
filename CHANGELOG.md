@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-22
+
+### Notes
+- Open previews as floating paper with Close and Edit controls and a darker backdrop for reading and editing.
+- Peel notes from the bottom-right corner with a dark underside; continue from the hover lift and reverse the animation when closing.
+- Keep resting notes flat, use a 13% hover lift, and remove detached fragments, oversized curl edges, and bright underside slivers.
+- Skip the opening peel when returning from editing and respect reduced-motion preferences.
+- Remove the Open note label, body placeholders, and Markdown helper text; update the formatting guide for inline code controls.
+
+### ERD
+- Move Tables and SQL tabs into the sidebar header, show the table count beside Tables, and keep Properties compact.
+- Add a compact theme menu inside the SQL editor and remember its selection in this browser.
+- Give SQL more editing space and use a full-width Apply SQL footer button that follows the active color scheme.
+- Keep tables and Add column controls above relationship notation, including selected connections.
+- Replace unreadable columns below 50% zoom with static placeholders, retaining full details for selected tables and restoring text when zooming in.
+- Batch wheel zoom updates into one animation frame and preserve full detail and theme colors in PNG exports.
+
+### Validation
+- Pass all 242 client regression tests, including note peel geometry, detail transitions, zoom anchoring, routing, SQL editing, and exports.
+- Client production build and lint pass.
+
 ## 2026-10-21
 
 ### Home and Discovery
@@ -17,7 +38,14 @@
 - Refresh the organization chooser with a concise workbench layout.
 
 ### ERD editing
-- Reorganize Properties with compact 12 px controls, clearer spacing, and collapsible relationship cards with readable endpoint controls and separate removal actions.
+- Show the grabbing cursor during middle-mouse panning and let Hand/Space/MMB pan over tables, fields, and relationship notation without triggering edits.
+- Remove the SQL helper description so the editor uses the available height.
+- Match relationship lines, notation previews, key markers, selection outlines, and PNG exports to the active color scheme.
+- Add a + Add column row when hovering a table or the space directly beneath it, with keyboard access and new columns selected for editing.
+- Balance broad relationship groups across columns and reuse gaps for disconnected tables instead of building tall stacks.
+- Apply the same layout automatically when adding a table, with creation and arrangement in one undo step.
+- Route connections around all tables with additional bends where needed; keep canvas paths, fit bounds, and PNG exports consistent.
+- Reorganize Properties into a 300 px sidebar with compact 12 px controls, clearer spacing, and collapsible relationship cards with readable endpoint controls and separate removal actions.
 - Use concise type codes such as UUID on the canvas, previews, and PNG exports; simplify the type picker to codes only.
 - Widen the Schema sidebar, add drag/keyboard resizing, and split Tables and SQL into tabs.
 - Edit highlighted SQL and apply it to the canvas with validation, draft conflict protection, and undo support; preserve existing positions, identities, and relationship attachments.
@@ -26,7 +54,7 @@
 - Offer a junction table when connecting tables as many-to-many, with matching foreign keys, a composite primary key, and two one-to-many links in one undoable step.
 
 ### Validation
-- Pass all 226 client regression tests, including junction tables, SQL editing, ERD clipboard operations, keyboard scoping, note draft recovery, and emoji coverage.
+- Pass all 232 client regression tests, including pan gesture capture, balanced layouts, obstacle routing, junction tables, SQL editing, ERD clipboard operations, keyboard scoping, note draft recovery, and emoji coverage.
 - Client production build and lint pass; API schema checks cover emoji and None values, older notes, and malformed values.
 
 ## 2026-10-20

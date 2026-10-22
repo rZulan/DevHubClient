@@ -66,8 +66,8 @@ export function NoteBodyEditor({body, onChange, readOnly}: {body: string; onChan
     return <div className="note-body-editor">
         {segments.map((segment, index) => segment.type === "code"
             ? <InlineCodeEditor key={index} block={segment} readOnly={readOnly} onChange={(source, language, theme) => update(replaceNoteCode(body, segment, source, language, theme))} onRemove={() => update(body.slice(0, segment.start) + body.slice(segment.end))}/>
-            : <Textarea key={index} id={index === 0 ? "sticky-note-body" : undefined} aria-label={index === 0 ? "Note content" : `Note content after code block ${Math.ceil(index / 2)}`} aria-describedby="sticky-note-markdown-hint" readOnly={readOnly} maxLength={Math.max(segment.text.length, 10000 - body.length + segment.text.length)} rows={segments.length > 1 ? 2 : 9}
-                className={segments.length > 1 ? "note-body-text-segment" : undefined} placeholder={segments.length > 1 ? "Continue writing in Markdown…" : "Write in Markdown…\n\n## A heading\n**Bold**, *italic*, and `code`\n- A list item\n- [ ] A task"} value={segment.text}
+            : <Textarea key={index} id={index === 0 ? "sticky-note-body" : undefined} aria-label={index === 0 ? "Note content" : `Note content after code block ${Math.ceil(index / 2)}`} readOnly={readOnly} maxLength={Math.max(segment.text.length, 10000 - body.length + segment.text.length)} rows={segments.length > 1 ? 2 : 9}
+                className={segments.length > 1 ? "note-body-text-segment" : undefined} value={segment.text}
                 onChange={event => {
                     const text = event.target.value
                     // Keep prose added after an unfinished fence outside the code block.

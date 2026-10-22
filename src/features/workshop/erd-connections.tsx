@@ -69,11 +69,12 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
         const moved = new Map(positions?.map(position => [position.id, position]))
         return new Map(document.tables.map(table => [table.id, moved.has(table.id) ? {...table, x: moved.get(table.id)!.x, y: moved.get(table.id)!.y} : table]))
     }, [document.tables, positions])
+    const routingTables = useMemo(() => [...tables.values()], [tables])
     const baseConnections = useMemo(() => document.relationships.flatMap((relation, index) => {
         const from = tables.get(relation.fromTable), to = tables.get(relation.toTable)
         if (!from || !to) return []
-        return [{relation, from, to, laneOffset: index % 6 * 12, route: routeCache.current!(from, to, relation, index % 6 * 12)}]
-    }), [document.relationships, tables])
+        return [{relation, from, to, laneOffset: index % 6 * 12, route: routeCache.current!(from, to, relation, index % 6 * 12, routingTables)}]
+    }), [document.relationships, tables, routingTables])
     const connections = baseConnections.map(connection => {
         const {relation, from, to, laneOffset} = connection
         let {route} = connection
@@ -81,7 +82,7 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
             const attached = preview.target && tables.get(preview.target.tableId)
             const port = attached && preview.target ? erdAnchorPort(attached, preview.target.anchor) : {...route[preview.end === "from" ? "source" : "target"], ...preview.point}
             route = routeErdPorts(preview.end === "from" ? port : route.source, preview.end === "to" ? port : route.target,
-                preview.end === "from" && attached ? attached : from, preview.end === "to" && attached ? attached : to, laneOffset)
+                preview.end === "from" && attached ? attached : from, preview.end === "to" && attached ? attached : to, laneOffset, routingTables)
         }
         return {relation, from, to, route}
     })

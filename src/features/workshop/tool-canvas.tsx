@@ -1,4 +1,4 @@
-import {useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode, type PointerEvent} from "react"
+import {useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode, type PointerEvent, type MouseEvent} from "react"
 import {Hand, MousePointer2, Redo2, Undo2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {ZoomControls} from "./ideas/canvas-controls"
@@ -22,7 +22,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     undo, redo, canUndo, canRedo, onDelete, onDuplicate, onCopy, onPaste, children, contentBounds, onConnect, fitViewKey, cullNodes = false, deferMoves = false, renderConnections}: {
     nodes: ToolCanvasNode[]; selectedIds: string[]; onSelect: (ids: string[]) => void
     onMove: (positions: NodePosition[]) => void; onResize?: (id: string, width: number, height: number) => void
-    renderNode: (node: ToolCanvasNode) => ReactNode; connections?: ReactNode; canEdit: boolean
+    renderNode: (node: ToolCanvasNode, view: {zoom: number}) => ReactNode; connections?: ReactNode; canEdit: boolean
     beginTransaction: () => void; endTransaction: () => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean
     onDelete: () => void; onDuplicate?: (offset: number) => void; onCopy?: () => string; onPaste?: (text: string, offset: number) => boolean; children?: ReactNode
     contentBounds?: Bounds[]
@@ -34,11 +34,15 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     const lastPaste = useRef({text: "", count: 0})
     const [zoom, setZoom] = useState(.85), [pan, setPan] = useState({x: 50, y: 100})
     const [hand, setHand] = useState(false), [space, setSpace] = useState(false), [snapping, setSnapping] = useState(true)
+    const [panning, setPanning] = useState(false)
+    const suppressPanClick = useRef(false)
     const [marquee, setMarquee] = useState<Bounds>()
     const [connection, setConnection] = useState<ConnectionDraft>()
     const [viewportSize, setViewportSize] = useState({width: 0, height: 0})
     const [movePreview, setMovePreview] = useState<NodePosition[]>([])
     const latestMove = useRef<NodePosition[]>([]), moveFrame = useRef<number | undefined>(undefined)
+    const wheelView = useRef<{zoom: number; pan: {x: number; y: number}} | undefined>(undefined)
+    const wheelFrame = useRef<number | undefined>(undefined)
     const previewById = new Map(movePreview.map(node => [node.id, node]))
     const displayNodes = movePreview.length ? nodes.map(node => previewById.has(node.id) ? {...node, ...previewById.get(node.id)!} : node) : nodes
     const viewport = cullNodes ? canvasViewport({zoom, pan}, viewportSize) : undefined
@@ -49,13 +53,21 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     const gesture = useRef<{mode: "pan" | "move" | "resize" | "select" | "connect"; x: number; y: number; pan: typeof pan; nodes: ToolCanvasNode[]; id?: string; base: string[]; moved: boolean} | undefined>(undefined)
     const touch = useCanvasTouch(root, {zoom, pan}, view => {setZoom(view.zoom); setPan(view.pan)}, () => end())
     useEffect(() => {
-        function release() {setSpace(false)}
+        function release() {setSpace(false); if (gesture.current?.mode === "pan") {gesture.current = undefined; setPanning(false)}}
         window.addEventListener("blur", release)
         return () => window.removeEventListener("blur", release)
     }, [])
-    useEffect(() => () => {if (moveFrame.current !== undefined) cancelAnimationFrame(moveFrame.current)}, [])
+    useEffect(() => () => {
+        if (moveFrame.current !== undefined) cancelAnimationFrame(moveFrame.current)
+        if (wheelFrame.current !== undefined) cancelAnimationFrame(wheelFrame.current)
+    }, [])
+    function cancelWheel() {
+        if (wheelFrame.current !== undefined) cancelAnimationFrame(wheelFrame.current)
+        wheelFrame.current = undefined; wheelView.current = undefined
+    }
     function changeZoom(next: number, anchor?: {x: number; y: number}) {
         if (!Number.isFinite(next) || next <= 0) return
+        cancelWheel()
         const position = anchor ?? {x: (root.current?.clientWidth ?? 1) / 2, y: (root.current?.clientHeight ?? 1) / 2}
         const nextPan = zoomAt(zoom, pan, next, position)
         if (!Number.isFinite(nextPan.x) || !Number.isFinite(nextPan.y) || !Number.isFinite((root.current?.clientWidth ?? 1) / next)) return
@@ -66,7 +78,18 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         if (gesture.current || !root.current || root.current.querySelector("[data-connection-dragging=true]")) return
         const rect = root.current.getBoundingClientRect()
         const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? root.current.clientHeight : 1)
-        changeZoom(zoom * Math.exp(-delta * .0015), {x: event.clientX - rect.left, y: event.clientY - rect.top})
+        const current = wheelView.current ?? {zoom, pan}, next = current.zoom * Math.exp(-delta * .0015)
+        if (!Number.isFinite(next) || next <= 0) return
+        const nextPan = zoomAt(current.zoom, current.pan, next, {x: event.clientX - rect.left, y: event.clientY - rect.top})
+        if (!Number.isFinite(nextPan.x) || !Number.isFinite(nextPan.y) || !Number.isFinite(root.current.clientWidth / next)) return
+        wheelView.current = {zoom: next, pan: nextPan}
+        // Trackpads can send several wheel events per frame. Accumulate every
+        // delta, but reconcile the visible diagram only once before painting.
+        if (wheelFrame.current === undefined) wheelFrame.current = requestAnimationFrame(() => {
+            const view = wheelView.current
+            wheelFrame.current = undefined; wheelView.current = undefined
+            if (view) {setPan(view.pan); setZoom(view.zoom)}
+        })
     })
     useEffect(() => {
         const canvas = root.current
@@ -76,6 +99,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     }, [])
     function fit() {
         if (!root.current) return
+        cancelWheel()
         const viewport = {width: root.current.clientWidth, height: root.current.clientHeight}
         const view = fitBounds(combinedBounds([...nodes, ...(contentBounds ?? [])]), viewport)
         setZoom(view.zoom); setPan(view.pan)
@@ -104,7 +128,8 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         return () => observer.disconnect()
     }, [hasNodes, cullNodes])
     function start(event: PointerEvent, node?: ToolCanvasNode, resize = false) {
-        if (event.button !== 0 && event.button !== 1) return
+        if (gesture.current || event.button !== 0 && event.button !== 1) return
+        cancelWheel()
         event.stopPropagation(); event.preventDefault(); root.current?.focus({preventScroll: true})
         const panning = hand || space || event.button === 1 || event.pointerType === "touch" && !node
         let ids = selectedIds
@@ -118,6 +143,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         root.current.setPointerCapture(event.pointerId)
         gesture.current = {mode: panning ? "pan" : resize ? "resize" : node ? "move" : "select", x: event.clientX, y: event.clientY,
             pan, nodes: nodes.filter(item => ids.includes(item.id) && !item.locked), id: node?.id, base: event.shiftKey ? selectedIds : [], moved: false}
+        setPanning(panning); suppressPanClick.current = panning
         if (!panning && !node && !event.shiftKey) onSelect([])
         if (!panning && node) beginTransaction()
     }
@@ -171,14 +197,24 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
             latestMove.current = []; setMovePreview([])
         }
         if (drag?.mode === "move" || drag?.mode === "resize") endTransaction()
-        gesture.current = undefined; setMarquee(undefined); setConnection(undefined)
+        gesture.current = undefined; setPanning(false); setMarquee(undefined); setConnection(undefined)
         if (event?.type === "pointerup" && drag?.mode === "connect" && drag.id && drag.moved && canEdit && root.current && nodes.some(node => node.id === drag.id)) {
             const target = connectionTargetAt(nodes, worldPoint(event), drag.id, 6 / zoom)
             if (target) onConnect?.(drag.id, target.id)
         }
     }
-    return <div className={`tool-canvas workshop-ideation ${hand || space ? "hand-tool" : ""}`} ref={root} tabIndex={0} aria-label="Design canvas"
+    function blockPanClick(event: MouseEvent) {
+        if (event.detail && (hand || space || suppressPanClick.current) && !(event.target as Element).closest(".tool-canvas-actions, .workshop-zoom-control")) {event.preventDefault(); event.stopPropagation()}
+    }
+    return <div className={`tool-canvas workshop-ideation ${hand || space || panning ? "hand-tool" : ""} ${panning ? "panning" : ""}`} ref={root} tabIndex={0} aria-label="Design canvas"
                 {...touch}
+                onPointerDownCapture={event => {
+                    suppressPanClick.current = false
+                    touch.onPointerDownCapture?.(event)
+                    if (event.defaultPrevented || gesture.current || (event.target as Element).closest(".tool-canvas-actions, .workshop-zoom-control")) return
+                    if (event.button === 1 || event.button === 0 && (hand || space)) start(event)
+                }}
+                onClickCapture={blockPanClick} onDoubleClickCapture={blockPanClick}
                 style={{"--canvas-pan-x": `${pan.x}px`, "--canvas-pan-y": `${pan.y}px`, "--canvas-zoom": zoom, ...canvasGridBackground(zoom, pan)} as CSSProperties}
                 onPointerDown={event => start(event)} onPointerMove={move} onPointerUp={end} onPointerCancel={() => end()} onLostPointerCapture={() => end()}
                 onAuxClick={event => {if (event.button === 1) event.preventDefault()}}
@@ -236,7 +272,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
             {renderConnections ? renderConnections(movePreview, viewport) : connections}
             {displayNodes.filter(node => !cullNodes || selectedIds.includes(node.id) || intersectsViewport(node, viewport)).map(node => <div key={node.id} className={`tool-node ${selectedIds.includes(node.id) ? "selected" : ""} ${node.locked ? "locked" : ""} ${connection?.targetId === node.id ? "connection-target" : ""}`}
                 style={{left: node.x, top: node.y, width: node.width, height: node.height}} onPointerDown={event => start(event, node)}>
-                {renderNode(node)}
+                {renderNode(node, {zoom})}
                 {onConnect && canEdit && ([-1, 1] as const).map(side => <button key={side} type="button" className={`tool-connect-handle ${side === -1 ? "left" : "right"}`}
                     aria-label={`Connect ${node.name ?? "table"} from ${side === -1 ? "left" : "right"} edge`} title="Drag to another table to create a relationship"
                     onPointerDown={event => startConnection(event, node, side)} onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); event.stopPropagation(); onConnect(node.id, "")}}}/>)}

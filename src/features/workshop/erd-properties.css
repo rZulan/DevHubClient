@@ -1,4 +1,4 @@
-.erd-properties-panel.tool-inspector:not(.erd-panel-collapsed) { width: clamp(340px, 26vw, 380px); padding: 16px; scrollbar-gutter: stable; font-size: 12px; }
+.erd-properties-panel.tool-inspector:not(.erd-panel-collapsed) { width: 300px; padding: 16px; scrollbar-gutter: stable; font-size: 12px; }
 .erd-properties-panel .erd-panel-heading { margin-bottom: 16px; }
 .erd-properties-panel .erd-panel-heading strong, .erd-properties-panel .tool-section-heading { font-size: 13px; }
 .erd-properties-panel .erd-panel-heading small { font-size: 11px; }

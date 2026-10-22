@@ -15,7 +15,7 @@ function noOverlap(document) {
 function clearPaths(document) {
     const tables = new Map(document.tables.map(t=>[t.id,t]))
     for (const [index, r] of document.relationships.entries()) {
-        const route = routeErdRelationship(tables.get(r.fromTable),tables.get(r.toTable),r.fromField,r.toField,index%6*12,r)
+        const route = routeErdRelationship(tables.get(r.fromTable),tables.get(r.toTable),r.fromField,r.toField,index%6*12,r,document.tables)
         let previous
         for (const match of route.path.matchAll(/([MHVL])(-?[\d.]+)(?: (-?[\d.]+))?/g)) {
             const next = match[1]==='H' ? {x:+match[2],y:previous.y} : match[1]==='V' ? {x:previous.x,y:+match[2]} : {x:+match[2],y:+match[3]}
@@ -69,6 +69,22 @@ test('unconnected tables pack into rows rather than one tall stack', () => {
     noOverlap(arranged)
     assert.ok(new Set(arranged.tables.map(t=>t.x)).size>1)
     assert.ok(new Set(arranged.tables.map(t=>t.y)).size>1)
+})
+
+test('a broad hub uses multiple columns and fills its unused column space with disconnected tables', () => {
+    const children = Array.from({length: 36}, (_, i) => table(`child-${String(i).padStart(2, '0')}`, i % 7 + 3))
+    const hub = table('hub', 12), connected = {tables: [hub, ...children], relationships: children.map(t => relation(hub.id, t.id))}
+    const arranged = arrangeErd(connected)
+    const height = Math.max(...arranged.tables.map(t => t.y + tableHeight(t))) - 80
+    const formerTower = children.reduce((sum, t) => sum + tableHeight(t) + 80, -80)
+    assert.ok(height < formerTower / 2, `${height} should use less than half the former ${formerTower} tower height`)
+    assert.ok(new Set(arranged.tables.filter(t => t.id !== hub.id).map(t => t.x)).size >= 3)
+    noOverlap(arranged); clearPaths(arranged)
+    const withIsolated = arrangeErd({...connected, tables: [...connected.tables, table('isolated-a'), table('isolated-b')]})
+    assert.ok(withIsolated.tables.filter(t => t.id.startsWith('isolated')).every(t => t.y + tableHeight(t) <= 80 + height), 'disconnected tables reuse vertical gaps')
+    noOverlap(withIsolated); clearPaths(withIsolated)
+    assert.equal(arrangeErd(withIsolated), withIsolated)
+    assert.deepEqual(positions(arrangeErd({tables: [...connected.tables].reverse(), relationships: [...connected.relationships].reverse()})), positions(arranged))
 })
 
 test('empty documents and missing relationship targets are handled without losing data', () => {

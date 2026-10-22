@@ -72,7 +72,11 @@ export function NoteMarkdownGuide() {
             <div><dt>Lists and checklists</dt><dd><pre>{"- Bullet\n  - Nested bullet\n1. Numbered item\n- [ ] Task\n- [x] Completed task"}</pre></dd></div>
             <div><dt>Links and images</dt><dd><pre>{'[Link text](https://example.com "Title")\n![Image description](image-url "Caption")'}</pre></dd></div>
             <div><dt>Quotes and dividers</dt><dd><pre>{"> A quote\n>\n> Another paragraph\n\n---"}</pre></dd></div>
-            <div><dt>Code blocks</dt><dd><pre>{'```html\n<div class="card">Hello</div>\n```\n\n```javascript theme=github-dark\nconst ready = true;\n```'}</pre><p>Type three backticks on a new line to edit code inline. Choose its grammar and theme above the code. Plain text is also available.</p></dd></div>
+            <div><dt>Code blocks</dt><dd>
+                <p>Type <code>{"```"}</code> on a new line to open a code block editor.</p>
+                <p>Choose a language from <strong>Grammar</strong> (or Plain text) and a color scheme from <strong>Theme</strong>, then type or paste your code.</p>
+                <p>Tab inserts four spaces. Shift+Tab moves focus. Continue your note in the blank area below the block, or select <strong>Remove</strong> to delete it.</p>
+            </dd></div>
             <div><dt>Tables and alignment</dt><dd><pre>{"| Left | Center | Right |\n| :--- | :---: | ---: |\n| One | Two | Three |"}</pre></dd></div>
             <div><dt>Footnotes and reference links</dt><dd><pre>{"A detail[^1] and a [reference link][docs].\n\n[^1]: More information.\n[docs]: https://example.com"}</pre></dd></div>
             <div><dt>Paragraphs and line breaks</dt><dd>Leave a blank line for a new paragraph. End a line with two spaces or a backslash for a line break.</dd></div>

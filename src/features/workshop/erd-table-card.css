@@ -1,0 +1,20 @@
+.erd-table-card { position: relative; width: 100%; height: 100%; }
+.erd-workspace .tool-node { z-index: 3; }
+.erd-workspace .erd-connections, .erd-workspace .erd-connections:has(.erd-relationship.selected) { z-index: 1; }
+.erd-table-overview > .erd-table { box-shadow: none; }
+.erd-column-skeleton { position: relative; height: calc(100% - 48px); }
+.erd-column-skeleton::before, .erd-column-skeleton::after { content: ""; position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(to bottom, transparent 0 13px, color-mix(in srgb, var(--muted-foreground) 30%, transparent) 13px 19px, transparent 19px 32px); }
+.erd-column-skeleton::before { left: 34px; width: 46%; }
+.erd-column-skeleton::after { right: 24px; width: 22%; }
+.erd-add-column { position: absolute; top: calc(100% - 1px); left: 0; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 34px; border: 1px dashed color-mix(in oklab, var(--primary) 40%, var(--border)); border-top: 0; border-radius: 0 0 10px 10px; background: color-mix(in oklab, var(--primary) 4%, var(--popover)); color: var(--muted-foreground); font: 12px var(--workshop-font-code); cursor: pointer; opacity: 0; pointer-events: auto; transition: opacity .15s, background .15s; }
+.erd-add-column > svg { width: 14px; height: 14px; }
+.erd-table-card:hover > .erd-add-column, .erd-table-card:focus-within > .erd-add-column { opacity: 1; pointer-events: auto; }
+.erd-table-card:has(> .erd-add-column):hover > .erd-table, .erd-table-card:has(> .erd-add-column):focus-within > .erd-table { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.erd-add-column:hover, .erd-add-column:focus-visible { color: var(--foreground); background: color-mix(in oklab, var(--primary) 12%, var(--popover)); }
+.erd-add-column:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.erd-add-column:disabled { cursor: default; color: var(--muted-foreground); }
+@media (hover: none), (pointer: coarse) {
+    .erd-add-column { opacity: 1; pointer-events: auto; height: 40px; }
+    .erd-table-card:has(> .erd-add-column) > .erd-table { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .erd-add-column { transition: none; } }

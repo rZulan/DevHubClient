@@ -32,7 +32,7 @@ export function erdDiagramImage(document: ErdDocument, palette: ErdImagePalette 
         if (!from || !to) return ""
         const keys = relationshipColumns(document, relation)
         if (relation.cardinality !== "N:M") keys.children.forEach(field => {if (field && keys.childTable) foreignKeys.add(`${keys.childTable.id}\0${field.id}`)})
-        const route = routeErdRelationship(from, to, relation.fromField, relation.toField, index % 6 * 12, relation), ends = relationshipEnds(relation)
+        const route = routeErdRelationship(from, to, relation.fromField, relation.toField, index % 6 * 12, relation, document.tables), ends = relationshipEnds(relation)
         return `<g fill="none" stroke="${colors.connector}" stroke-linecap="round" stroke-linejoin="round"><path d="${route.path}" stroke-width="1.5"/>${(["source", "target"] as const).map((end, index) => {
             const port = route[end]
             return `<g transform="translate(${port.x} ${port.y}) rotate(${erdPortAngles[port.edge]})" stroke-width="2.2">${endSymbol(index === 0 ? ends.leftEnd : ends.rightEnd, colors.background)}</g>`
@@ -61,19 +61,23 @@ export async function exportErdPng(document: ErdDocument, workspace: HTMLElement
     const palette = {
         background: style(".tool-canvas").backgroundColor,
         surface: table.backgroundColor, header: header.backgroundColor, text: table.color, muted: fieldType.color,
-        border: table.borderTopColor, connector: style(".erd-connection-line").stroke || defaultPalette.connector,
+        border: table.borderTopColor, connector: style(".erd-table > header svg").color,
         accent: style(".erd-table > header svg").color,
     }
-    // Offscreen table cards may be unmounted. Resolve theme colors without requiring a visible card.
-    if (!workspace.querySelector(".erd-table")) {
+    // Overview cards omit field text, and offscreen cards may be unmounted.
+    // Resolve missing colors from the theme instead of inheriting workspace text.
+    if (!workspace.querySelector(".erd-table") || !workspace.querySelector(".erd-field-row small")) {
         const probe = window.document.createElement("span")
         probe.hidden = true; workspace.append(probe)
         const color = (value: string) => {probe.style.color = value; return getComputedStyle(probe).color}
         try {
-            palette.surface = color("var(--popover)"); palette.text = color("var(--popover-foreground)")
-            palette.header = color("color-mix(in oklab, var(--primary) 13%, var(--popover))")
-            palette.muted = color("var(--muted-foreground)"); palette.border = color("var(--border)")
-            palette.accent = color("var(--primary)"); palette.connector = color("color-mix(in oklab, #8b5cf6 75%, var(--foreground))")
+            palette.muted = color("var(--muted-foreground)")
+            if (!workspace.querySelector(".erd-table")) {
+                palette.surface = color("var(--popover)"); palette.text = color("var(--popover-foreground)")
+                palette.header = color("color-mix(in oklab, var(--primary) 13%, var(--popover))")
+                palette.border = color("var(--border)")
+                palette.accent = color("var(--primary)"); palette.connector = color("var(--primary)")
+            }
         } finally {probe.remove()}
     }
     const image = erdDiagramImage(document, palette)

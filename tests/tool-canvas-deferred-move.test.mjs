@@ -15,11 +15,11 @@ const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop
 
 function canvas(deferMoves = true, overrides = {}) {
     const states = [], frames = new Map(), commits = [], history = []
-    let cursor = 0, frameId = 0, selected = []
+    let cursor = 0, frameId = 0, selected = [], effectEventCursor = 0, wheelHandler
     const react = {
         useState(initial) {const index = cursor++; if (!(index in states)) states[index] = initial; return [states[index], next => {states[index] = typeof next === 'function' ? next(states[index]) : next}]},
         useRef(initial) {const index = cursor++; return states[index] ??= {current: initial}},
-        useEffect() {}, useEffectEvent: callback => callback,
+        useEffect() {}, useEffectEvent: callback => {if(effectEventCursor++===0) wheelHandler=callback; return callback},
     }
     const exports = {}
     vm.runInNewContext(source, {exports, requestAnimationFrame: callback => {frames.set(++frameId, callback); return frameId}, cancelAnimationFrame: id => frames.delete(id), require: name => {
@@ -32,7 +32,7 @@ function canvas(deferMoves = true, overrides = {}) {
         if (name === '@/components/ui/button') return {Button: 'button'}
         return require(name)
     }})
-    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, setPointerCapture() {}, getBoundingClientRect: () => ({left: 0, top: 0})}
+    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, setPointerCapture() {}, querySelector: () => null, getBoundingClientRect: () => ({left: 0, top: 0})}
     const event = (x, type = 'pointermove') => ({type, button: 0, pointerId: 1, clientX: x, clientY: 100, preventDefault() {}, stopPropagation() {}})
     function all(node, result = []) {
         if (Array.isArray(node)) node.forEach(child => all(child, result))
@@ -41,6 +41,7 @@ function canvas(deferMoves = true, overrides = {}) {
     }
     function render() {
         cursor = 0
+        effectEventCursor = 0
         const result = exports.ToolCanvas({nodes: [{id: 'table', x: 0, y: 0, width: 300, height: 100}], selectedIds: selected, onSelect: ids => {selected = ids}, onMove: moves => commits.push(moves),
             renderNode: () => null, canEdit: true, deferMoves, beginTransaction: () => history.push('begin'), endTransaction: () => history.push('end'), ...overrides})
         result.props.ref.current = root
@@ -51,6 +52,21 @@ function canvas(deferMoves = true, overrides = {}) {
         move(x) {render().props.onPointerMove(event(x))},
         release(x) {render().props.onPointerUp(event(x, 'pointerup'))},
         cancel() {render().props.onPointerCancel()},
+        capture(options = {}) {
+            const event = {...eventForPan(options), defaultPrevented: false, stopped: false, preventDefault() {this.defaultPrevented = true}, stopPropagation() {this.stopped = true}}
+            render().props.onPointerDownCapture(event)
+            return {prevented: event.defaultPrevented, stopped: event.stopped}
+        },
+        clickCapture(control = false, detail = 1, double = false) {
+            const event = {detail, target: {closest: () => control ? {} : null}, prevented: false, stopped: false, preventDefault() {this.prevented = true}, stopPropagation() {this.stopped = true}}
+            render().props[double ? 'onDoubleClickCapture' : 'onClickCapture'](event)
+            return {prevented: event.prevented, stopped: event.stopped}
+        },
+        keyUpSpace() {render().props.onKeyUp({code: 'Space'})},
+        isPanning() {return render().props.className.split(' ').includes('panning')},
+        pan() {const s = render().props.style; return [parseFloat(s['--canvas-pan-x']), parseFloat(s['--canvas-pan-y'])]},
+        zoom() {return render().props.style['--canvas-zoom']},
+        wheel(deltaY) {render(); wheelHandler({deltaY,deltaMode:0,clientX:500,clientY:400,preventDefault(){}})},
         flush() {const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach(callback => callback())},
         previewX() {return all(render()).find(node => node.props.className?.startsWith('tool-node ')).props.style.left},
         key(key, options = {}) {
@@ -69,6 +85,71 @@ function canvas(deferMoves = true, overrides = {}) {
         frames, commits, history,
     }
 }
+
+function eventForPan({button = 0, control = false} = {}) {
+    return {type: 'pointerdown', button, pointerId: 1, pointerType: 'mouse', clientX: 100, clientY: 100, target: {closest: () => control ? {} : null}}
+}
+
+test('middle-mouse panning captures child gestures, shows dragging state, and never changes the document', () => {
+    const c = canvas()
+    assert.deepEqual(c.capture({button: 1}), {prevented: true, stopped: true})
+    assert.equal(c.isHand(), true); assert.equal(c.isPanning(), true)
+    c.move(185)
+    assert.deepEqual(c.pan(), [135, 100])
+    assert.equal(c.commits.length, 0); assert.equal(c.history.length, 0)
+    assert.deepEqual(c.selection(), [])
+    c.release(185)
+    assert.equal(c.isHand(), false); assert.equal(c.isPanning(), false)
+    assert.equal(c.clickCapture().stopped, true, 'pan release cannot click a field, connection, or add-column button')
+    c.capture()
+    assert.equal(c.clickCapture().stopped, false, 'the next normal interaction still works')
+})
+
+test('wheel zoom accumulates every delta in one frame while preserving the pointer anchor', () => {
+    const c=canvas(), before=c.pan(), zoom=c.zoom()
+    c.wheel(80); c.wheel(40); c.wheel(-20)
+    assert.equal(c.frames.size,1)
+    assert.equal(c.zoom(),zoom,'wheel events do not each reconcile the diagram')
+    c.flush()
+    const expected=zoom*Math.exp(-100*.0015)
+    assert.ok(Math.abs(c.zoom()-expected)<1e-12,'no input delta is lost')
+    const after=c.pan()
+    assert.ok(Math.abs((500-before[0])/zoom-(500-after[0])/c.zoom())<1e-9)
+    assert.ok(Math.abs((400-before[1])/zoom-(400-after[1])/c.zoom())<1e-9)
+    c.wheel(20); c.capture({button:1})
+    assert.equal(c.frames.size,0,'starting a gesture cancels a pending zoom')
+})
+
+test('node renderers receive the current zoom for readable detail transitions', () => {
+    const levels=[]
+    const c=canvas(true,{renderNode:(_node,view)=>{levels.push(view.zoom); return null}})
+    assert.equal(c.zoom(),.85)
+    c.key('-',{ctrlKey:true})
+    assert.equal(c.zoom(),.85/1.2)
+    assert.equal(levels.at(-1),c.zoom())
+})
+
+test('Hand and Space capture panning before child controls while toolbar and keyboard activation remain usable', () => {
+    for (const mode of ['h', ' ']) {
+        const c = canvas()
+        c.key(mode)
+        assert.deepEqual(c.capture({control: true}), {prevented: false, stopped: false})
+        assert.equal(c.clickCapture(true).stopped, false)
+        assert.equal(c.clickCapture(false, 0).stopped, false, 'keyboard activation is not a pointer pan')
+        assert.deepEqual(c.capture(), {prevented: true, stopped: true})
+        c.move(200); c.release(200)
+        assert.equal(c.clickCapture().stopped, true)
+        assert.equal(c.clickCapture(false, 2, true).stopped, true, 'double-click does not rename a field in pan mode')
+        assert.equal(c.commits.length, 0); assert.equal(c.history.length, 0)
+        if (mode === 'h') c.key('v'); else c.keyUpSpace()
+        c.capture()
+        assert.equal(c.isHand(), false)
+        assert.equal(c.clickCapture().stopped, false)
+    }
+    const cancelled = canvas()
+    cancelled.capture({button: 1}); cancelled.cancel()
+    assert.equal(cancelled.isPanning(), false); assert.equal(cancelled.isHand(), false)
+})
 
 test('drag previews use one animation frame and commit the final release position once', () => {
     const c = canvas()

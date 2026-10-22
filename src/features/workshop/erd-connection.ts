@@ -1,4 +1,5 @@
 import {tableHeight, type ErdAnchor, type ErdDocument, type ErdEdge, type ErdRelationship, type ErdTable} from "./tool-documents.ts"
+import {avoidErdObstacles} from "./erd-obstacle-route.ts"
 
 export type ErdPort = {x: number; y: number; edge: ErdEdge}
 type Point = {x: number; y: number}
@@ -38,7 +39,7 @@ function simplify(points: Point[]) {
 }
 
 /** Route manual attachments orthogonally, outside the two table bodies. */
-export function routeErdPorts(source: ErdPort, target: ErdPort, from: ErdTable, to: ErdTable, laneOffset = 0) {
+export function routeErdPorts(source: ErdPort, target: ErdPort, from: ErdTable, to: ErdTable, laneOffset = 0, obstacles: readonly ErdTable[] = []) {
     const lead = 48 + laneOffset
     const exit = (port: ErdPort, own: ErdTable, other: ErdTable) => {
         let length = lead
@@ -90,12 +91,12 @@ export function routeErdPorts(source: ErdPort, target: ErdPort, from: ErdTable, 
     const geometry = [...pathPoints, ...[source, target].map(port => ({x: port.x + vectors[port.edge].x * 30, y: port.y + vectors[port.edge].y * 30}))]
     const minX = Math.min(...geometry.map(point => point.x)) - 12, maxX = Math.max(...geometry.map(point => point.x)) + 12
     const minY = Math.min(...geometry.map(point => point.y)) - 12, maxY = Math.max(...geometry.map(point => point.y)) + 12
-    return {source, target, path: pathPoints.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" "),
-        bounds: {x: minX, y: minY, width: maxX - minX, height: maxY - minY}}
+    return avoidErdObstacles({source, target, path: pathPoints.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" "),
+        bounds: {x: minX, y: minY, width: maxX - minX, height: maxY - minY}}, from, to, obstacles, laneOffset)
 }
 
 // Automatic attachments follow column rows; manual attachments follow their chosen edge.
-export function routeErdRelationship(from: ErdTable, to: ErdTable, fromField: string, toField: string, laneOffset = 0, anchors: Pick<ErdRelationship, "fromAnchor" | "toAnchor"> = {}) {
+export function routeErdRelationship(from: ErdTable, to: ErdTable, fromField: string, toField: string, laneOffset = 0, anchors: Pick<ErdRelationship, "fromAnchor" | "toAnchor"> = {}, obstacles: readonly ErdTable[] = []) {
     const width = 300, clearance = 32
     const rowY = (table: ErdTable, id: string) => table.y + 66 + Math.max(0, table.fields.findIndex(field => field.id === id)) * 32
     let source: ErdPort, target: ErdPort, lane: number
@@ -114,29 +115,35 @@ export function routeErdRelationship(from: ErdTable, to: ErdTable, fromField: st
         target = {x: to.x + width, y: rowY(to, toField), edge: "right"}
         lane = Math.max(source.x, target.x) + clearance + 16 + laneOffset
     }
-    if (anchors.fromAnchor || anchors.toAnchor) return routeErdPorts(anchors.fromAnchor ? erdAnchorPort(from, anchors.fromAnchor) : source, anchors.toAnchor ? erdAnchorPort(to, anchors.toAnchor) : target, from, to, laneOffset)
-    if (from.id === to.id && source.y === target.y) return routeErdPorts(source, target, from, to, laneOffset)
+    if (anchors.fromAnchor || anchors.toAnchor) return routeErdPorts(anchors.fromAnchor ? erdAnchorPort(from, anchors.fromAnchor) : source, anchors.toAnchor ? erdAnchorPort(to, anchors.toAnchor) : target, from, to, laneOffset, obstacles)
+    if (from.id === to.id && source.y === target.y) return routeErdPorts(source, target, from, to, laneOffset, obstacles)
     const left = Math.min(source.x, target.x, lane), right = Math.max(source.x, target.x, lane)
-    return {source, target, path: `M${source.x} ${source.y} H${lane} V${target.y} H${target.x}`,
-        bounds: {x: left, y: Math.min(source.y, target.y) - 12, width: right - left, height: Math.abs(source.y - target.y) + 24}}
+    return avoidErdObstacles({source, target, path: `M${source.x} ${source.y} H${lane} V${target.y} H${target.x}`,
+        bounds: {x: left, y: Math.min(source.y, target.y) - 12, width: right - left, height: Math.abs(source.y - target.y) + 24}}, from, to, obstacles, laneOffset)
 }
 
 export function erdConnectionBounds(document: ErdDocument) {
     const tables = new Map(document.tables.map(table => [table.id, table]))
     return document.relationships.flatMap((relation, index) => {
         const from = tables.get(relation.fromTable), to = tables.get(relation.toTable)
-        return from && to ? [routeErdRelationship(from, to, relation.fromField, relation.toField, index % 6 * 12, relation).bounds] : []
+        return from && to ? [routeErdRelationship(from, to, relation.fromField, relation.toField, index % 6 * 12, relation, document.tables).bounds] : []
     })
 }
 
-/** A move only invalidates routes attached to the moved table; selection/panning reuse them. */
+/** Reuse routes unless an endpoint or a nearby obstacle changes; selection/panning stay cheap. */
 export function createErdRouteCache() {
-    const cache = new WeakMap<ErdRelationship, {from: ErdTable; to: ErdTable; lane: number; route: ReturnType<typeof routeErdRelationship>}>()
-    return (from: ErdTable, to: ErdTable, relation: ErdRelationship, lane: number) => {
+    const empty: readonly ErdTable[] = []
+    const cache = new WeakMap<ErdRelationship, {from: ErdTable; to: ErdTable; lane: number; route: ReturnType<typeof routeErdRelationship>; obstacles: readonly ErdTable[]; nearby: ErdTable[]}>()
+    const nearby = (obstacles: readonly ErdTable[], bounds: ReturnType<typeof routeErdRelationship>["bounds"], from: ErdTable, to: ErdTable) => obstacles.filter(table => table.id !== from.id && table.id !== to.id && table.x < bounds.x + bounds.width + 64 && table.x + 300 > bounds.x - 64 && table.y < bounds.y + bounds.height + 64 && table.y + tableHeight(table) > bounds.y - 64)
+    return (from: ErdTable, to: ErdTable, relation: ErdRelationship, lane: number, obstacles: readonly ErdTable[] = empty) => {
         const existing = cache.get(relation)
-        if (existing?.from === from && existing.to === to && existing.lane === lane) return existing.route
-        const route = routeErdRelationship(from, to, relation.fromField, relation.toField, lane, relation)
-        cache.set(relation, {from, to, lane, route})
+        if (existing?.from === from && existing.to === to && existing.lane === lane) {
+            if (existing.obstacles === obstacles) return existing.route
+            const current = nearby(obstacles, existing.route.bounds, from, to), old = new Set(existing.nearby)
+            if (current.length === old.size && current.every(table => old.has(table))) {existing.obstacles = obstacles; return existing.route}
+        }
+        const route = routeErdRelationship(from, to, relation.fromField, relation.toField, lane, relation, obstacles)
+        cache.set(relation, {from, to, lane, route, obstacles, nearby: nearby(obstacles, route.bounds, from, to)})
         return route
     }
 }

@@ -10363,9 +10363,7 @@
 .notes-board-status, .notes-board-status > span { display: flex; align-items: center; gap: 8px; }
 .notes-board-status svg { width: 13px; height: 13px; }
 .workshop-notes-grid, .notes-board-loading { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 18px; }
-.workshop-sticky-note { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 242px; gap: 18px; padding: 24px; border: 1px solid color-mix(in srgb, var(--note-ink) 12%, transparent); border-radius: 5px 5px 22px 5px; background: var(--note-color); color: var(--note-ink); text-align: left; cursor: pointer; box-shadow: 0 3px 7px #0000000c; transition: transform .15s, box-shadow .15s; }
-.workshop-sticky-note::after { content: ""; position: absolute; right: 0; bottom: 0; width: 21px; height: 21px; border-radius: 5px 0 21px 0; background: color-mix(in srgb, var(--note-ink) 13%, var(--note-color)); }
-.workshop-sticky-note:hover { transform: translateY(-3px); box-shadow: 0 8px 18px #00000016; }
+.workshop-sticky-note { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 242px; gap: 18px; padding: 24px; border: 1px solid color-mix(in srgb, var(--note-ink) 12%, transparent); border-radius: 5px; background: var(--note-color); color: var(--note-ink); text-align: left; cursor: pointer; box-shadow: 0 3px 7px #0000000c; }
 .sticky-note-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; cursor: pointer; }
 .sticky-note-open:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
 .sticky-note-heading { display: flex; align-items: flex-start; gap: 10px; }
@@ -10380,8 +10378,6 @@
 .sticky-note-body { overflow-wrap: anywhere; font-size: 14px; line-height: 1.75; max-height: 7.5em; overflow: hidden; }
 .sticky-note-body.empty { opacity: .55; }
 .sticky-note-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--note-ink) 14%, transparent); font-size: 11px; }
-.sticky-note-footer > span { display: inline-flex; gap: 5px; align-items: center; }
-.sticky-note-footer svg { width: 12px; height: 12px; }
 .notes-board-error { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; }
 .notes-board-error > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .notes-drafts { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
@@ -10441,7 +10437,6 @@
 .notes-editor-footer { margin-top: 20px; }
 .notes-delete-button { margin-right: auto; color: var(--destructive); }
 .notes-editor-mode { display: flex; gap: 4px; margin-bottom: 12px; }
-.notes-markdown-hint { margin-top: 10px; color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
 .notes-reader-paper > h3, .notes-editor-preview > h3 { font-size: 18px; line-height: 1.5; font-weight: 650; overflow-wrap: anywhere; }
 .notes-editor-preview { min-width: 0; min-height: 200px; }
 .notes-editor-preview > h3 { margin-bottom: 14px; }
@@ -10524,7 +10519,6 @@
     .notes-editor-footer { flex-wrap: wrap; }
     .note-color-picker > div { gap: 12px; }
 }
-@media (prefers-reduced-motion: reduce) { .workshop-sticky-note { transition: none; } }
 
 .workshop-todo-card {
     display: flex;
@@ -11936,9 +11930,9 @@
     .erd-table > .erd-field-row small { font: 12px monospace; color: var(--muted-foreground); }
     .erd-table > .erd-field-row i { font-size: 12px; color: var(--muted-foreground); }
     .erd-table > p { font-size: 13px; padding: 8px 14px; color: var(--muted-foreground); }
-    .erd-field-key { width: 14px; color: #a78bfa; }
+    .erd-field-key { width: 14px; color: var(--primary); }
     .erd-field-key svg { width: 12px; height: 12px; }
-    .erd-connections { position: absolute; top: 0; left: 0; z-index: 2; overflow: visible; pointer-events: none; --erd-connector: color-mix(in oklab, #8b5cf6 75%, var(--foreground)); }
+    .erd-connections { position: absolute; top: 0; left: 0; z-index: 2; overflow: visible; pointer-events: none; --erd-connector: var(--primary); }
     .erd-connections .erd-connection-line { stroke: var(--erd-connector); stroke-width: 1.5; stroke-linejoin: round; }
     .erd-connections .erd-end-symbol path, .erd-connections .erd-end-symbol circle { stroke: var(--erd-connector); stroke-width: 2.2; }
     .erd-relationship-entry { display: flex; gap: 6px; align-items: flex-start; border: 1px solid var(--border); border-radius: 7px; padding: 8px; font-size: 12px; }
@@ -12037,12 +12031,12 @@
     }
 }
 @layer components {
-    .erd-end-symbol path, .erd-end-symbol circle { fill: none; stroke: #9b87e8; stroke-width: 1.8; stroke-linecap: round; }
+    .erd-end-symbol path, .erd-end-symbol circle { fill: none; stroke: var(--primary); stroke-width: 1.8; stroke-linecap: round; }
     .erd-end-symbol .erd-end-open { fill: var(--background); }
     .erd-end-preview { display: flex; align-items: center; justify-content: center; min-height: 20px; }
     .erd-end-preview svg { width: 32px; height: 20px; overflow: visible; }
     .erd-end-preview .erd-end-symbol path, .erd-end-preview .erd-end-symbol circle { stroke-width: 1.3; }
-    .erd-end-preview > svg > path { fill: none; stroke: #9b87e8; stroke-width: 1.4; }
+    .erd-end-preview > svg > path { fill: none; stroke: var(--primary); stroke-width: 1.4; }
     .erd-relationship-entry .tool-property-grid { margin-top: 10px; }
     .erd-relationship-entry .tool-property-grid select { font-size: 14px; padding-inline: 4px; }
     .erd-import-warning { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #d99c3855; border-radius: 8px; background: #d99c3810; }
@@ -12142,6 +12136,8 @@
 .erd-connections:has(.erd-relationship.selected) { z-index: 5; }
 .erd-relationship { outline: none; }
 .erd-relationship.selected, .erd-relationship:has(.erd-relationship-hit:focus-visible) { --erd-connector: var(--primary); }
+.erd-workspace .tool-node.selected { outline-color: var(--primary); }
+.tool-canvas.hand-tool .tool-world, .tool-canvas.hand-tool .tool-world * { cursor: var(--workshop-grab-cursor, grab); }
 .erd-relationship.selected .erd-connection-line, .erd-relationship:has(.erd-relationship-hit:focus-visible) .erd-connection-line { stroke-width: 2.5px; }
 .erd-endpoint { outline: none; }
 .erd-endpoint-hit { fill: transparent; stroke: none; pointer-events: all; cursor: pointer; touch-action: none; }
