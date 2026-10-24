@@ -12,6 +12,7 @@ import {roadmapSize} from "@/features/workshop/sdlc-camera"
 import {waterfallConnection} from "@/features/workshop/sdlc-waterfall-geometry"
 import {useSdlcCamera} from "@/features/workshop/use-sdlc-camera"
 import {SdlcConstellationIllustration} from "@/features/workshop/sdlc-constellation-illustration"
+import {SdlcStarfield} from "@/features/workshop/sdlc-starfield"
 import {IterativeTornado, type TornadoControls} from "@/features/workshop/iterative-tornado"
 import {tornadoHue} from "@/features/workshop/tornado-geometry"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -97,12 +98,7 @@ function SdlcRoadmap() {
         <ToolDocumentHeader title="Development roadmap" projectName={project!.name} {...editor} canWrite={canWrite} persisted={isPersistedOrganization} onSave={() => void editor.save()} onRetry={editor.retry} onReload={editor.reload} tool="sdlc" document={document}/>
         <div className="sdlc-layout">
             <div className="sdlc-universe" data-model={document.model} style={{"--sdlc-model-color": isIterative ? `hsl(${tornadoHue(cycle)} 72% 65%)` : model.color} as CSSProperties}>
-                <svg className="sdlc-starfield sdlc-stars-far" viewBox="0 0 1000 650" preserveAspectRatio="xMidYMid slice" style={{transform: `translate3d(${navigation.camera.x * .06}px, ${navigation.camera.y * .06}px, 0)`}} aria-hidden="true">
-                    {Array.from({length: 100}, (_, index) => <circle key={index} cx={(index * 7919 + 43) % 1000} cy={(index * 3571 + 71) % 650} r={index % 7 === 0 ? 1.2 : .65} opacity={.12 + index % 6 * .055}/>)}
-                </svg>
-                <svg className="sdlc-starfield sdlc-stars-near" viewBox="0 0 1000 650" preserveAspectRatio="xMidYMid slice" style={{transform: `translate3d(${navigation.camera.x * .16}px, ${navigation.camera.y * .16}px, 0)`}} aria-hidden="true">
-                    {Array.from({length: 24}, (_, index) => <circle key={index} cx={(index * 5839 + 137) % 1000} cy={(index * 2137 + 53) % 650} r={index % 5 === 0 ? 1.6 : 1} opacity={.2 + index % 4 * .08}/>)}
-                </svg>
+                <SdlcStarfield camera={navigation.camera}/>
                 <div className="sdlc-canvas-toolbar">
                     <div className="sdlc-model-control"><label>SDLC model<select aria-label="SDLC model" value={document.model} disabled={!canEdit} onChange={event => changeModel(event.target.value as SdlcModel)}>{sdlcModelIds.map(id => <option key={id} value={id}>{sdlcModels[id].title}</option>)}</select></label>
                         <label>{releaseView ? "Release phase" : "Current phase"}<select aria-label={releaseView ? "Current release phase" : `Current ${model.title} phase`} value={detailCurrent} disabled={!canEdit || readOnlyPhase} onChange={event => current(Number(event.target.value))}>{detailPhases.map((item, index) => <option key={item.id} value={index}>{item.title}</option>)}</select></label>

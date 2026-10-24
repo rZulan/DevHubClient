@@ -7,6 +7,7 @@
 - Show completed sprints and iterations in history; offer another iteration or deployment and maintenance after evaluation.
 - Display Iterative cycles as an interactive 3D tornado with orbit, pan, zoom, and phase selection.
 - Refine the Waterfall illustration with matching smooth cascades, regular zigzag phase spacing, and a level pool.
+- Scatter background stars independently to remove diagonal bands, keeping their positions stable during navigation and model changes.
 - Add constellation artwork, readable phase labels, canvas navigation, and a collapsible phase details panel.
 - Preserve shared saving, recovery drafts, undo/redo, permissions, and older Waterfall documents.
 
