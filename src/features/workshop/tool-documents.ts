@@ -1,5 +1,8 @@
 import {createClientId} from "../../lib/create-client-id.ts"
 import {validNoteEmoji} from "./note-emojis.ts"
+import {validSdlcDocument, type SdlcDocument} from "./sdlc-document.ts"
+export {waterfallPhases} from "./sdlc-models.ts"
+export type {SdlcDocument} from "./sdlc-document.ts"
 
 export const dataTypes = ["UUID", "INT", "BIGINT", "VARCHAR", "TEXT", "BOOLEAN", "DATE", "TIMESTAMP", "DECIMAL", "FLOAT", "JSON", "BLOB"] as const
 export type DataType = typeof dataTypes[number]
@@ -21,15 +24,6 @@ export type ErdDocument = {dialect?: ErdDialect; tables: ErdTable[]; relationshi
 export type DesignKind = "frame" | "rectangle" | "ellipse" | "text" | "button"
 export type DesignLayer = {id: string; name: string; kind: DesignKind; parentId?: string; x: number; y: number; width: number; height: number; fill: string; stroke: string; strokeWidth: number; radius: number; opacity: number; text: string; fontSize: number; textColor: string; hidden: boolean; locked: boolean}
 export type DesignDocument = {layers: DesignLayer[]}
-export const waterfallPhases = [
-    {id: "requirements", title: "Requirements", description: "Define the problem, scope and acceptance criteria.", deliverables: "Requirements specification, stakeholder approval"},
-    {id: "design", title: "System design", description: "Plan the architecture, data model and user experience.", deliverables: "Architecture, ERD, UI designs"},
-    {id: "implementation", title: "Implementation", description: "Build the system from the approved design.", deliverables: "Working code, unit tests, technical documentation"},
-    {id: "verification", title: "Verification", description: "Validate the system against the requirements.", deliverables: "Test results, defect fixes, acceptance sign-off"},
-    {id: "deployment", title: "Deployment", description: "Release the approved system to its users.", deliverables: "Release plan, production deployment, user training"},
-    {id: "maintenance", title: "Maintenance", description: "Monitor, support and improve the released system.", deliverables: "Monitoring, support log, maintenance releases"},
-] as const
-export type SdlcDocument = {model: "waterfall"; currentPhase: number; completed: boolean; notes: Record<string, string>}
 export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string; emoji?: string | null}
 export type NotesDocument = {notes: StickyNote[]}
 export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument}
@@ -52,7 +46,7 @@ export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
             return true
         })
     }
-    if (tool === "sdlc") return value.model === "waterfall" && Number.isInteger(value.currentPhase) && Number(value.currentPhase) >= 0 && Number(value.currentPhase) < 6 && flag(value, "completed") && record(value.notes) && Object.values(value.notes).every(note => typeof note === "string")
+    if (tool === "sdlc") return validSdlcDocument(value)
     if (tool === "ui-editor") return Array.isArray(value.layers) && value.layers.every(layer => record(layer)
         && ["id", "name", "text", "fill", "stroke", "textColor"].every(key => text(layer, key))
         && ["frame", "rectangle", "ellipse", "text", "button"].includes(String(layer.kind))

@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import {emptyDocuments, validToolDocument} from '../src/features/workshop/tool-documents.ts'
+import {switchSdlcModel, startSdlcCycle, startSdlcRelease} from '../src/features/workshop/sdlc-document.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/use-tool-document.ts', import.meta.url), 'utf8'), {
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
@@ -122,4 +123,40 @@ test('a newer peer revision during saving cannot be overwritten by queued edits'
     h.remote({revision: 6, document: {...document, currentPhase: 5}}); await h.settle()
     h.saves[0].resolve({revision: 5}); await h.settle()
     assert.equal(h.value.status, 'conflict'); assert.equal(h.value.document.currentPhase, 4); assert.equal(h.saves.length, 1)
+})
+
+test('multi-model progress and cycle history use the same save, recovery, undo and permission boundaries', async () => {
+    let mixed=switchSdlcModel(document,'agile')
+    mixed=startSdlcCycle({...mixed,currentPhase:6,completed:true,notes:{review:'Keep this feedback'}})
+    mixed={...mixed,notes:{backlog:'Next increment'}}
+    const h=harness(); await h.settle(); h.value.setDocument(mixed); h.tick()
+    assert.deepEqual(h.saves[0].document,mixed)
+    h.saves[0].resolve({revision:5}); await h.settle()
+    const draft=JSON.parse(h.storage.get(h.storageKey))
+    const recovered=harness({persisted:false,draft}); await recovered.settle()
+    assert.deepEqual(JSON.parse(JSON.stringify(recovered.value.document)),mixed)
+    h.value.setDocument(value=>switchSdlcModel(value,'v-model'))
+    h.value.undo(); assert.deepEqual(h.value.document,mixed)
+    h.value.redo(); assert.equal(h.value.document.model,'v-model')
+    const viewer=harness({canWrite:false,saved:{revision:5,document:mixed}}); await viewer.settle()
+    viewer.value.setDocument(value=>switchSdlcModel(value,'waterfall')); viewer.tick()
+    assert.deepEqual(viewer.value.document,mixed)
+    assert.equal(viewer.saves.length,0)
+})
+
+test('the Iterative release decision saves, recovers and undoes with the rest of the roadmap', async () => {
+    const evaluated={model:'iterative',currentPhase:5,completed:true,notes:{evaluate:'Ready to release'}}
+    const released=startSdlcRelease(evaluated)
+    const h=harness({saved:{revision:4,document:evaluated}}); await h.settle()
+    h.value.setDocument(startSdlcRelease); h.tick()
+    assert.deepEqual(h.saves[0].document,released)
+    h.saves[0].resolve({revision:5}); await h.settle()
+    const recovered=harness({persisted:false,draft:JSON.parse(h.storage.get(h.storageKey))}); await recovered.settle()
+    assert.deepEqual(JSON.parse(JSON.stringify(recovered.value.document)),released)
+    h.value.undo(); assert.deepEqual(h.value.document,evaluated)
+    h.value.redo(); assert.deepEqual(h.value.document,released)
+    const viewer=harness({canWrite:false,saved:{revision:5,document:evaluated}}); await viewer.settle()
+    viewer.value.setDocument(startSdlcRelease); viewer.tick()
+    assert.equal(viewer.value.document.release,undefined)
+    assert.equal(viewer.saves.length,0)
 })

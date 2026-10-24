@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-25
+
+### Development roadmap
+- Add Waterfall, V Model, Agile, and Iterative roadmaps with model-specific phases, notes, and progress preserved when switching models.
+- Show completed sprints and iterations in history; offer another iteration or deployment and maintenance after evaluation.
+- Display Iterative cycles as an interactive 3D tornado with orbit, pan, zoom, and phase selection.
+- Refine the Waterfall illustration with matching smooth cascades, regular zigzag phase spacing, and a level pool.
+- Add constellation artwork, readable phase labels, canvas navigation, and a collapsible phase details panel.
+- Preserve shared saving, recovery drafts, undo/redo, permissions, and older Waterfall documents.
+
+### Validation
+- Pass all 260 client regression tests and lint; verify the production build.
+- Release matching API validation for all roadmap models, cycle history, and iterative release progress without a database migration.
+
 ## 2026-10-22
 
 ### Notes

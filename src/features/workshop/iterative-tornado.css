@@ -1,0 +1,72 @@
+.tornado-view { --tornado-lightness: 40%; min-height: 300px; }
+.sdlc-universe[data-model="iterative"] { overflow-y: auto; overscroll-behavior: contain; }
+.dark .tornado-view { --tornado-lightness: 69%; }
+.tornado-scene { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.tornado-guides { fill: none; stroke: var(--foreground); stroke-width: .8; opacity: .1; pointer-events: none; }
+.tornado-segment { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; pointer-events: none; }
+.tornado-phase { cursor: pointer; outline: none; }
+.tornado-hit-target { fill: transparent; stroke: none; }
+.tornado-star-glow { --sdlc-glow-low: .38; --sdlc-glow-high: .7; fill: currentColor; animation: tornado-star-pulse 2.4s ease-in-out infinite alternate; pointer-events: none; }
+.tornado-star-glow.alternate { animation-delay: -2.4s; }
+.tornado-phase.completed .tornado-star-glow { --sdlc-glow-low: .6; --sdlc-glow-high: .95; }
+.tornado-phase.current .tornado-star-glow, .tornado-phase.selected .tornado-star-glow { --sdlc-glow-low: .75; --sdlc-glow-high: 1; }
+.tornado-star-glow use { fill: color-mix(in oklab, currentColor 55%, var(--foreground)); }
+.tornado-selected-ring { fill: none; stroke: currentColor; stroke-width: 1; opacity: .75; pointer-events: none; }
+.tornado-phase:focus-visible .tornado-hit-target { stroke: var(--foreground); stroke-width: 1; stroke-dasharray: 2 4; }
+.tornado-labels { pointer-events: none; }
+.tornado-labels path { fill: none; stroke: currentColor; stroke-width: .7; opacity: .3; }
+.tornado-labels text { font-size: 12px; font-weight: 450; fill: var(--muted-foreground); stroke: var(--background); stroke-width: 5px; paint-order: stroke; stroke-linejoin: round; }
+.tornado-labels .selected text { fill: var(--foreground); }
+.tornado-view-badge { position: absolute; top: 17px; left: 20px; display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted-foreground); pointer-events: none; }
+.tornado-view-badge > span:first-child { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+.tornado-toolbar { position: absolute; top: 8px; right: 16px; display: flex; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in oklab, var(--background) 94%, transparent); }
+.tornado-toolbar button { display: flex; gap: 6px; align-items: center; justify-content: center; min-width: 30px; min-height: 30px; padding: 5px 7px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+.tornado-toolbar button:hover, .tornado-toolbar button[aria-pressed="true"] { background: var(--secondary); }
+.tornado-toolbar svg { width: 13px; height: 13px; }
+.tornado-toolbar button:focus-visible, .tornado-layer-legend button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tornado-layer-legend { position: absolute; bottom: 10px; left: 20px; right: 20px; display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none; }
+.tornado-layer-legend button { display: flex; align-items: center; gap: 5px; padding: 4px 7px; min-height: 28px; border: 1px solid transparent; border-radius: 6px; background: color-mix(in oklab, var(--background) 94%, transparent); font-size: 11px; cursor: pointer; pointer-events: auto; }
+.tornado-layer-legend button[aria-pressed="true"] { border-color: currentColor; }
+.tornado-layer-legend i { width: 14px; height: 2px; border-radius: 2px; background: currentColor; box-shadow: 0 0 6px currentColor; }
+.tornado-layer-legend svg { width: 10px; height: 10px; }
+.tornado-view.mode-pan { cursor: grab; }
+.tornado-view.mode-orbit { cursor: move; }
+.tornado-view.is-dragging, .tornado-view.is-dragging * { cursor: grabbing; }
+.sdlc-iteration-decision { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in oklab, var(--secondary) 45%, transparent); }
+.sdlc-iteration-decision > strong { font-size: 13px; }
+.sdlc-iteration-decision > p { margin: 0 0 3px; font-size: 12px; line-height: 1.7; color: var(--muted-foreground); }
+.sdlc-iteration-decision > button { width: 100%; }
+.sdlc-release-path { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin: 0 28px 12px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in oklab, var(--background) 92%, transparent); font-size: 12px; }
+.sdlc-release-path > span { display: grid; gap: 3px; margin-right: 3px; }
+.sdlc-release-path small { font-size: 10px; color: var(--muted-foreground); }
+.sdlc-release-path > svg { width: 13px; height: 13px; color: var(--muted-foreground); }
+.sdlc-release-path button { display: flex; align-items: center; gap: 7px; padding: 7px 9px; min-height: 36px; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+.sdlc-release-path button:hover { background: var(--secondary); }
+.sdlc-release-path button[aria-pressed="true"] { border-color: var(--sdlc-model-color); background: var(--secondary); }
+.sdlc-release-path button > span { display: grid; place-items: center; width: 21px; height: 21px; border: 1px solid var(--border); border-radius: 50%; font-size: 10px; color: var(--muted-foreground); }
+.sdlc-release-path button.completed > span { color: var(--sdlc-model-color); border-color: currentColor; }
+.sdlc-release-path button svg { width: 12px; height: 12px; }
+.sdlc-release-path button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 800px) {
+    .sdlc-universe[data-model="iterative"] { height: auto; min-height: max(560px, 75svh); }
+    .tornado-view { flex: none; height: max(300px, 40svh); }
+}
+@media (max-width: 600px) {
+    .tornado-view { min-height: 300px; }
+    .tornado-toolbar { right: 10px; }
+    .tornado-toolbar button { min-height: 36px; padding: 4px 6px; }
+    .tornado-view-badge { left: 12px; top: 22px; font-size: 10px; }
+    .tornado-layer-legend { left: 12px; right: 12px; }
+    .tornado-layer-legend button { min-height: 32px; }
+    .tornado-labels text { font-size: 11px; }
+    .sdlc-release-path { gap: 4px; margin: 0 12px 10px; padding: 10px; }
+    .sdlc-release-path > span { flex-basis: 100%; margin-bottom: 4px; }
+    .sdlc-release-path > svg { display: none; }
+}
+@keyframes tornado-star-pulse {
+    from { opacity: var(--sdlc-glow-low); }
+    to { opacity: var(--sdlc-glow-high); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tornado-star-glow { animation: none; opacity: var(--sdlc-glow-high); }
+}

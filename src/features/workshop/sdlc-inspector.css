@@ -1,0 +1,25 @@
+.sdlc-inspector-panel { display: flex; flex-direction: column; flex-shrink: 0; width: 280px; min-height: 0; border-left: 1px solid var(--border); background: var(--background); }
+.sdlc-inspector-heading { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--border); }
+.sdlc-inspector-heading strong { font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+.sdlc-inspector-heading button { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 6px; color: var(--muted-foreground); cursor: pointer; }
+.sdlc-inspector-heading button:hover { color: var(--foreground); background: var(--secondary); }
+.sdlc-inspector-heading button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.sdlc-inspector-heading svg { width: 16px; height: 16px; }
+.sdlc-inspector-panel > .sdlc-phase-inspector { width: 100%; flex: 1; min-height: 0; border: 0; }
+.sdlc-inspector-panel > .sdlc-phase-inspector[hidden] { display: none; }
+.sdlc-inspector-panel.is-collapsed { width: 40px; }
+.sdlc-inspector-panel.is-collapsed .sdlc-inspector-heading { justify-content: center; padding: 10px 3px; }
+.sdlc-inspector-panel.is-collapsed .sdlc-inspector-heading strong { display: none; }
+.sdlc-inspector-rail-label { align-self: center; padding-top: 14px; writing-mode: vertical-rl; font-size: 11px; color: var(--muted-foreground); }
+@media (max-width: 1200px) {
+    .sdlc-inspector-panel { width: 240px; }
+}
+@media (max-width: 950px) {
+    .sdlc-inspector-panel, .sdlc-inspector-panel.is-collapsed { width: 100%; flex: none; border-left: 0; border-top: 1px solid var(--border); }
+    .sdlc-inspector-panel > .sdlc-phase-inspector { flex: none; overflow: visible; }
+    .sdlc-inspector-heading, .sdlc-inspector-panel.is-collapsed .sdlc-inspector-heading { justify-content: space-between; padding: 8px 16px; }
+    .sdlc-inspector-panel.is-collapsed .sdlc-inspector-heading strong { display: block; }
+    .sdlc-inspector-heading button { width: 40px; height: 40px; }
+    .sdlc-inspector-heading svg { transform: rotate(-90deg); }
+    .sdlc-inspector-rail-label { display: none; }
+}
