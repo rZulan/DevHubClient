@@ -3,6 +3,11 @@
 ## 2026-10-25
 
 ### Development roadmap
+- Align model paths with documented lifecycle practices and include expandable workflow guidance with source links.
+- Pair V Model development stages with their test levels; distinguish early review and test preparation from test execution after implementation.
+- Use a Scrum workflow for Agile with ongoing backlog refinement, overlapping development activities, optional release, and separate Sprint Review and Retrospective checkpoints.
+- Start each new Sprint at Planning and preserve older combined review/retrospective notes and completion.
+- Add explicit defect correction and retesting paths, plus feedback connections between Iterative tornado layers.
 - Add Waterfall, V Model, Agile, and Iterative roadmaps with model-specific phases, notes, and progress preserved when switching models.
 - Show completed sprints and iterations in history; offer another iteration or deployment and maintenance after evaluation.
 - Display Iterative cycles as an interactive 3D tornado with orbit, pan, zoom, and phase selection.
@@ -12,7 +17,7 @@
 - Preserve shared saving, recovery drafts, undo/redo, permissions, and older Waterfall documents.
 
 ### Validation
-- Pass all 260 client regression tests and lint; verify the production build.
+- Pass all 268 client regression tests and lint; verify the production build.
 - Release matching API validation for all roadmap models, cycle history, and iterative release progress without a database migration.
 
 ## 2026-10-22

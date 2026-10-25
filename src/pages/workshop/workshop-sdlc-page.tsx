@@ -7,9 +7,9 @@ import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {iterativeReleasePhases, sdlcModelIds, sdlcModels, type SdlcModel} from "@/features/workshop/sdlc-models"
-import {advanceSdlc, advanceSdlcRelease, maxSdlcHistory, setSdlcPhase, setSdlcReleasePhase, startSdlcCycle, startSdlcRelease, switchSdlcModel} from "@/features/workshop/sdlc-document"
+import {advanceSdlc, advanceSdlcRelease, maxSdlcHistory, nextSdlcPhase, sdlcPhaseDone, setSdlcPhase, setSdlcReleasePhase, startSdlcCycle, startSdlcRelease, switchSdlcModel} from "@/features/workshop/sdlc-document"
 import {roadmapSize} from "@/features/workshop/sdlc-camera"
-import {waterfallConnection} from "@/features/workshop/sdlc-waterfall-geometry"
+import {sdlcAdvanceLabel, sdlcLinks, sdlcQuality, sdlcRework} from "@/features/workshop/sdlc-flow"
 import {useSdlcCamera} from "@/features/workshop/use-sdlc-camera"
 import {SdlcConstellationIllustration} from "@/features/workshop/sdlc-constellation-illustration"
 import {SdlcStarfield} from "@/features/workshop/sdlc-starfield"
@@ -17,6 +17,7 @@ import {IterativeTornado, type TornadoControls} from "@/features/workshop/iterat
 import {tornadoHue} from "@/features/workshop/tornado-geometry"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/sdlc-inspector.css"
+import "@/features/workshop/sdlc-workflow.css"
 export function WorkshopSdlcPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
@@ -39,11 +40,9 @@ function SdlcRoadmap() {
     const [tornadoZoom, setTornadoZoom] = useState(1)
     const markerId = useId()
     const model = sdlcModels[document.model], phases = model.phases, positions = model.positions
-    const phaseLinks = positions.slice(1).map((position, index) => document.model === "waterfall"
-        ? waterfallConnection(positions[index], position)
-        : `M${positions[index].x} ${positions[index].y} L${position.x} ${position.y}`)
+    const phaseLinks = sdlcLinks(document.model)
     const archive = archiveSelection?.model === document.model ? document.history?.find(entry => entry.cycle === archiveSelection.cycle) : undefined
-    const active = archive ? {...document, notes: archive.notes, currentPhase: phases.length - 1, completed: true} : document
+    const active = archive ? {...document, notes: archive.notes, currentPhase: phases.length - 1, completed: true, released: archive.released ?? document.model === "agile"} : document
     const activeRelease = archive ? archive.release : document.release
     const releaseView = !!activeRelease && (selectedPhase?.model !== document.model || selectedPhase.release === true)
     const detailPhases = releaseView ? iterativeReleasePhases : phases
@@ -51,15 +50,18 @@ function SdlcRoadmap() {
     const selected = selectedPhase?.model === document.model ? Math.min(selectedPhase.index, detailPhases.length - 1) : releaseView ? activeRelease!.currentPhase : active.currentPhase
     const phase = detailPhases[selected]
     const pairedPhase = detailPhases.findIndex(item => item.id === phase.pair)
-    const completedCount = active.completed ? phases.length : active.currentPhase
+    const requiredCount = phases.filter(item => !item.optional && !item.ongoing).length
+    const completedCount = phases.filter((item, index) => !item.optional && !item.ongoing && sdlcPhaseDone(active, index)).length
+    const phaseNumber = (index: number) => phases.slice(0, index + 1).filter(item => !item.optional && !item.ongoing).length
     const detailCurrent = releaseView ? activeRelease!.currentPhase : active.currentPhase
     const detailCompleted = releaseView ? activeRelease!.completed : active.completed
-    const detailCompletedCount = detailCompleted ? detailPhases.length : detailCurrent
+    const detailDone = (index: number) => releaseView ? activeRelease!.completed || index < activeRelease!.currentPhase : sdlcPhaseDone(active, index)
     const detailNotes = releaseView ? activeRelease!.notes : active.notes
     const readOnlyPhase = !!archive || !releaseView && !!document.release
-    const progress = Math.round(completedCount / phases.length * 100)
+    const progress = Math.round(completedCount / requiredCount * 100)
     const cycleName = model.cycle ? `${model.cycle} ${cycle}` : "Roadmap"
     const lastPhase = detailCurrent === detailPhases.length - 1
+    const rework = !releaseView ? sdlcRework(document.model, selected) : null
     function select(index: number) {
         setSelectedPhase({model: document.model, index, release: releaseView})
         if (releaseView) return
@@ -84,9 +86,10 @@ function SdlcRoadmap() {
     function advance() {
         setDocument(releaseView ? advanceSdlcRelease : advanceSdlc); setSelectedPhase(null)
         if (releaseView) return
-        if (!lastPhase) {
-            if (isIterative) tornado.current?.focus(document.cycle ?? 1, document.currentPhase + 1)
-            else navigation.reveal(positions[document.currentPhase + 1])
+        const next = nextSdlcPhase(document)
+        if (next !== null) {
+            if (isIterative) tornado.current?.focus(document.cycle ?? 1, next)
+            else navigation.reveal(positions[next])
         }
     }
     function startCycle() {
@@ -101,13 +104,17 @@ function SdlcRoadmap() {
                 <SdlcStarfield camera={navigation.camera}/>
                 <div className="sdlc-canvas-toolbar">
                     <div className="sdlc-model-control"><label>SDLC model<select aria-label="SDLC model" value={document.model} disabled={!canEdit} onChange={event => changeModel(event.target.value as SdlcModel)}>{sdlcModelIds.map(id => <option key={id} value={id}>{sdlcModels[id].title}</option>)}</select></label>
-                        <label>{releaseView ? "Release phase" : "Current phase"}<select aria-label={releaseView ? "Current release phase" : `Current ${model.title} phase`} value={detailCurrent} disabled={!canEdit || readOnlyPhase} onChange={event => current(Number(event.target.value))}>{detailPhases.map((item, index) => <option key={item.id} value={index}>{item.title}</option>)}</select></label>
+                        <label>{releaseView ? "Release phase" : document.model === "agile" ? "Current activity" : "Current phase"}<select aria-label={releaseView ? "Current release phase" : `Current ${model.title} phase`} value={detailCurrent} disabled={!canEdit || readOnlyPhase} onChange={event => current(Number(event.target.value))}>{detailPhases.map((item, index) => <option key={item.id} value={index}>{item.title}{item.optional ? " (optional)" : ""}</option>)}</select></label>
                         {model.cycle && <label>{model.cycle}<select aria-label={`View ${model.cycle.toLowerCase()}`} value={cycle} onChange={event => viewCycle(Number(event.target.value))}>
                             {document.history?.map(entry => <option key={entry.cycle} value={entry.cycle}>{entry.cycle} · completed</option>)}<option value={document.cycle ?? 1}>{document.cycle ?? 1} · {document.completed ? "completed" : "current"}</option>
                         </select></label>}
                     </div>
-                    <span className="sdlc-map-label" title={model.summary}><span/>{releaseView ? activeRelease!.completed ? "Release complete" : `Release · ${iterativeReleasePhases[activeRelease!.currentPhase].title}` : active.completed ? `${cycleName} complete` : `Phase ${String(active.currentPhase + 1).padStart(2, "0")} / ${String(phases.length).padStart(2, "0")}`}</span>
+                    <span className="sdlc-map-label" title={model.summary}><span/>{releaseView ? activeRelease!.completed ? "Release complete" : `Release · ${iterativeReleasePhases[activeRelease!.currentPhase].title}` : active.completed ? `${cycleName} complete` : document.model === "agile" ? `Focus · ${phases[active.currentPhase].title}` : `Phase ${String(active.currentPhase + 1).padStart(2, "0")} / ${String(phases.length).padStart(2, "0")}`}</span>
                 </div>
+                <details className="sdlc-workflow-guide" key={document.model}><summary>How {model.title} flows · references</summary><p>{model.guidance}</p>
+                    <div className="sdlc-path-legend"><span><i/>Progression</span><span><i className="dashed"/>{document.model === "v-model" ? "Test-basis pairing" : document.model === "agile" ? "Feedback / optional release" : "Feedback / rework"}</span></div>
+                    <nav aria-label={`${model.title} workflow sources`}>{model.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</nav>
+                </details>
                 {document.model === "iterative" ? <IterativeTornado ref={tornado} cycles={document.cycle ?? 1} phases={phases} currentPhase={document.currentPhase} completed={document.completed}
                     selectedCycle={cycle} selectedPhase={releaseView ? -1 : selected} onSelect={selectTornadoPhase} onZoomChange={setTornadoZoom}/>
                 : <div ref={navigation.viewport} className={`sdlc-viewport ${navigation.dragging ? "is-dragging" : ""}`} tabIndex={0} role="region" aria-label={`${model.title} roadmap canvas`} aria-describedby="sdlc-navigation-help" {...navigation.handlers}>
@@ -115,17 +122,24 @@ function SdlcRoadmap() {
                 <div className="sdlc-constellation" aria-label={`${model.title} roadmap`}>
                     <SdlcConstellationIllustration model={document.model}/>
                     <svg className="sdlc-roadmap-links" viewBox={`0 0 ${roadmapSize.width} ${roadmapSize.height}`} aria-hidden="true">
-                        <defs><marker id={markerId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--sdlc-ink)" strokeWidth="1.3"/></marker></defs>
-                        <g className="sdlc-path-shadow">{phaseLinks.map((path, index) => <path key={index} d={path}/>)}</g>
-                        {phaseLinks.map((path, index) => <path key={index} d={path} className={index < completedCount ? "completed" : ""}/>)}
-                        {model.loop && <path className="sdlc-cycle-return" d={model.loop} markerEnd={`url(#${markerId})`}/>}
+                        <defs><marker id={markerId} viewBox="0 0 10 10" refX="37" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--sdlc-ink)" strokeWidth="1.3"/></marker></defs>
+                        <g className="sdlc-path-shadow">{phaseLinks.filter(link => link.kind === "flow").map((link, index) => <path key={index} d={link.path}/>)}</g>
+                        {phaseLinks.map((link, index) => {
+                            const highlighted = link.kind === "validation" && (selected === link.from || selected === link.to)
+                            if (link.kind === "feedback" && document.model === "waterfall" && selected !== 3) return null
+                            return <path key={index} d={link.path} data-from={phases[link.from].id} data-to={phases[link.to].id} data-kind={link.kind}
+                                markerEnd={link.kind === "validation" ? undefined : `url(#${markerId})`}
+                                className={`sdlc-link sdlc-link-${link.kind} ${highlighted ? "selected" : ""} ${link.kind === "flow" && sdlcPhaseDone(active, link.from) ? "completed" : ""}`}><title>{phases[link.from].title} → {phases[link.to].title}{link.label ? ` · ${link.label}` : ""}</title></path>
+                        })}
+                        {phaseLinks.filter(link => link.label && link.labelX !== undefined).map((link, index) => <text key={index} x={link.labelX} y={link.labelY} className={`sdlc-link-label ${selected === link.from || selected === link.to ? "selected" : ""}`}>{link.label}</text>)}
+                        {document.model === "agile" && <text className="sdlc-agile-activity-note" x="500" y="360"><tspan x="500">Design · Build · Test</tspan><tspan x="500" dy="21">overlap during the Sprint</tspan></text>}
                     </svg>
                     {phases.map((item, index) => {
-                        const done = index < completedCount, currentPhase = index === active.currentPhase && !active.completed
+                        const done = sdlcPhaseDone(active, index), currentPhase = index === active.currentPhase && !active.completed
                         return <button type="button" key={`${document.model}:${item.id}`} aria-label={`${item.title}, ${done ? "completed" : currentPhase ? "current phase" : "upcoming"}`} aria-pressed={selected === index}
-                            className={`sdlc-phase-star label-${positions[index].label} ${done ? "completed" : ""} ${currentPhase ? "current" : ""} ${selected === index ? "selected" : ""} ${pairedPhase === index ? "paired" : ""}`}
+                            className={`sdlc-phase-star label-${positions[index].label} ${item.optional ? "optional" : ""} ${done ? "completed" : ""} ${currentPhase ? "current" : ""} ${selected === index ? "selected" : ""} ${pairedPhase === index ? "paired" : ""}`}
                             style={{left: positions[index].x, top: positions[index].y}} onFocus={event => {if (event.currentTarget.matches(":focus-visible")) navigation.reveal(positions[index])}} onClick={() => setSelectedPhase({model: document.model, index})}>
-                            <span className="sdlc-star-core"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path className="sdlc-star-rays" d="M32 0L35 25L48 16L39 29L64 32L39 35L48 48L35 39L32 64L29 39L16 48L25 35L0 32L25 29L16 16L29 25Z"/><path className="sdlc-star-light" d="M32 8L36 28L56 32L36 36L32 56L28 36L8 32L28 28Z"/><circle cx="32" cy="32" r="4"/></svg></span><span className="sdlc-star-label"><small>{String(index + 1).padStart(2, "0")}</small><strong>{item.title}</strong><em>{done ? <><Check/> Completed</> : currentPhase ? "You are here" : "Upcoming"}</em></span>
+                            <span className="sdlc-star-core"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path className="sdlc-star-rays" d="M32 0L35 25L48 16L39 29L64 32L39 35L48 48L35 39L32 64L29 39L16 48L25 35L0 32L25 29L16 16L29 25Z"/><path className="sdlc-star-light" d="M32 8L36 28L56 32L36 36L32 56L28 36L8 32L28 28Z"/><circle cx="32" cy="32" r="4"/></svg></span><span className="sdlc-star-label"><small>{item.optional ? "OPTIONAL" : item.ongoing ? "ONGOING" : String(phaseNumber(index)).padStart(2, "0")}</small><strong>{item.title}</strong><em>{done ? <><Check/> Completed</> : currentPhase ? "You are here" : item.optional ? "Release when ready" : item.ongoing ? "Refine throughout" : "Upcoming"}</em></span>
                         </button>
                     })}
                 </div>
@@ -139,7 +153,7 @@ function SdlcRoadmap() {
                     </button>)}
                 </nav>}
                 <footer className="sdlc-canvas-footer">
-                    <div className="sdlc-progress-card"><div><span>{cycleName} {active.completed ? "complete" : "progress"}</span><strong>{progress}%</strong></div><progress max="100" value={progress} aria-label={`${model.title} completion`}/><small>{completedCount} of {phases.length} phases complete</small></div>
+                    <div className="sdlc-progress-card"><div><span>{cycleName} {active.completed ? "complete" : "progress"}</span><strong>{progress}%</strong></div><progress max="100" value={progress} aria-label={`${model.title} completion`}/><small>{completedCount} of {requiredCount} {document.model === "agile" ? "checkpoints" : "phases"} complete{document.model === "agile" ? active.released ? " · Released" : " · Release optional" : ""}</small></div>
                     <div className="sdlc-navigation"><div className="sdlc-zoom-controls" role="group" aria-label="Roadmap view"><button type="button" aria-label="Zoom out" disabled={isIterative ? tornadoZoom <= .45 : navigation.camera.zoom <= .2} onClick={() => isIterative ? tornado.current?.zoom(1 / 1.2) : navigation.zoom(1 / 1.2)}><Minus/></button><output aria-label="Roadmap zoom">{Math.round((isIterative ? tornadoZoom : navigation.camera.zoom) * 100)}%</output><button type="button" aria-label="Zoom in" disabled={isIterative ? tornadoZoom >= 5 : navigation.camera.zoom >= 2} onClick={() => isIterative ? tornado.current?.zoom(1.2) : navigation.zoom(1.2)}><Plus/></button><button type="button" aria-label="Fit roadmap" title="Fit roadmap (Home)" onClick={() => isIterative ? tornado.current?.fit() : navigation.fit()}><Maximize/></button></div><p id="sdlc-navigation-help">{isIterative ? "Drag to orbit · Shift-drag to pan · Scroll to zoom" : "Drag to pan · Scroll to zoom"}<span className="sr-only">. Focus the canvas and use arrow keys to {isIterative ? "rotate, Shift and arrow keys to pan" : "pan"}, plus or minus to zoom, and Home to {isIterative ? "reset the 3D view" : "fit the roadmap"}.</span></p></div>
                 </footer>
             </div>
@@ -148,8 +162,9 @@ function SdlcRoadmap() {
                     aria-expanded={!inspectorCollapsed} aria-controls={inspectorId} onClick={() => setInspectorCollapsed(value => !value)}>{inspectorCollapsed ? <ChevronLeft/> : <ChevronRight/>}</button></div>
                 {inspectorCollapsed && <span className="sdlc-inspector-rail-label" aria-hidden="true">Phase details</span>}
             <aside id={inspectorId} hidden={inspectorCollapsed} className="sdlc-phase-inspector tool-inspector" aria-label="Roadmap phase details">
-                <header><span className="sdlc-phase-number">{String(selected + 1).padStart(2, "0")}</span><strong>{phase.title}</strong><small>{archive ? `${cycleName} · ${releaseView ? "released" : "completed"}` : selected < detailCompletedCount ? "Completed phase" : selected === detailCurrent ? "Current phase" : "Upcoming phase"}</small></header>
+                <header><span className="sdlc-phase-number">{phase.optional ? "◇" : phase.ongoing ? "↻" : String(releaseView ? selected + 1 : phaseNumber(selected)).padStart(2, "0")}</span><strong>{phase.title}</strong><small>{archive ? `${cycleName} · ${releaseView ? "released" : phase.optional && !detailDone(selected) ? "not released" : "completed"}` : detailDone(selected) ? "Completed phase" : selected === detailCurrent ? "Current phase" : phase.optional ? "Optional release" : phase.ongoing ? "Ongoing activity" : "Upcoming phase"}</small></header>
                 <p className="sdlc-phase-description">{phase.description}</p>
+                <section className="sdlc-quality-activity" aria-label="Quality activity"><strong>{document.model === "v-model" && selected < 4 ? "Review & test preparation" : "Quality activity"}</strong><p>{sdlcQuality(document.model, phase)}</p></section>
                 {pairedPhase >= 0 && <div className="sdlc-validation-pair"><small>{selected < 4 ? "Validated by" : "Verifies"}</small><button type="button" onClick={() => select(pairedPhase)}>{phases[pairedPhase].title}<ArrowRight/></button></div>}
                 <div className="tool-section-heading"><strong>Deliverables</strong><Flag/></div>
                 <ul className="sdlc-deliverables">{phase.deliverables.split(", ").map(item => <li key={item}><CheckCircle2/>{item}</li>)}</ul>
@@ -169,10 +184,14 @@ function SdlcRoadmap() {
                         </section> : <Button disabled={!canEdit || (document.history?.length ?? 0) >= maxSdlcHistory} onClick={startCycle}><RotateCcw/>Start {model.cycle.toLowerCase()} {(document.cycle ?? 1) + 1}<ArrowRight/></Button>}
                         <Button variant="secondary" disabled={!canEdit} onClick={() => current(selected)}>Reopen selected phase</Button>
                     </>
-                    : selected === document.currentPhase && !document.completed ? <Button disabled={!canEdit} onClick={advance}><Check/>{lastPhase ? isIterative ? "Complete evaluation" : `Complete ${model.cycle?.toLowerCase() ?? "roadmap"}` : "Complete phase & continue"}<ArrowRight/></Button>
+                    : selected === document.currentPhase && !document.completed ? <Button disabled={!canEdit} onClick={advance}><Check/>{sdlcAdvanceLabel(document.model, selected)}<ArrowRight/></Button>
                     : <Button variant="secondary" disabled={!canEdit} onClick={() => current(selected)}>Set as current phase</Button>}
+                {!archive && !releaseView && !document.release && !document.completed && selected === document.currentPhase && <>
+                    {document.model === "agile" && selected === 4 && <Button variant="secondary" disabled={!canEdit} onClick={() => current(5)}>Release Done increment<ArrowRight/></Button>}
+                    {rework !== null && <Button variant="secondary" disabled={!canEdit} onClick={() => current(rework)}><RotateCcw/>{document.model === "agile" ? "Continue development" : "Fix defects & retest"}</Button>}
+                </>}
                 <p className="tool-help">{model.summary} {model.cycle ? "Each new cycle keeps the previous cycle's notes in history." : "Setting a phase marks earlier phases complete. You can return to an earlier phase at any time."}</p>
-                <div className="sdlc-phase-list">{detailPhases.map((item, index) => <button type="button" key={item.id} className={selected === index ? "active" : ""} onClick={() => select(index)}><span>{index < detailCompletedCount ? <Check/> : index + 1}</span>{item.title}{index === detailCurrent && !detailCompleted && <i/>}</button>)}</div>
+                <div className="sdlc-phase-list">{detailPhases.map((item, index) => <button type="button" key={item.id} className={selected === index ? "active" : ""} onClick={() => select(index)}><span>{detailDone(index) ? <Check/> : item.optional ? "◇" : item.ongoing ? "↻" : releaseView ? index + 1 : phaseNumber(index)}</span>{item.title}{item.optional && <small>Optional</small>}{index === detailCurrent && !detailCompleted && <i/>}</button>)}</div>
             </aside>
             </div>
         </div>

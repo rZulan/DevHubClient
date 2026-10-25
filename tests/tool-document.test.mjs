@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import {emptyDocuments, validToolDocument} from '../src/features/workshop/tool-documents.ts'
-import {switchSdlcModel, startSdlcCycle, startSdlcRelease} from '../src/features/workshop/sdlc-document.ts'
+import {normalizeSdlcDocument, switchSdlcModel, startSdlcCycle, startSdlcRelease} from '../src/features/workshop/sdlc-document.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/use-tool-document.ts', import.meta.url), 'utf8'), {
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
@@ -27,6 +27,7 @@ function harness({saved = {revision: 4, document}, draft, canWrite = true, persi
         if (name === 'react') return react
         if (name === '@/app/hooks') return {useAppDispatch: () => dispatch}
         if (name === './use-project-tool-updates') return {useProjectToolUpdates: (_key, _enabled, callback) => {notify = callback}}
+        if (name === './sdlc-document') return {normalizeSdlcDocument}
         if (name === './tool-documents') return {emptyDocuments, validToolDocument}
         if (name === './tool-documents-api') return {toolDocumentsApi: {endpoints: {getToolDocument: {initiate: args => ({type: 'get', args})}, saveToolDocument: {initiate: args => ({type: 'save', args})}}}}
         throw Error(name)
@@ -159,4 +160,20 @@ test('the Iterative release decision saves, recovers and undoes with the rest of
     viewer.value.setDocument(startSdlcRelease); viewer.tick()
     assert.equal(viewer.value.document.release,undefined)
     assert.equal(viewer.saves.length,0)
+})
+
+test('legacy Scrum documents normalize on load and peer updates without writing back automatically', async () => {
+    const legacy={model:'agile',currentPhase:6,completed:true,notes:{review:'Combined review and retrospective'}}
+    const h=harness({saved:{revision:4,document:legacy}}); await h.settle()
+    assert.equal(h.value.document.currentPhase,7)
+    assert.equal(h.value.document.released,true)
+    assert.deepEqual(h.value.document.notes,legacy.notes)
+    h.tick(); assert.equal(h.saves.length,0)
+    h.remote({revision:5,document:{...legacy,notes:{review:'Peer feedback'}}}); await h.settle()
+    assert.equal(h.value.document.currentPhase,7)
+    assert.equal(h.value.document.notes.review,'Peer feedback')
+    assert.equal(h.saves.length,0)
+    const preview=harness({persisted:false,draft:{revision:0,pending:false,document:legacy}}); await preview.settle()
+    assert.equal(preview.value.document.currentPhase,7)
+    assert.equal(preview.value.document.notes.review,legacy.notes.review)
 })

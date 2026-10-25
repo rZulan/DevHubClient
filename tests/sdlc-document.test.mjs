@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {advanceSdlc, advanceSdlcRelease, setSdlcPhase, setSdlcReleasePhase, startSdlcCycle, startSdlcRelease, switchSdlcModel, validSdlcDocument} from '../src/features/workshop/sdlc-document.ts'
+import {advanceSdlc, advanceSdlcRelease, normalizeSdlcDocument, sdlcPhaseDone, setSdlcPhase, setSdlcReleasePhase, startSdlcCycle, startSdlcRelease, switchSdlcModel, validSdlcDocument} from '../src/features/workshop/sdlc-document.ts'
 import {sdlcModelIds, sdlcModels} from '../src/features/workshop/sdlc-models.ts'
 import {emptyDocuments, validToolDocument, waterfallPhases} from '../src/features/workshop/tool-documents.ts'
 
@@ -39,7 +39,7 @@ test('each model completes only at its real final phase; V Model has reciprocal 
         let doc=switchSdlcModel(emptyDocuments.sdlc,model)
         const definition=sdlcModels[model]
         assert.equal(definition.positions.length,definition.phases.length)
-        for(let phase=0;phase<definition.phases.length;phase++) {
+        for(const phase of definition.phases.map((item,index)=>item.optional?null:index).filter(index=>index!==null)) {
             assert.equal(doc.currentPhase,phase)
             assert.equal(doc.completed,false)
             assert.equal(validSdlcDocument(doc),true)
@@ -71,7 +71,7 @@ test('repeating models archive all cycle notes and keep their history when switc
         doc=startSdlcCycle(doc)
         assert.equal(doc.cycle,2)
         assert.deepEqual(doc.notes,{})
-        assert.deepEqual(doc.history,[{cycle:1,notes:{[first]:'First cycle'}}])
+        assert.deepEqual(doc.history,[{cycle:1,notes:{[first]:'First cycle'},...(model==='agile'?{released:false}:{})}])
         assert.equal(finished.cycle,undefined)
         doc={...doc,notes:{[first]:'Second cycle'}}
         doc=switchSdlcModel(switchSdlcModel(doc,'waterfall'),model)
@@ -93,11 +93,68 @@ test('validation rejects invalid active, inactive and historical data', () => {
     for(const bad of [
         {...legacy,model:'unknown'}, {...legacy,currentPhase:6}, {...legacy,completed:true}, {...legacy,currentPhase:{}},
         {...legacy,notes:{invalid:'Unknown phase'}}, {...legacy,notes:{implementation:'x'.repeat(10001)}},
-        {...valid,currentPhase:7}, {...valid,history:undefined}, {...valid,history:[{cycle:2,notes:{}}]},
+        {...valid,currentPhase:8}, {...valid,history:undefined}, {...valid,history:[{cycle:2,notes:{}}]},
         {...valid,history:[{cycle:1,notes:{maintenance:'Wrong model'}}]}, {...valid,cycle:2.5},
         {...valid,modelStates:{waterfall:{...legacy,currentPhase:7}}}, {...valid,modelStates:{agile:valid}},
         {...valid,modelStates:{unknown:legacy}}, {...valid,modelStates:[]}, {...legacy,history:[]},
     ]) assert.equal(validToolDocument('sdlc',bad),false)
+})
+
+test('Scrum can finish a Sprint without a release and keeps Review and Retrospective separate', () => {
+    let doc={model:'agile',currentPhase:4,completed:false,notes:{test:'Definition of Done met'},released:false}
+    doc=advanceSdlc(doc)
+    assert.equal(sdlcModels.agile.phases[doc.currentPhase].id,'review')
+    assert.equal(doc.completed,false)
+    assert.equal(sdlcPhaseDone(doc,5),false)
+    doc=advanceSdlc(doc)
+    assert.equal(sdlcModels.agile.phases[doc.currentPhase].id,'retrospective')
+    assert.equal(doc.completed,false)
+    doc={...doc,notes:{...doc.notes,review:'Stakeholder feedback',retrospective:'Improve CI'}}
+    doc=advanceSdlc(doc)
+    assert.equal(doc.completed,true)
+    assert.equal(sdlcPhaseDone(doc,5),false)
+    const next=startSdlcCycle(doc)
+    assert.equal(next.cycle,2)
+    assert.equal(next.currentPhase,1)
+    assert.equal(sdlcPhaseDone(next,0),false)
+    assert.equal(next.history[0].released,false)
+    assert.equal(next.history[0].notes.retrospective,'Improve CI')
+    assert.equal(next.released,false)
+    assert.equal(validSdlcDocument(next),true)
+})
+
+test('recording an optional release does not complete the Sprint or skip feedback events', () => {
+    let doc={model:'agile',currentPhase:4,completed:false,notes:{},released:false}
+    doc=advanceSdlc(setSdlcPhase(doc,5))
+    assert.equal(doc.currentPhase,6)
+    assert.equal(doc.completed,false)
+    assert.equal(doc.released,true)
+    assert.equal(sdlcPhaseDone(doc,5),true)
+    assert.equal(validSdlcDocument(doc),true)
+    const rework=setSdlcPhase({...doc,notes:{test:'Failure details',release:'Version shipped'}},3)
+    assert.equal(rework.notes.test,'Failure details')
+    assert.equal(sdlcPhaseDone(rework,4),false)
+    assert.equal(rework.released,true)
+    assert.equal(validSdlcDocument(rework),true)
+})
+
+test('legacy combined Review and Retrospective completion migrates without losing notes or history', () => {
+    const old={model:'agile',currentPhase:6,completed:true,notes:{review:'Review and retrospective notes'},cycle:2,history:[{cycle:1,notes:{review:'Earlier findings'}}]}
+    assert.equal(validSdlcDocument(old),true)
+    const upgraded=normalizeSdlcDocument(old)
+    assert.equal(upgraded.currentPhase,7)
+    assert.equal(upgraded.completed,true)
+    assert.equal(upgraded.released,true)
+    assert.deepEqual(upgraded.notes,old.notes)
+    assert.deepEqual(upgraded.history,old.history)
+    assert.equal(validSdlcDocument(upgraded),true)
+    assert.equal(normalizeSdlcDocument(upgraded),upgraded)
+    const inactive=normalizeSdlcDocument({...legacy,modelStates:{agile:old}})
+    assert.equal(inactive.modelStates.agile.currentPhase,7)
+    assert.deepEqual(inactive.modelStates.agile.notes,old.notes)
+    assert.equal(validSdlcDocument(inactive),true)
+    assert.equal(normalizeSdlcDocument({...old,completed:false}).currentPhase,6)
+    for(const bad of [{...old,released:false},{...old,released:'yes'},{...legacy,released:false},{...old,currentPhase:7,history:[{cycle:1,notes:{},released:'no'}]}]) assert.equal(validSdlcDocument(bad),false)
 })
 
 test('Iterative requires evaluation before choosing another iteration or release', () => {

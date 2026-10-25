@@ -3,10 +3,12 @@ import {useAppDispatch} from "@/app/hooks"
 import {emptyDocuments, validToolDocument, type DocumentTool, type ToolDocumentMap} from "./tool-documents"
 import {toolDocumentsApi, type ToolKey, type SavedToolDocument} from "./tool-documents-api"
 import {useProjectToolUpdates} from "./use-project-tool-updates"
+import {normalizeSdlcDocument, type SdlcDocument} from "./sdlc-document"
 
 type Status = "loading" | "saved" | "unsaved" | "saving" | "error" | "conflict" | "load-error"
 export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}, userId: string, canWrite: boolean, persisted: boolean) {
     type Document = ToolDocumentMap[T]
+    const normalize = (value: Document): Document => key.tool === "sdlc" ? normalizeSdlcDocument(value as SdlcDocument) as Document : value
     const dispatch = useAppDispatch()
     const [document, renderDocument] = useState<Document>(emptyDocuments[key.tool] as Document)
     const [status, renderStatus] = useState<Status>("loading")
@@ -35,7 +37,7 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
             if (alive.current) setError("A teammate saved changes while you were editing. Download your draft before reloading the shared document.")
             return
         }
-        const next = (saved.document ?? emptyDocuments[key.tool]) as Document
+        const next = normalize((saved.document ?? emptyDocuments[key.tool]) as Document)
         revision.current = saved.revision; current.current = next; renderDocument(next)
         past.current = []; future.current = []; transaction.current = undefined; setHistoryVersion(value => value + 1)
         queuedRemote.current = null; setError(""); setStatus("saved"); backup()
@@ -95,6 +97,7 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
                     conflict = pending.current && draft.revision !== response.revision
                 }
             } catch { /* A malformed backup cannot grant project access. */ }
+            next = normalize(next)
             current.current = next; renderDocument(next)
             past.current = []; future.current = []; transaction.current = undefined; setHistoryVersion(value => value + 1)
             setError(conflict ? "A recovered draft conflicts with the saved project. Download your draft before reloading." : "")

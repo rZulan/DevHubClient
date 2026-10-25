@@ -30,7 +30,11 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
             return {kind: "star" as const, key: `star-${layer.cycle}-${phase}`, layer, phase, projected, depth: projected.depth, done,
                 current: layer.cycle === cycles && phase === currentPhase && !completed}
         }))
-        const items = [...lines, ...stars].sort((a, b) => a.depth - b.depth)
+        const bridges = scene.layers.slice(1).map((layer, index) => {
+            const from = project(scene.layers[index].phases.at(-1)!), to = project(layer.phases[0])
+            return {kind: "line" as const, key: `bridge-${layer.cycle}`, layer, from, to, depth: (from.depth + to.depth) / 2, done: true}
+        })
+        const items = [...lines, ...bridges, ...stars].sort((a, b) => a.depth - b.depth)
         const selectedLayer = scene.layers[selectedCycle - 1] ?? scene.layers.at(-1)!
         const labels = tornadoLabels(selectedLayer.phases.map(project), viewport)
         return {items, labels, guides: scene.guides.map(points => points.map(project))}
@@ -50,7 +54,7 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
             {rendered.items.map(item => {
                 const chosenLayer = item.layer.cycle === selectedCycle
                 const depthOpacity = Math.max(.3, Math.min(1, .65 + item.depth / scene.height))
-                if (item.kind === "line") return <path key={item.key} className="tornado-segment" data-cycle={item.layer.cycle}
+                if (item.kind === "line") return <path key={item.key} className="tornado-segment" data-cycle={item.layer.cycle} data-kind={item.key.startsWith("bridge-") ? "iteration-feedback" : "iteration-flow"}
                     d={`M${item.from.x} ${item.from.y}L${item.to.x} ${item.to.y}`} style={{...colorStyle(item.layer.hue), opacity: (chosenLayer ? item.done ? .95 : .55 : .5) * depthOpacity}}/>
                 const {projected, phase} = item
                 const selected = chosenLayer && phase === selectedPhase
