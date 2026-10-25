@@ -1,6 +1,9 @@
 import {createClientId} from "../../lib/create-client-id.ts"
 import {validNoteEmoji} from "./note-emojis.ts"
 import {validSdlcDocument, type SdlcDocument} from "./sdlc-document.ts"
+import {validDesignDocument, type DesignDocument} from "./design-document.ts"
+export type {DesignDocument, DesignLayer, DesignKind} from "./design-document.ts"
+export {designSvg} from "./design-export.ts"
 export {waterfallPhases} from "./sdlc-models.ts"
 export type {SdlcDocument} from "./sdlc-document.ts"
 
@@ -21,9 +24,6 @@ export type ErdEdge = "left" | "right" | "top" | "bottom"
 export type ErdAnchor = {edge: ErdEdge; offset: number}
 export type ErdRelationship = {id: string; fromTable: string; fromField: string; toTable: string; toField: string; fromFields?: string[]; toFields?: string[]; cardinality: "1:1" | "1:N" | "N:1" | "N:M"; leftEnd?: RelationshipEnd; rightEnd?: RelationshipEnd; fromAnchor?: ErdAnchor; toAnchor?: ErdAnchor; onDelete: "RESTRICT" | "CASCADE" | "SET NULL"}
 export type ErdDocument = {dialect?: ErdDialect; tables: ErdTable[]; relationships: ErdRelationship[]}
-export type DesignKind = "frame" | "rectangle" | "ellipse" | "text" | "button"
-export type DesignLayer = {id: string; name: string; kind: DesignKind; parentId?: string; x: number; y: number; width: number; height: number; fill: string; stroke: string; strokeWidth: number; radius: number; opacity: number; text: string; fontSize: number; textColor: string; hidden: boolean; locked: boolean}
-export type DesignDocument = {layers: DesignLayer[]}
 export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string; emoji?: string | null}
 export type NotesDocument = {notes: StickyNote[]}
 export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument}
@@ -47,11 +47,7 @@ export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
         })
     }
     if (tool === "sdlc") return validSdlcDocument(value)
-    if (tool === "ui-editor") return Array.isArray(value.layers) && value.layers.every(layer => record(layer)
-        && ["id", "name", "text", "fill", "stroke", "textColor"].every(key => text(layer, key))
-        && ["frame", "rectangle", "ellipse", "text", "button"].includes(String(layer.kind))
-        && ["x", "y", "width", "height", "radius", "strokeWidth", "opacity", "fontSize"].every(key => number(layer, key))
-        && ["hidden", "locked"].every(key => flag(layer, key)))
+    if (tool === "ui-editor") return validDesignDocument(value)
     const stringList = (items: unknown) => Array.isArray(items) && items.length > 0 && items.length <= 200 && items.every(item => typeof item === "string") && new Set(items).size === items.length
     return (value.dialect === undefined || erdDialects.includes(value.dialect as ErdDialect)) && Array.isArray(value.tables) && Array.isArray(value.relationships) && value.tables.every(table => record(table)
         && ["id", "name"].every(key => text(table, key)) && ["x", "y"].every(key => number(table, key)) && Array.isArray(table.fields)
@@ -111,21 +107,3 @@ export function downloadFile(text: string, name: string, mime: string) {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 export {erdSql} from "./erd-schema.ts"
-
-export function designSvg(document: DesignDocument): string {
-    const escape = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;")
-    const visible = document.layers.filter(layer => !layer.hidden && !document.layers.some(parent => parent.id === layer.parentId && parent.hidden))
-    const x = Math.min(0, ...visible.map(layer => layer.x)), y = Math.min(0, ...visible.map(layer => layer.y))
-    const width = Math.max(100, ...visible.map(layer => layer.x + layer.width)) - x
-    const height = Math.max(100, ...visible.map(layer => layer.y + layer.height)) - y
-    const clips: string[] = []
-    const shapes = visible.map((layer, index) => {
-        const parent = visible.find(item => item.id === layer.parentId)
-        if (parent) clips.push(`<clipPath id="clip-${index}"><rect x="${parent.x - layer.x}" y="${parent.y - layer.y}" width="${parent.width}" height="${parent.height}"/></clipPath>`)
-        const common = `fill="${layer.kind === "text" ? "none" : layer.fill}" stroke="${layer.stroke}" stroke-width="${layer.strokeWidth}"`
-        const shape = layer.kind === "ellipse" ? `<ellipse cx="${layer.width / 2}" cy="${layer.height / 2}" rx="${layer.width / 2}" ry="${layer.height / 2}" ${common}/>` : `<rect width="${layer.width}" height="${layer.height}" rx="${layer.radius}" ${common}/>`
-        const text = layer.text ? `<text x="${layer.kind === "button" ? layer.width / 2 : 12}" y="${layer.kind === "button" ? layer.height / 2 + layer.fontSize * .35 : layer.fontSize + 12}" text-anchor="${layer.kind === "button" ? "middle" : "start"}" font-family="Arial, sans-serif" font-size="${layer.fontSize}" fill="${layer.textColor}">${layer.text.split('\n').map((line, index) => `<tspan x="${layer.kind === "button" ? layer.width / 2 : 12}" dy="${index ? layer.fontSize * 1.4 : 0}">${escape(line)}</tspan>`).join("")}</text>` : ""
-        return `<g transform="translate(${layer.x} ${layer.y})" opacity="${layer.opacity}"${parent ? ` clip-path="url(#clip-${index})"` : ""}>${shape}${text}</g>`
-    }).join("\n")
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${width} ${height}" width="${width}" height="${height}">\n<defs>${clips.join("")}</defs>\n${shapes}\n</svg>`
-}

@@ -40,7 +40,7 @@ test('SQL creates tables before constraints and escapes identifiers', () => {
 })
 test('SVG skips hidden frames and children, and escapes text markup', () => {
     const layer = {id: 'text', kind: 'text', x: 10, y: 20, width: 100, height: 60, radius: 0, fill: '#ffffff', stroke: '#000000', strokeWidth: 0, opacity: 1, textColor: '#000000', fontSize: 16, text: '<script>&', hidden: false}
-    assert.match(designSvg({layers: [layer]}), /&lt;script>&amp;/)
+    assert.match(designSvg({layers: [layer]}), /&lt;script&gt;&amp;/)
     const svg = designSvg({layers: [{...layer, id: 'frame', kind: 'frame', hidden: true}, {...layer, parentId: 'frame'}]})
     assert.doesNotMatch(svg, /<g /)
 })

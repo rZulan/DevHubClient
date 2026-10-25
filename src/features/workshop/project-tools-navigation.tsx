@@ -10,8 +10,8 @@ const tools: Record<ProjectToolId, {label: string; underConstruction?: boolean}>
     todo: {label: "TODOs"},
     notes: {label: "Notes"},
     erd: {label: "ERD maker"},
-    "ui-editor": {label: "UI/UX Editor", underConstruction: true},
-    sdlc: {label: "SDLC Roadmap", underConstruction: true},
+    "ui-editor": {label: "UI/UX Editor"},
+    sdlc: {label: "SDLC Roadmap"},
 }
 
 export function ProjectToolsNavigation({userId, organizationId, expanded, onToggle}: {

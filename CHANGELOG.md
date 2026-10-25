@@ -2,7 +2,20 @@
 
 ## 2026-10-25
 
+### UI/UX studio
+- Replace the placeholder with a dedicated design canvas, drawing tools, eight resize handles, multi-selection, snapping, alignment, and keyboard shortcuts.
+- Keep layers nested under their screens with search, rename, drag reordering, visibility, locking, copy/paste, and reliable frame movement.
+- Add screen presets, editable starter screens, component assets, image fills, typography, shadows, and horizontal or vertical frame layout.
+- Connect screens with click actions, overlays, back navigation, and transitions; present prototypes with working text inputs, checkboxes, and toggles.
+- Export screens or the canvas as SVG and PNG, import JSON drafts, and retain shared autosaving, browser recovery, permissions, and undo/redo.
+- Integrate the workshop appearance and compact-screen drawers; remove the UI/UX under-construction marker.
+
 ### Development roadmap
+- Add a phase overview, owners, target dates, overdue indicators, real deliverable checklists, and blockers with completion reviews.
+- Preserve phase tracking in saved models, Sprint and iteration history, and independent deployment/maintenance progress; prevent blocked phases from being skipped.
+- Add visible undo/redo controls, keyboard shortcuts, reviewed JSON draft restore, and Markdown reports covering saved models and cycle history.
+- Keep phase actions reachable, open phase details in a compact-screen drawer, and fit the complete lifecycle on entry with readable map labels.
+- Remove the SDLC under-construction marker and connect phases to related workshop tools.
 - Align model paths with documented lifecycle practices and include expandable workflow guidance with source links.
 - Pair V Model development stages with their test levels; distinguish early review and test preparation from test execution after implementation.
 - Use a Scrum workflow for Agile with ongoing backlog refinement, overlapping development activities, optional release, and separate Sprint Review and Retrospective checkpoints.
@@ -17,7 +30,7 @@
 - Preserve shared saving, recovery drafts, undo/redo, permissions, and older Waterfall documents.
 
 ### Validation
-- Pass all 268 client regression tests and lint; verify the production build.
+- Pass the client regression suite and lint; verify the production build and browser workflows for phase tracking, completion, history, and draft restore.
 - Release matching API validation for all roadmap models, cycle history, and iterative release progress without a database migration.
 
 ## 2026-10-22

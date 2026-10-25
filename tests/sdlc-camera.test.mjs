@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {boundRoadmap, elasticRoadmap, fitRoadmap, roadmapPositions, roadmapSize} from '../src/features/workshop/sdlc-camera.ts'
 
-test('overview includes all phases; the initial phone view keeps labels readable', () => {
+test('fit includes all phases and an optional readable zoom remains available', () => {
     for (const viewport of [{width: 1080, height: 560}, {width: 350, height: 360}, {width: 800, height: 260}]) {
         const overview = fitRoadmap(viewport)
         assert.ok(overview.x >= 0 && overview.y >= 0)

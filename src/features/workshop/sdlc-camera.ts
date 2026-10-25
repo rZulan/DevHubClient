@@ -4,7 +4,9 @@ export const roadmapSize = {width: 1000, height: 900}
 export const roadmapPositions = sdlcModels.waterfall.positions
 
 export function fitRoadmap(viewport: {width: number; height: number}, readable = false): RoadmapCamera {
-    const zoom = Math.min(1.25, Math.max(readable ? .6 : .1, Math.min(viewport.width / roadmapSize.width, viewport.height / roadmapSize.height)))
+    // Leave room for labels, which retain a readable size when the scene is small.
+    const padding = 32
+    const zoom = Math.min(1.25, Math.max(readable ? .6 : .1, Math.min((viewport.width - padding * 2) / roadmapSize.width, (viewport.height - padding * 2) / roadmapSize.height)))
     return {zoom, x: (viewport.width - roadmapSize.width * zoom) / 2, y: (viewport.height - roadmapSize.height * zoom) / 2}
 }
 

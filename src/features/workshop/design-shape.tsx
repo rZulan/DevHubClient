@@ -1,0 +1,3 @@
+import type {DesignLayer} from "./design-document"
+import {designShapeStyle} from "./design-style"
+export function DesignShape({layer, checked = true}: {layer: DesignLayer; checked?: boolean}) {return <div className="ui-design-shape" style={{...designShapeStyle(layer), position: "relative"}}>{layer.control === "toggle" ? <span style={{position: "absolute", top: 4, left: checked ? Math.max(4, layer.width - layer.height + 4) : 4, width: Math.max(8, layer.height - 8), height: Math.max(8, layer.height - 8), borderRadius: "50%", background: "#ffffff", boxShadow: "0 1px 3px #0002"}}/> : layer.control === "checkbox" && !checked ? "" : layer.text}</div>}

@@ -36,7 +36,7 @@ export function useSdlcCamera(enabled = true) {
     const fit = useCallback(() => {stop(); const next = fitRoadmap(size.current); raw.current = next; commit(next)}, [commit, stop])
     const reset = useCallback((point: RoadmapPoint) => {
         stop()
-        const next = fitRoadmap(size.current, true)
+        const next = fitRoadmap(size.current)
         const focused = boundRoadmap({...next, x: size.current.width / 2 - point.x * next.zoom, y: size.current.height / 2 - point.y * next.zoom}, size.current)
         raw.current = focused; commit(focused)
     }, [commit, stop])
@@ -50,14 +50,15 @@ export function useSdlcCamera(enabled = true) {
         if (!enabled) return
         const element = viewport.current
         if (!element) return
-        let initialized = false
+        let initialized = false, windowWidth = window.innerWidth, windowHeight = window.innerHeight
         const observer = new ResizeObserver(([entry]) => {
             size.current = {width: entry.contentRect.width, height: entry.contentRect.height}
             if (!size.current.width || !size.current.height) return
             stop()
-            const next = initialized ? boundRoadmap(value.current, size.current) : fitRoadmap(size.current, true)
-            // Start at the headwater on small screens, with room to pan downstream.
-            if (!initialized) next.y = Math.max(0, next.y)
+            const resized = windowWidth !== window.innerWidth || windowHeight !== window.innerHeight
+            const next = initialized && !resized ? boundRoadmap(value.current, size.current) : fitRoadmap(size.current)
+            // Fit the entire lifecycle initially; zoom and phase details provide a closer view.
+            windowWidth = window.innerWidth; windowHeight = window.innerHeight
             initialized = true; raw.current = next; commit(next)
         })
         observer.observe(element)

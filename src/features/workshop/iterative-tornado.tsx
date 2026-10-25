@@ -1,16 +1,17 @@
 import {useEffect, useId, useImperativeHandle, useMemo, type CSSProperties, type Ref} from "react"
 import {Check, Move, Orbit, RotateCcw, ScanEye, View} from "lucide-react"
 import type {SdlcPhase} from "./sdlc-models"
+import type {SdlcWork} from "./sdlc-document"
 import {createTornadoScene, tornadoHue, tornadoLabels, tornadoProjection} from "./tornado-geometry"
 import {useTornadoCamera} from "./use-tornado-camera"
 import "./iterative-tornado.css"
 
 export type TornadoControls = {fit: () => void; zoom: (factor: number) => void; focus: (cycle: number, phase: number) => void}
-type Props = {ref: Ref<TornadoControls>; cycles: number; phases: readonly SdlcPhase[]; currentPhase: number; completed: boolean;
+type Props = {ref: Ref<TornadoControls>; cycles: number; phases: readonly SdlcPhase[]; currentPhase: number; completed: boolean; work?: SdlcWork;
     selectedCycle: number; selectedPhase: number; onSelect: (cycle: number, phase: number) => void; onZoomChange: (zoom: number) => void}
 const colorStyle = (hue: number) => ({"--tornado-hue": hue, color: `hsl(${hue} 72% var(--tornado-lightness))`, "--sdlc-ink": "currentColor"} as CSSProperties)
 
-export function IterativeTornado({ref, cycles, phases, currentPhase, completed, selectedCycle, selectedPhase, onSelect, onZoomChange}: Props) {
+export function IterativeTornado({ref, cycles, phases, currentPhase, completed, work, selectedCycle, selectedPhase, onSelect, onZoomChange}: Props) {
     const scene = useMemo(() => createTornadoScene(cycles, phases.length), [cycles, phases.length])
     const navigation = useTornadoCamera(scene)
     const {viewport, camera} = navigation
@@ -60,9 +61,10 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
                 const selected = chosenLayer && phase === selectedPhase
                 const detail = chosenLayer || cycles <= 16
                 const starSize = Math.max(3, Math.min(17, (detail ? 11 : 4) * projected.perspective * Math.sqrt(camera.zoom)))
-                const state = item.done ? "completed" : item.current ? "current phase" : "upcoming"
+        const blocked = item.layer.cycle === cycles && !item.done && work?.[phases[phase].id]?.blocked
+        const state = item.done ? "completed" : blocked ? "blocked" : item.current ? "current phase" : "upcoming"
                 return <g key={item.key} className={`tornado-phase ${selected ? "selected" : ""} ${item.current ? "current" : ""} ${item.done ? "completed" : ""}`}
-                    style={colorStyle(item.layer.hue)} transform={`translate(${projected.x} ${projected.y})`} data-cycle={item.layer.cycle} data-phase={phase} data-depth={item.depth.toFixed(3)}
+                    style={{...colorStyle(item.layer.hue), ...(blocked ? {color: "var(--destructive)"} : {})}} transform={`translate(${projected.x} ${projected.y})`} data-cycle={item.layer.cycle} data-phase={phase} data-depth={item.depth.toFixed(3)}
                     role="button" tabIndex={chosenLayer ? 0 : -1} aria-label={`Iteration ${item.layer.cycle}, ${phases[phase].title}, ${state}`} aria-pressed={selected}
                     onClick={() => choose(item.layer.cycle, phase)} onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); event.stopPropagation(); choose(item.layer.cycle, phase)}}}>
                     <title>Iteration {item.layer.cycle} · {phases[phase].title} · {state}</title>
