@@ -19,6 +19,7 @@ import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {TodoAssignees} from "@/features/workshop/todo-assignees"
 import {TodoBoardSettings} from "@/features/workshop/todo-board-settings"
+import {TodoBoardProgress} from "@/features/workshop/todo-board-progress"
 import {TodoTaskCard} from "@/features/workshop/todo-task-card"
 import {TodoTaskEditDialog, TodoTaskDeleteDialog} from "@/features/workshop/todo-task-dialogs"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
@@ -38,6 +39,7 @@ import {
     useTodoPagesInfiniteQuery
 } from "@/features/workshop/todo-api"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
+import "@/features/workshop/todo-board.css"
 
 const formatDate = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
     year: "numeric",
@@ -345,6 +347,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                         } else setCreating(true)
                     }}><Plus/>{selected ? "Add task" : "Create TODO"}</Button></div>}
             </section>
+            {selected && !isError && <TodoBoardProgress tasks={selected.tasks} columns={columns} busy={busy || isFetching}/>}
             {error && !creating && !addingTo && <p role="alert" className="workshop-form-error">{error}</p>}
             {isError && (selectedId || !todos.length) ?
                 <section className="workshop-empty-panel"><h3>Could not load TODOs</h3><p>Please try again to retrieve
@@ -386,7 +389,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                             <small className="workshop-column-complete"
                                                    title="Tasks in this column count as complete">Complete</small>}
                                         </header>
-                                        <div className="workshop-task-list">
+                                        <div className="workshop-task-list" role="region" aria-label={`${name} tasks`} tabIndex={0}>
                                             {tasks.map(task => <TodoTaskCard key={task.id} task={task} columns={columns} members={members} userId={userId}
                                                 canManage={canManage} disabled={busy || isFetching} dragging={draggedId === task.id}
                                                 onEdit={() => setEditing({task, boardRevision: selected.boardRevision})}
@@ -396,14 +399,14 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                                 onDragStart={event => startDrag(event, task.id)} onDragEnd={() => {setDraggedId(null); setDropColumn(null)}}/>)}
                                             {!tasks.length &&
                                                 <p className="workshop-todo-empty-column">No tasks yet</p>}
-                                            {canManage &&
-                                                <Button className="workshop-add-task" disabled={busy} variant="ghost"
-                                                        onClick={() => {
-                                                            setError("");
-                                                            setDraftAssignees([]);
-                                                            setAddingTo(id)
-                                                        }}><Plus/> Add a task</Button>}
                                         </div>
+                                        {canManage &&
+                                            <Button className="workshop-add-task" disabled={busy} variant="ghost"
+                                                    onClick={() => {
+                                                        setError("");
+                                                        setDraftAssignees([]);
+                                                        setAddingTo(id)
+                                                    }}><Plus/> Add a task</Button>}
                                     </section>
                                 })}
                             </div>

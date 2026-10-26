@@ -1,5 +1,5 @@
 // Playground is archived; keep its canvas implementation and project data for later.
-export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc"] as const
+export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "state-machine"] as const
 export type ProjectToolId = typeof projectToolIds[number]
 export type ToolPreferences = { order: ProjectToolId[]; hidden: ProjectToolId[] }
 

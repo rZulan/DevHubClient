@@ -48,7 +48,7 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
         <svg className="tornado-scene" viewBox={`0 0 ${viewport.width} ${viewport.height}`} aria-label={`${cycles} iteration ${cycles === 1 ? "layer" : "layers"} in a 3D tornado`}>
             <defs><g id={starId}><path d="M0-28L3-8L13-13L8-3L28 0L8 3L13 13L3 8L0 28L-3 8L-13 13L-8 3L-28 0L-8-3L-13-13L-3-8Z" opacity=".3"/><path d="M0-22L4-4L22 0L4 4L0 22L-4 4L-22 0L-4-4Z"/><circle r="3"/></g>
                 {scene.layers.map(layer => <radialGradient key={layer.cycle} id={`${starId}-halo-${layer.cycle}`} style={colorStyle(layer.hue)}>
-                    <stop offset="0" stopColor="currentColor" stopOpacity=".7"/><stop offset=".3" stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity="0"/>
+                    <stop offset="0" stopColor="currentColor" stopOpacity=".45"/><stop offset=".3" stopColor="currentColor" stopOpacity=".12"/><stop offset="1" stopColor="currentColor" stopOpacity="0"/>
                 </radialGradient>)}
             </defs>
             <g className="tornado-guides" aria-hidden="true">{rendered.guides.map((points, index) => <path key={index} d={points.map((point, i) => `${i ? "L" : "M"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ")}/>)}</g>
@@ -60,7 +60,9 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
                 const {projected, phase} = item
                 const selected = chosenLayer && phase === selectedPhase
                 const detail = chosenLayer || cycles <= 16
-                const starSize = Math.max(3, Math.min(17, (detail ? 11 : 4) * projected.perspective * Math.sqrt(camera.zoom)))
+                const pointScale = projected.perspective * Math.sqrt(camera.zoom)
+                const starSize = Math.max(2, Math.min(8, (detail ? 5 : 2) * pointScale))
+                const hitRadius = Math.max(14, Math.min(17, (detail ? 11 : 4) * pointScale) * 1.6)
         const blocked = item.layer.cycle === cycles && !item.done && work?.[phases[phase].id]?.blocked
         const state = item.done ? "completed" : blocked ? "blocked" : item.current ? "current phase" : "upcoming"
                 return <g key={item.key} className={`tornado-phase ${selected ? "selected" : ""} ${item.current ? "current" : ""} ${item.done ? "completed" : ""}`}
@@ -68,9 +70,9 @@ export function IterativeTornado({ref, cycles, phases, currentPhase, completed, 
                     role="button" tabIndex={chosenLayer ? 0 : -1} aria-label={`Iteration ${item.layer.cycle}, ${phases[phase].title}, ${state}`} aria-pressed={selected}
                     onClick={() => choose(item.layer.cycle, phase)} onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); event.stopPropagation(); choose(item.layer.cycle, phase)}}}>
                     <title>Iteration {item.layer.cycle} · {phases[phase].title} · {state}</title>
-                    <circle className="tornado-hit-target" r={Math.max(14, starSize * 1.6)}/>
-                    {selected && <circle className="tornado-selected-ring" r={starSize + 7}/>}
-                    <g className={`tornado-star-glow ${phase % 2 ? "alternate" : ""}`} transform={`scale(${starSize / 24})`}><circle className="tornado-star-halo" r="58" fill={`url(#${starId}-halo-${item.layer.cycle})`}/><use href={`#${starId}`}/></g>
+                    <circle className="tornado-hit-target" r={hitRadius}/>
+                    {selected && <circle className="tornado-selected-ring" r={starSize + 4}/>}
+                    <g className={`tornado-star-glow ${phase % 2 ? "alternate" : ""}`} transform={`scale(${starSize / 24})`}><circle className="tornado-star-halo" r="42" fill={`url(#${starId}-halo-${item.layer.cycle})`}/><use href={`#${starId}`}/></g>
                 </g>
             })}
             <g className="tornado-labels" aria-hidden="true">{rendered.labels.map(label => {

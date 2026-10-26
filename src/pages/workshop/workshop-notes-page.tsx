@@ -34,7 +34,7 @@ export function WorkshopNotesPage() {
 function NotesBoard() {
     const {organization, project, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    const canWrite = hasWorkshopPermission(organization, userId, "Edit ideation")
+    const canWrite = hasWorkshopPermission(organization, userId, "Manage notes")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "notes"}, userId, canWrite, isPersistedOrganization)
     const {document, setDocument, canEdit, status, error} = editor
     const recovery = useNoteDrafts(noteDraftKey(userId, organization.id, project!.id), document.notes, status === "saved")

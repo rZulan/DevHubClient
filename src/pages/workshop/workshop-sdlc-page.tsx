@@ -35,7 +35,7 @@ export function WorkshopSdlcPage() {
 function SdlcRoadmap() {
     const {organization, project, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    const canWrite = hasWorkshopPermission(organization, userId, "Manage projects")
+    const canWrite = hasWorkshopPermission(organization, userId, "Manage roadmap")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "sdlc"}, userId, canWrite, isPersistedOrganization)
     const {document, setDocument, canEdit} = editor
     const [selectedPhase, setSelectedPhase] = useState<{model: SdlcModel; index: number; release?: boolean} | null>(null)

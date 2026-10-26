@@ -15,7 +15,7 @@ const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop
 function navigation() {
     const states = [], storage = new Map()
     let cursor = 0, order = [...projectTools.projectToolIds]
-    const bounds = {left:100, right:364, top:100, bottom:322}
+    const bounds = {left:100, right:364, top:100, bottom:100 + projectTools.projectToolIds.length * 45 - 3}
     const container = {
         setPointerCapture() {},
         getBoundingClientRect: () => bounds,
@@ -67,14 +67,14 @@ test('drop line follows every destination during one captured drag, including to
     const n = navigation()
     n.start('todo',121)
     assert.equal(n.indicator(),undefined)
-    for (const [pointerY, lineY] of [[160,45],[200,90],[250,135],[330,222],[100,45]]) {
+    for (const [pointerY, lineY] of [[160,45],[200,90],[250,135],[330,225],[375,267],[100,45]]) {
         n.move(pointerY)
         assert.equal(n.indicator().props.style.top,lineY)
         assert.equal(n.preview().props.style.top,pointerY - 120)
         assert.equal(n.indicator().props['aria-hidden'],'true')
     }
     n.drop(250)
-    assert.deepEqual(n.order(),['notes','erd','todo','ui-editor','sdlc'])
+    assert.deepEqual(n.order(),['notes','erd','todo','ui-editor','sdlc','state-machine'])
     assert.equal(n.indicator(),undefined)
     assert.equal(n.preview(),undefined)
     assert.equal(n.storage.size,1)

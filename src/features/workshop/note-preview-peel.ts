@@ -108,7 +108,7 @@ export function beginNoteHover(source: HTMLElement) {
         hovering.set(source, peel)
         source.dataset.noteHoverActive = "true"
     }
-    peel.moveTo(noteHoverProgress, 180)
+    peel.moveTo(noteHoverProgress, 90)
 }
 
 export function endNoteHover(source: HTMLElement) {

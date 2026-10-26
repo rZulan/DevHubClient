@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {Input} from "@/components/ui/input"
 import {getApiErrorMessage} from "@/features/auth/api-error"
-import {canManageWorkshopMember, canManageWorkshopRole,} from "@/features/workshop/workshop-access"
+import {canAssignWorkshopRole, canManageWorkshopMember} from "@/features/workshop/workshop-access"
 import type {WorkshopMember, WorkshopRole} from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
+import {OwnerPromotionDialog} from "@/features/workshop/owner-promotion-dialog"
 import {
     useAssignOrganizationRoleMutation,
     usePromoteOrganizationOwnerMutation,
@@ -29,12 +30,13 @@ import {
 const joinedFormat = new Intl.DateTimeFormat(undefined, {month: "short", day: "numeric", year: "numeric"})
 
 export function MembersSettingsPage() {
-    const {organization, canInvite, openInviteDialog} = useOutletContext<WorkshopOutletContext>()
+    const {organization, canInvite, openInviteDialog, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
     const currentUserId = useAppSelector((state) => state.auth.user?.id)
     const [query, setQuery] = useState("")
     const [error, setError] = useState("")
     const [removing, setRemoving] = useState<WorkshopMember | null>(null)
-    const [assignRole] = useAssignOrganizationRoleMutation()
+    const [ownerCandidate, setOwnerCandidate] = useState<WorkshopMember | null>(null)
+    const [assignRole, {isLoading: isAssigning}] = useAssignOrganizationRoleMutation()
     const [promoteOwner] = usePromoteOrganizationOwnerMutation()
     const [removeMember, {isLoading: isRemoving}] = useRemoveOrganizationMemberMutation()
 
@@ -47,16 +49,17 @@ export function MembersSettingsPage() {
     const members = useMemo(() => {
         const search = query.trim().toLowerCase()
         return organization.members
-            .filter((member) => !search || `${member.name} ${member.username}`.toLowerCase().includes(search))
+            .filter((member) => !search || `${member.name} ${member.username} ${member.nickname ?? ""}`.toLowerCase().includes(search))
             .sort((left, right) =>
                 Number(Boolean(right.isOwner)) - Number(Boolean(left.isOwner)) ||
                 left.name.localeCompare(right.name))
     }, [organization.members, query])
 
     async function toggleRole(member: WorkshopMember, role: WorkshopRole, assigned: boolean) {
+        if (isAssigning || !isPersistedOrganization) return
         setError("")
         try {
-            if (role.isOwnerRole) await promoteOwner({organizationId: organization.id, userId: member.id}).unwrap()
+            if (role.isOwnerRole) {if (assigned && currentMember?.isOwner) setOwnerCandidate(member)}
             else await assignRole({
                 organizationId: organization.id,
                 roleId: role.id,
@@ -109,13 +112,12 @@ export function MembersSettingsPage() {
                     // Everyone holds the default role, so only surface it when it is the member's only role.
                     const customRoles = assignedRoles.filter((role) => !role.isDefaultRole)
                     const memberRoles = customRoles.length || member.isOwner ? customRoles : assignedRoles
-                    const canRemove = canManageWorkshopMember(organization, currentUserId, member.id)
-                    const assignableRoles = roles.filter((role) =>
+                    const canRemove = isPersistedOrganization && canManageWorkshopMember(organization, currentUserId, member.id)
+                    const assignableRoles = roles.filter((role) => isPersistedOrganization && (
                         role.isOwnerRole
                             ? currentMember?.isOwner && !member.isOwner
                             : !role.isDefaultRole &&
-                            canManageWorkshopMember(organization, currentUserId, member.id) &&
-                            canManageWorkshopRole(organization, currentUserId, role))
+                            canAssignWorkshopRole(organization, currentUserId, member.id, role)))
                     const presence = member.presenceStatus ?? (member.online ? "online" : "offline")
 
                     return (
@@ -160,7 +162,7 @@ export function MembersSettingsPage() {
                                         return (
                                             <DropdownMenuCheckboxItem
                                                 checked={assigned}
-                                                disabled={!canToggle}
+                                                disabled={!canToggle || isAssigning}
                                                 key={role.id}
                                                 onCheckedChange={(checked) => void toggleRole(member, role, checked === true)}
                                                 onSelect={(event) => event.preventDefault()}
@@ -186,7 +188,9 @@ export function MembersSettingsPage() {
             </section>
 
             <p className="workshop-settings-footnote">You can change roles and remove members only below your highest
-                role. Owners can promote other owners.</p>
+                role. Role assignments need Manage roles; removals need Manage members. Reassign team leadership before removing a leader. Owners can promote other owners.</p>
+
+            <OwnerPromotionDialog member={ownerCandidate} organizationName={organization.name} onClose={() => setOwnerCandidate(null)} onConfirm={async () => {if (ownerCandidate && currentMember?.isOwner) await promoteOwner({organizationId: organization.id, userId: ownerCandidate.id}).unwrap()}}/>
 
             <Dialog open={Boolean(removing)} onOpenChange={(open) => {
                 if (!open) setRemoving(null)

@@ -10,6 +10,14 @@ export type WorkshopPermission =
     | "Manage projects"
     | "Manage tasks"
     | "Edit ideation"
+    | "Edit ERD"
+    | "Edit UI designs"
+    | "Manage notes"
+    | "Manage wiki"
+    | "Manage bug reports"
+    | "Manage roadmap"
+    | "Manage dashboard"
+    | "Manage invites"
 
 export type WorkshopRole = {
     id: string
@@ -123,6 +131,7 @@ export type ApiOrganizationInvite = {
     token: string
     expiresAtUtc: string
 }
+export type ActiveOrganizationInvite = {id: string; createdByUserId: string; createdAtUtc: string; expiresAtUtc: string}
 
 export type ApiOrganizationRole = {
     id: string

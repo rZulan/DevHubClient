@@ -25,7 +25,7 @@ export function WorkshopUiEditorPage() {
 }
 function UiEditor() {
     const {organization, project, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
-    const userId = useAppSelector(state => state.auth.user?.id) ?? "current", canWrite = hasWorkshopPermission(organization, userId, "Edit ideation")
+    const userId = useAppSelector(state => state.auth.user?.id) ?? "current", canWrite = hasWorkshopPermission(organization, userId, "Edit UI designs")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "ui-editor"}, userId, canWrite, isPersistedOrganization)
     const {document, setDocument, canEdit} = editor
     const workspace = useRef<HTMLElement>(null), fileInput = useRef<HTMLInputElement>(null), imageInput = useRef<HTMLInputElement>(null), imageTarget = useRef<string | undefined>(undefined), pasteCount = useRef({text: "", count: 0})

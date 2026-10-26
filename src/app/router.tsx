@@ -16,6 +16,10 @@ export const router = createBrowserRouter([
         HydrateFallback: RouterFallback,
         children: [
             {
+                path: "report-bug/:token",
+                lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
+            },
+            {
                 element: <RootLayout/>,
                 children: [
                     {
@@ -95,6 +99,18 @@ export const router = createBrowserRouter([
                                     },
                                     {path: "lobby", loader: () => redirect("../dashboard")},
                                     {
+                                        path: "project-wiki",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-project-wiki-page")).WorkshopProjectWikiPage,
+                                        }),
+                                    },
+                                    {
+                                        path: "bug-reports",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-bug-reports-page")).WorkshopBugReportsPage,
+                                        }),
+                                    },
+                                    {
                                         path: "todo",
                                         lazy: async () => ({
                                             Component: (await import("@/pages/workshop/workshop-todo-page")).WorkshopTodoPage,
@@ -124,6 +140,12 @@ export const router = createBrowserRouter([
                                         path: "sdlc",
                                         lazy: async () => ({
                                             Component: (await import("@/pages/workshop/workshop-sdlc-page")).WorkshopSdlcPage,
+                                        }),
+                                    },
+                                    {
+                                        path: "state-machine",
+                                        lazy: async () => ({
+                                            Component: (await import("@/pages/workshop/workshop-state-machine-page")).WorkshopStateMachinePage,
                                         }),
                                     },
                                     {
@@ -174,6 +196,12 @@ export const router = createBrowserRouter([
                                                 path: "members",
                                                 lazy: async () => ({
                                                     Component: (await import("@/pages/workshop/settings/members-settings-page")).MembersSettingsPage,
+                                                }),
+                                            },
+                                            {
+                                                path: "invites",
+                                                lazy: async () => ({
+                                                    Component: (await import("@/pages/workshop/settings/invites-settings-page")).InvitesSettingsPage,
                                                 }),
                                             },
                                             {

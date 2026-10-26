@@ -41,7 +41,7 @@ export function WorkshopErdPage() {
 function ErdEditor() {
     const {organization, project, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    const canWrite = hasWorkshopPermission(organization, userId, "Edit ideation")
+    const canWrite = hasWorkshopPermission(organization, userId, "Edit ERD")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "erd"}, userId, canWrite, isPersistedOrganization)
     const {document, setDocument, canEdit} = editor
     const dialect = document.dialect ?? "postgresql"

@@ -514,7 +514,7 @@ export function WorkshopLobbyPage() {
     const [publishError, setPublishError] = useState("")
     const [now, setNow] = useState(() => new Date())
     const isPersistedOrganization = guidPattern.test(organization.id)
-    const canManageDashboard = isPersistedOrganization && hasWorkshopPermission(organization, user?.id ?? "current", "Manage organization")
+    const canManageDashboard = isPersistedOrganization && hasWorkshopPermission(organization, user?.id ?? "current", "Manage dashboard")
     const canManageTeams = hasWorkshopPermission(organization, user?.id ?? "current", "Manage teams")
     const {data: dashboard, isLoading: dashboardLoading} = useGetOrganizationDashboardQuery(
         organization.id,

@@ -10,50 +10,25 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {getApiErrorMessage} from "@/features/auth/api-error"
 import {
-    canManageWorkshopMember,
+    canAssignWorkshopRole,
     canManageWorkshopRole,
     hasWorkshopPermission,
 } from "@/features/workshop/workshop-access"
-import type {WorkshopPermission, WorkshopRole,} from "@/features/workshop/workshop-types"
+import type {WorkshopMember, WorkshopPermission, WorkshopRole,} from "@/features/workshop/workshop-types"
+import {OwnerPromotionDialog} from "@/features/workshop/owner-promotion-dialog"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
+import {availablePermissions, permissionGroups, permissionDescriptions, permissionLabels, impliedPermissionSources} from "@/features/workshop/workshop-permissions"
 import {
     useAssignOrganizationRoleMutation,
     useCreateOrganizationRoleMutation,
     useDeleteOrganizationRoleMutation,
+    useMoveOrganizationRoleMutation,
     usePromoteOrganizationOwnerMutation,
     useUpdateOrganizationRoleMutation,
 } from "@/services/api"
 
-const availablePermissions = [
-    "Administrator",
-    "Manage organization",
-    "Manage roles",
-    "Manage members",
-    "Change nicknames",
-    "Create invites",
-    "Manage teams",
-    "View all projects",
-    "Manage projects",
-    "Manage tasks",
-    "Edit ideation",
-] as const satisfies readonly WorkshopPermission[]
-
-const permissionDescriptions: Record<WorkshopPermission, string> = {
-    Administrator: "Grants every regular permission without bypassing role hierarchy.",
-    "Manage organization": "Edit the organization name, description, and dashboard.",
-    "Manage roles": "Create and manage roles and assignments below this role.",
-    "Manage members": "Remove organization members lower in the hierarchy.",
-    "Change nicknames": "Set organization-specific display names for members.",
-    "Create invites": "Create invitation links for new organization members.",
-    "Manage teams": "Create, rename, delete, and change team membership or leadership.",
-    "View all projects": "See projects owned by teams this member has not joined.",
-    "Manage projects": "Create, edit, move, archive, and delete projects.",
-    "Manage tasks": "Create, assign, move, edit, and delete project tasks.",
-    "Edit ideation": "Create, edit, move, and delete ideation items.",
-}
-
 export function WorkshopRolesPage() {
-    const {organization} = useOutletContext<WorkshopOutletContext>()
+    const {organization, isPersistedOrganization} = useOutletContext<WorkshopOutletContext>()
     const currentUserId = useAppSelector((state) => state.auth.user?.id)
     const [editingRole, setEditingRole] = useState<WorkshopRole | null>(null)
     const [isCreating, setIsCreating] = useState(false)
@@ -61,9 +36,13 @@ export function WorkshopRolesPage() {
     const [createRole, {isLoading: isCreatingRole}] = useCreateOrganizationRoleMutation()
     const [updateRole, {isLoading: isUpdatingRole}] = useUpdateOrganizationRoleMutation()
     const [deleteRole, {isLoading: isDeletingRole}] = useDeleteOrganizationRoleMutation()
-    const [assignRole] = useAssignOrganizationRoleMutation()
-    const [promoteOwner] = usePromoteOrganizationOwnerMutation()
-    const canCreateRoles = hasWorkshopPermission(organization, currentUserId, "Manage roles")
+    const [moveRoleRequest, {isLoading: isMovingRole}] = useMoveOrganizationRoleMutation()
+    const [assignRole, {isLoading: isAssigning}] = useAssignOrganizationRoleMutation()
+    const [promoteOwner, {isLoading: isPromoting}] = usePromoteOrganizationOwnerMutation()
+    const [deletingRole, setDeletingRole] = useState<WorkshopRole | null>(null)
+    const [ownerCandidate, setOwnerCandidate] = useState<WorkshopMember | null>(null)
+    const busy = isCreatingRole || isUpdatingRole || isDeletingRole || isMovingRole || isAssigning || isPromoting
+    const canCreateRoles = isPersistedOrganization && hasWorkshopPermission(organization, currentUserId, "Manage roles")
     const roles = useMemo(
         () => [...organization.roles].sort((left, right) => left.order - right.order),
         [organization.roles],
@@ -73,26 +52,10 @@ export function WorkshopRolesPage() {
         const movableRoles = roles.filter((candidate) => !candidate.isOwnerRole && !candidate.isDefaultRole)
         const index = movableRoles.findIndex((candidate) => candidate.id === role.id)
         const target = movableRoles[index + direction]
-        if (!target || !canManageWorkshopRole(organization, currentUserId, target)) return
+        if (busy || !target || !canManageWorkshopRole(organization, currentUserId, role) || !canManageWorkshopRole(organization, currentUserId, target)) return
         setError("")
         try {
-            await Promise.all([
-                updateRole({
-                    organizationId: organization.id,
-                    roleId: role.id,
-                    role: {name: role.name, color: role.color, position: target.order, permissions: role.permissions}
-                }).unwrap(),
-                updateRole({
-                    organizationId: organization.id,
-                    roleId: target.id,
-                    role: {
-                        name: target.name,
-                        color: target.color,
-                        position: role.order,
-                        permissions: target.permissions
-                    }
-                }).unwrap(),
-            ])
+            await moveRoleRequest({organizationId: organization.id, roleId: role.id, direction}).unwrap()
         } catch (moveError) {
             setError(getApiErrorMessage(moveError))
         }
@@ -103,7 +66,7 @@ export function WorkshopRolesPage() {
         try {
             if (role.isOwnerRole) {
                 if (assigned) {
-                    await promoteOwner({organizationId: organization.id, userId: memberId}).unwrap()
+                    setOwnerCandidate(organization.members.find(member => member.id === memberId) ?? null)
                 }
                 return
             }
@@ -120,10 +83,12 @@ export function WorkshopRolesPage() {
     }
 
     async function removeRole(role: WorkshopRole) {
+        if (busy || !canManageWorkshopRole(organization, currentUserId, role)) return
         setError("")
         try {
             await deleteRole({organizationId: organization.id, roleId: role.id}).unwrap()
             setEditingRole(null)
+            setDeletingRole(null)
         } catch {
             setError("This role could not be deleted. Protected roles and higher roles cannot be removed.")
         }
@@ -159,7 +124,7 @@ export function WorkshopRolesPage() {
                     const members = organization.members.filter((member) =>
                         (member.roleIds ?? [member.roleId]).includes(role.id),
                     )
-                    const manageable = canManageWorkshopRole(organization, currentUserId, role)
+                    const manageable = isPersistedOrganization && canManageWorkshopRole(organization, currentUserId, role)
                     const movableRoles = roles.filter((candidate) => !candidate.isOwnerRole && !candidate.isDefaultRole)
                     const movableIndex = movableRoles.findIndex((candidate) => candidate.id === role.id)
                     return (
@@ -176,7 +141,7 @@ export function WorkshopRolesPage() {
                                 </header>
                                 <div className="workshop-permission-tags">
                                     {role.permissions.map((permission) => <span
-                                        key={permission}><Check/> {permission}</span>)}
+                                        key={permission}><Check/> {permissionLabels[permission] ?? permission}</span>)}
                                     {!role.permissions.length && <small>No elevated permissions</small>}
                                 </div>
                             </div>
@@ -187,11 +152,11 @@ export function WorkshopRolesPage() {
                             </div>
                             {manageable && <div className="workshop-role-order-actions">
                                 {!role.isOwnerRole && !role.isDefaultRole && <>
-                                    <Button aria-label={`Move ${role.name} up`} disabled={movableIndex <= 0}
+                                    <Button aria-label={`Move ${role.name} up`} disabled={busy || movableIndex <= 0 || !canManageWorkshopRole(organization, currentUserId, movableRoles[movableIndex - 1])}
                                             onClick={() => void moveRole(role, -1)} size="icon-xs" type="button"
                                             variant="ghost"><ArrowUp/></Button>
                                     <Button aria-label={`Move ${role.name} down`}
-                                            disabled={movableIndex < 0 || movableIndex >= movableRoles.length - 1}
+                                            disabled={busy || movableIndex < 0 || movableIndex >= movableRoles.length - 1 || !canManageWorkshopRole(organization, currentUserId, movableRoles[movableIndex + 1])}
                                             onClick={() => void moveRole(role, 1)} size="icon-xs" type="button"
                                             variant="ghost"><ArrowDown/></Button>
                                 </>}
@@ -205,6 +170,8 @@ export function WorkshopRolesPage() {
                 })}
             </div>
 
+            <OwnerPromotionDialog member={ownerCandidate} organizationName={organization.name} onClose={() => setOwnerCandidate(null)} onConfirm={async () => {if (ownerCandidate) await promoteOwner({organizationId: organization.id, userId: ownerCandidate.id}).unwrap()}}/>
+
             <RoleDialog
                 busy={isCreatingRole}
                 currentUserId={currentUserId}
@@ -214,8 +181,8 @@ export function WorkshopRolesPage() {
                     try {
                         await createRole({organizationId: organization.id, role: draft}).unwrap()
                         setIsCreating(false)
-                    } catch {
-                        setError("The role could not be created. Check its name and your permissions.")
+                    } catch (failure) {
+                        setError(getApiErrorMessage(failure)); throw failure
                     }
                 }}
                 open={isCreating}
@@ -223,11 +190,11 @@ export function WorkshopRolesPage() {
             />
 
             <RoleDialog
-                busy={isUpdatingRole || isDeletingRole}
+                busy={busy}
                 members={editingRole ? organization.members : undefined}
                 onClose={() => setEditingRole(null)}
                 onDelete={editingRole && !editingRole.isOwnerRole && !editingRole.isDefaultRole
-                    ? () => void removeRole(editingRole)
+                    ? () => setDeletingRole(editingRole)
                     : undefined}
                 onMemberChange={editingRole
                     ? (memberId, assigned) => void toggleMember(editingRole, memberId, assigned)
@@ -242,8 +209,8 @@ export function WorkshopRolesPage() {
                             role: {...draft, position: editingRole.order},
                         }).unwrap()
                         setEditingRole(null)
-                    } catch {
-                        setError("The role could not be updated. Check the hierarchy and role name.")
+                    } catch (failure) {
+                        setError(getApiErrorMessage(failure)); throw failure
                     }
                 }}
                 open={Boolean(editingRole)}
@@ -251,6 +218,8 @@ export function WorkshopRolesPage() {
                 currentUserId={currentUserId}
                 role={editingRole ?? undefined}
             />
+
+            <Dialog open={!!deletingRole} onOpenChange={open => {if (!open && !busy) setDeletingRole(null)}}><DialogContent><DialogHeader><DialogTitle>Delete {deletingRole?.name}?</DialogTitle><DialogDescription>This removes the role and its permissions from all assigned members. Their other roles remain. This cannot be undone.</DialogDescription></DialogHeader>{error && <p role="alert" className="workshop-form-error">{error}</p>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={busy} onClick={() => setDeletingRole(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={() => {if (deletingRole) void removeRole(deletingRole)}}>{isDeletingRole ? "Deleting…" : "Delete role"}</Button></div></DialogContent></Dialog>
 
         </div>
     )
@@ -288,12 +257,14 @@ function RoleDialog({
     const [name, setName] = useState("")
     const [color, setColor] = useState("#f472b6")
     const [permissions, setPermissions] = useState<Set<WorkshopPermission>>(() => new Set())
+    const [saveError, setSaveError] = useState("")
 
     useEffect(() => {
         if (!open) return
+        setSaveError("")
         setName(role?.name ?? "")
         setColor(role?.color ?? "#f472b6")
-        setPermissions(new Set(role?.isOwnerRole ? availablePermissions : role?.permissions ?? []))
+        setPermissions(new Set(role?.isOwnerRole ? availablePermissions : role?.permissions.includes("Administrator") ? ["Administrator"] : role?.permissions ?? []))
     }, [open, role])
 
     const administrator = role?.isOwnerRole || permissions.has("Administrator")
@@ -305,7 +276,10 @@ function RoleDialog({
     function togglePermission(permission: WorkshopPermission, checked: boolean) {
         setPermissions((current) => {
             if (permission === "Administrator") {
-                return checked ? new Set(availablePermissions) : new Set<WorkshopPermission>()
+                const next = new Set(current)
+                if (checked) next.add(permission)
+                else next.delete(permission)
+                return next
             }
             const next = new Set(current)
             if (checked) next.add(permission)
@@ -316,12 +290,15 @@ function RoleDialog({
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
-        await onSave({name: name.trim(), color, permissions: [...permissions]})
+        if (busy) return
+        setSaveError("")
+        try {await onSave({name: name.trim(), color, permissions: [...permissions]})}
+        catch (failure) {setSaveError(getApiErrorMessage(failure))}
     }
 
     return (
         <Dialog open={open} onOpenChange={(nextOpen) => {
-            if (!nextOpen) onClose()
+            if (!nextOpen && !busy) onClose()
         }}>
             {open && (
                 <DialogContent className="workshop-modal workshop-role-modal sm:max-w-2xl">
@@ -337,32 +314,34 @@ function RoleDialog({
 
                     <form onSubmit={submit}>
                         <div className="workshop-role-fields">
-                            <Label>Role name<Input autoFocus maxLength={100}
+                            <Label>Role name<Input autoFocus disabled={busy} maxLength={100}
                                                    onChange={(event) => setName(event.target.value)} required
                                                    value={name}/></Label>
-                            <Label>Color<Input disabled={role?.isOwnerRole}
+                            <Label>Color<Input disabled={role?.isOwnerRole || busy}
                                                onChange={(event) => setColor(event.target.value)} type="color"
                                                value={color}/></Label>
                         </div>
                         <fieldset>
                             <legend>Permissions</legend>
-                            {availablePermissions.map((permission) => {
+                            <p className="text-xs leading-relaxed text-muted-foreground">Members can view projects available to their teams. Tool editing permissions do not grant access to other teams’ projects.</p>
+                            {permissionGroups.map(group => <div key={group.title} className="grid gap-2" role="group" aria-label={group.title}><h4 className="mt-3 text-xs font-semibold text-muted-foreground">{group.title}</h4>{group.permissions.map((permission) => {
+                                const includedBy = (impliedPermissionSources[permission] ?? []).filter(source => permissions.has(source))
                                 const locked = Boolean(
                                     role?.isOwnerRole ||
                                     (administrator && permission !== "Administrator") ||
                                     !canGrantPermission(permission),
-                                )
+                                ) || includedBy.length > 0
                                 return (
                                     <Label key={permission}>
                                         <Checkbox
-                                            checked={administrator || permissions.has(permission)}
-                                            disabled={locked}
+                                            checked={administrator || permissions.has(permission) || includedBy.length > 0}
+                                            disabled={locked || busy}
                                             onCheckedChange={(checked) => togglePermission(permission, checked === true)}
                                         />
-                                        <span><strong>{permission}</strong><small>{permissionDescriptions[permission]}</small></span>
+                                        <span><strong>{permissionLabels[permission] ?? permission}</strong><small>{permissionDescriptions[permission]}{includedBy.length > 0 && ` Included through ${includedBy.map(source => permissionLabels[source] ?? source).join(", ")}.`}</small></span>
                                     </Label>
                                 )
-                            })}
+                            })}</div>)}
                         </fieldset>
 
                         {role && members && organization && (
@@ -373,13 +352,12 @@ function RoleDialog({
                                     const canChange = role.isOwnerRole
                                         ? organization.members.find((candidate) => candidate.id === currentUserId)?.isOwner && !member.isOwner
                                         : !role.isDefaultRole &&
-                                        canManageWorkshopMember(organization, currentUserId, member.id) &&
-                                        canManageWorkshopRole(organization, currentUserId, role)
+                                        canAssignWorkshopRole(organization, currentUserId, member.id, role)
                                     return (
                                         <Label key={member.id}>
                                             <Checkbox
                                                 checked={assigned}
-                                                disabled={!canChange}
+                                                disabled={!canChange || busy}
                                                 onCheckedChange={(checked) => onMemberChange?.(member.id, checked === true)}
                                             />
                                             <span><strong>{member.name}</strong><small>@{member.username}{member.isOwner ? " · Owner" : ""}</small></span>
@@ -389,6 +367,7 @@ function RoleDialog({
                             </fieldset>
                         )}
 
+                        {saveError && <p role="alert" className="workshop-form-error">{saveError}</p>}
                         <div className="workshop-role-dialog-actions">
                             {onDelete && <Button disabled={busy} onClick={onDelete} type="button" variant="destructive"><Trash2/> Delete
                                 role</Button>}

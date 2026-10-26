@@ -1,0 +1,11 @@
+.workshop-content:has(.workshop-todo-board) { display: flex; flex-direction: column; overflow: hidden; }
+.workshop-page.workshop-board-page:has(> .workshop-todo-board) { flex: 1; height: 100%; min-height: 0; overflow: hidden; }
+.workshop-board-page:has(> .workshop-todo-board) > .workshop-page-heading,
+.workshop-board-page:has(> .workshop-todo-board) > [role=alert] { flex-shrink: 0; }
+.workshop-board.workshop-todo-board { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); overflow-y: hidden; }
+.workshop-todo-board > .workshop-board-column { min-height: 0; overflow: hidden; }
+.workshop-todo-board > .workshop-board-column > header { flex-shrink: 0; }
+.workshop-todo-board .workshop-task-list { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+.workshop-todo-board .workshop-task-list > * { flex-shrink: 0; }
+.workshop-todo-board .workshop-task-list:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.workshop-todo-board .workshop-add-task { flex-shrink: 0; width: auto; align-self: stretch; margin: 0 .55rem .55rem; }

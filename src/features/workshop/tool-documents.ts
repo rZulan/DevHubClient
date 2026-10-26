@@ -2,6 +2,7 @@ import {createClientId} from "../../lib/create-client-id.ts"
 import {validNoteEmoji} from "./note-emojis.ts"
 import {validSdlcDocument, type SdlcDocument} from "./sdlc-document.ts"
 import {validDesignDocument, type DesignDocument} from "./design-document.ts"
+import {validWikiDocument, type WikiDocument} from "./wiki-document.ts"
 export type {DesignDocument, DesignLayer, DesignKind} from "./design-document.ts"
 export {designSvg} from "./design-export.ts"
 export {waterfallPhases} from "./sdlc-models.ts"
@@ -26,9 +27,9 @@ export type ErdRelationship = {id: string; fromTable: string; fromField: string;
 export type ErdDocument = {dialect?: ErdDialect; tables: ErdTable[]; relationships: ErdRelationship[]}
 export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string; emoji?: string | null}
 export type NotesDocument = {notes: StickyNote[]}
-export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument}
+export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument; wiki: WikiDocument}
 export type DocumentTool = keyof ToolDocumentMap
-export const emptyDocuments: ToolDocumentMap = {erd: {tables: [], relationships: []}, "ui-editor": {layers: []}, sdlc: {model: "waterfall", currentPhase: 0, completed: false, notes: {}}, notes: {notes: []}}
+export const emptyDocuments: ToolDocumentMap = {erd: {tables: [], relationships: []}, "ui-editor": {layers: []}, sdlc: {model: "waterfall", currentPhase: 0, completed: false, notes: {}}, notes: {notes: []}, wiki: {pages: [], homePageId: null}}
 
 export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
     const record = (item: unknown): item is Record<string, unknown> => !!item && typeof item === "object" && !Array.isArray(item)
@@ -36,6 +37,7 @@ export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
     const number = (item: Record<string, unknown>, key: string) => typeof item[key] === "number" && Number.isFinite(item[key])
     const flag = (item: Record<string, unknown>, key: string) => typeof item[key] === "boolean"
     if (!record(value)) return false
+    if (tool === "wiki") return validWikiDocument(value)
     if (tool === "notes") {
         const ids = new Set<string>()
         return Array.isArray(value.notes) && value.notes.length <= 1000 && value.notes.every(note => {

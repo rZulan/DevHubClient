@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-10-26
+
+### Bug reports
+- Replace the placeholder with a project inbox, status and category filters, priority, sender email, attachment downloads, and private triage notes.
+- Add an optional public submission link: people can submit with an email and attachments without a DevHub account. Project managers can enable, disable, or replace the link.
+- Add project-specific categories with rename, archive, and restore controls; keep existing report classifications when a category is archived.
+- Keep reports and attachment bytes in SQL, protect private reads with project access, and require Manage bug reports for link settings, categories, and triage.
+
+### Organization settings
+- Group permissions with clear descriptions and separate access for ERD, UI/UX, Notes, Roadmap, dashboard publishing, and invitation management; preserve existing broad grants.
+- Add an Invitations settings page to review expiry and revoke links, with creators limited to their own links and managers able to manage all links.
+- Match member controls to role-assignment and removal permissions, protect team leaders, and confirm owner promotion, role deletion, and leaving an organization.
+- Reorder roles in one atomic request, show save failures inside the role editor, and preserve profile edits while saved descriptions load or refresh.
+- Add authorization, profile synchronization, and isolated settings preview coverage.
+
+### Project Wiki
+- Replace the placeholder with a project wiki: create, rename, edit, search, and delete Markdown pages with preview, page links, a configurable home page, and Markdown downloads.
+- Keep stable page addresses and the latest 20 previous versions per page, with reviewed restoration and edit summaries.
+- Persist wikis in shared project storage with live updates, revision conflicts, recoverable browser drafts, JSON backup downloads, and a separate Manage wiki permission.
+
+### Notes
+- Speed up the opening lift from 650 ms to 300 ms and the hover curl from 180 ms to 90 ms.
+
+### Workshop pages
+- Mark Teams, Org chart, Project Wiki, Bug Reports, SDLC Roadmap, UI/UX Editor, All projects, and every project entry as under construction while keeping them accessible.
+- Move Organization to the top of the sidebar with Dashboard, Teams, and Org chart; remove the Workspace heading and group Project Wiki and Bug Reports under Project resources, separate from Project tools.
+- Add Project Wiki and Bug Reports with themed placeholder pages and under-construction indicators.
+
+### TODO boards
+- Scroll task lists independently inside each column while keeping board controls, column headers, and Add a task buttons visible; keep horizontal board scrolling within the available height.
+- Show a progress bar below the board title, with a color for each column, light green for the rightmost completion column, task counts, and completion percentage.
+
+### Development roadmap
+- Reduce Iterative roadmap star size, halo, and selection rings for clearer layers while retaining the existing click targets.
+
+### Project tools
+- Add State Machine with a themed placeholder page and under-construction indicator; include it in tool visibility and ordering settings while preserving existing preferences.
+
 ## 2026-10-25
 
 ### UI/UX studio

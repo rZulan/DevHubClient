@@ -174,6 +174,7 @@ export function useWorkshopPresenceSession(organizationIds: string[]) {
                     ...[...pendingMemberships].flatMap(organizationId => [
                         {type: "OrganizationMembers" as const, id: organizationId},
                         {type: "OrganizationRoles" as const, id: organizationId},
+                        {type: "OrganizationInvites" as const, id: organizationId},
                         {type: "Teams" as const, id: organizationId},
                         {type: "Projects" as const, id: organizationId},
                         {type: "Chats" as const, id: organizationId},

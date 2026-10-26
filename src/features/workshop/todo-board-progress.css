@@ -1,0 +1,13 @@
+.todo-board-progress { display: grid; gap: 8px; flex-shrink: 0; }
+.workshop-todo-heading:has(+ .todo-board-progress) { margin-bottom: 12px; }
+.todo-board-progress + .workshop-todo-board { margin-top: 16px; }
+.todo-board-progress-caption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; font-size: 11px; color: var(--muted-foreground); }
+.todo-board-progress-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; min-width: 0; }
+.todo-board-progress-legend > span { display: inline-flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.todo-board-progress-legend i { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.todo-board-progress-legend b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.todo-board-progress-summary { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; margin-left: auto; font-variant-numeric: tabular-nums; }
+.todo-board-progress-summary strong { color: var(--foreground); font-weight: 600; }
+.todo-board-progress-track { display: flex; height: 6px; width: 100%; border-radius: 999px; overflow: hidden; background: var(--muted); }
+.todo-board-progress-track > span { display: block; flex-shrink: 0; height: 100%; transition: width .2s ease; }
+@media (prefers-reduced-motion: reduce) { .todo-board-progress-track > span { transition: none; } }

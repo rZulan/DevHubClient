@@ -1,4 +1,5 @@
 import type {WorkshopOrganization, WorkshopPermission, WorkshopRole,} from "@/features/workshop/workshop-types"
+import {grantsWorkshopPermission} from "./workshop-permissions.ts"
 
 export function hasWorkshopPermission(
     organization: WorkshopOrganization,
@@ -11,7 +12,7 @@ export function hasWorkshopPermission(
 
     return organization.roles.some((role) =>
         (member.roleIds ?? [member.roleId]).includes(role.id) &&
-        (role.permissions.includes("Administrator") || role.permissions.includes(permission)),
+        grantsWorkshopPermission(role.permissions, permission),
     )
 }
 
@@ -51,8 +52,18 @@ export function canManageWorkshopMember(
     const actor = organization.members.find((member) => member.id === userId)
     const target = organization.members.find((member) => member.id === targetUserId)
     if (!actor || !target || target.isOwner) return false
+    if (!hasWorkshopPermission(organization, userId, "Manage members") || organization.teams.some(team => team.leaderId === targetUserId)) return false
     if (actor.isOwner) return true
     const actorRole = highestWorkshopRole(organization, userId)
     const targetRole = highestWorkshopRole(organization, targetUserId)
+    return Boolean(actorRole && targetRole && actorRole.order < targetRole.order)
+}
+
+export function canAssignWorkshopRole(organization: WorkshopOrganization, userId: string | undefined, targetUserId: string, role: WorkshopRole) {
+    if (!userId || userId === targetUserId || role.isOwnerRole || role.isDefaultRole) return false
+    const actor = organization.members.find(member => member.id === userId), target = organization.members.find(member => member.id === targetUserId)
+    if (!actor || !target || target.isOwner || !canManageWorkshopRole(organization, userId, role)) return false
+    if (actor.isOwner) return true
+    const actorRole = highestWorkshopRole(organization, userId), targetRole = highestWorkshopRole(organization, targetUserId)
     return Boolean(actorRole && targetRole && actorRole.order < targetRole.order)
 }

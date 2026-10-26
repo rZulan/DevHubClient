@@ -1,4 +1,4 @@
-import {Building2, Palette, ShieldCheck, Users} from "lucide-react"
+import {Building2, Link2, Palette, ShieldCheck, Users} from "lucide-react"
 import {NavLink, Outlet, useOutletContext} from "react-router-dom"
 
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -8,6 +8,7 @@ const sections = [
     {path: "general", label: "General", icon: Building2},
     {path: "appearance", label: "Appearance", icon: Palette},
     {path: "members", label: "Members", icon: Users},
+    {path: "invites", label: "Invitations", icon: Link2},
     {path: "roles", label: "Roles & access", icon: ShieldCheck},
 ]
 
@@ -33,7 +34,7 @@ export function WorkshopSettingsLayout() {
                 </nav>
             </aside>
             <div className="workshop-settings-content">
-                <Outlet context={context}/>
+                <Outlet key={organization.id} context={context}/>
             </div>
         </div>
     )

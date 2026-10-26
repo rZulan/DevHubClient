@@ -1,4 +1,4 @@
-import {type FormEvent, useState} from "react"
+import {type FormEvent, useEffect, useState} from "react"
 import {AlertTriangle, Check, FolderKanban, LoaderCircle, LogOut, ShieldCheck, Trash2, Users} from "lucide-react"
 import {useNavigate, useOutletContext} from "react-router-dom"
 
@@ -13,6 +13,7 @@ import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useWorkshop} from "@/features/workshop/workshop-context"
 import {clearSelectedOrganizationId} from "@/features/workshop/workshop-storage"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
+import {organizationProfileDraft, syncOrganizationProfileDraft} from "@/features/workshop/organization-profile-draft"
 import {
     useDeleteOrganizationMutation,
     useLeaveOrganizationMutation,
@@ -26,42 +27,44 @@ export function GeneralSettingsPage() {
     const navigate = useNavigate()
     const {removeLocalOrganization} = useWorkshop()
     // The workshop model substitutes placeholder copy for a missing description; edit the stored value.
-    const {savedDescription} = useListOrganizationsQuery(undefined, {
-        selectFromResult: ({data}) => ({
-            savedDescription: data?.find((candidate) => candidate.id === organization.id)?.description ?? "",
-        }),
-    })
-    const [name, setName] = useState(organization.name)
-    const [description, setDescription] = useState(savedDescription)
+    const profileQuery = useListOrganizationsQuery(undefined, {skip: !isPersistedOrganization})
+    const savedDescription = isPersistedOrganization ? profileQuery.data ? profileQuery.data.find(candidate => candidate.id === organization.id)?.description ?? "" : undefined : organization.description
+    const [profile, setProfile] = useState(() => organizationProfileDraft(organization.id, organization.name, savedDescription ?? ""))
+    const {name, description} = profile
+    useEffect(() => {if (savedDescription !== undefined) setProfile(current => syncOrganizationProfileDraft(current, organization.id, organization.name, savedDescription))}, [organization.id, organization.name, savedDescription])
     const [savedAt, setSavedAt] = useState(0)
     const [error, setError] = useState("")
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [confirmation, setConfirmation] = useState("")
+    const [leaveOpen, setLeaveOpen] = useState(false)
     const [updateOrganization, {isLoading: isSaving}] = useUpdateOrganizationMutation()
     const [leaveOrganization, {isLoading: isLeaving}] = useLeaveOrganizationMutation()
     const [deleteOrganization, {isLoading: isDeleting}] = useDeleteOrganizationMutation()
 
-    const canEdit = isPersistedOrganization && hasWorkshopPermission(organization, currentUserId, "Manage organization")
+    const canEdit = isPersistedOrganization && savedDescription !== undefined && hasWorkshopPermission(organization, currentUserId, "Manage organization")
     const currentMember = organization.members.find((member) => member.id === currentUserId)
     const ownerCount = organization.members.filter((member) => member.isOwner).length
-    const canLeave = isPersistedOrganization && (!currentMember?.isOwner || ownerCount > 1)
+    const leadsTeam = organization.teams.some(team => team.leaderId === currentUserId)
+    const canLeave = isPersistedOrganization && !!currentMember && (currentMember.isOwner ? ownerCount > 1 : !leadsTeam)
     const canDelete = isPersistedOrganization && Boolean(currentMember?.isOwner)
-    const isDirty = name.trim() !== organization.name || description.trim() !== savedDescription
+    const isDirty = name.trim() !== profile.savedName || description.trim() !== profile.savedDescription
     const initials = name.trim().split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase() || organization.initials
 
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
+        if (!canEdit || isSaving) return
         setError("")
         if (name.trim().length < 2) {
             setError("Give your organization a name with at least 2 characters.")
             return
         }
         try {
-            await updateOrganization({
+            const saved = await updateOrganization({
                 organizationId: organization.id,
                 name: name.trim(),
                 description: description.trim()
             }).unwrap()
+            setProfile(organizationProfileDraft(organization.id, saved.name, saved.description ?? ""))
             setSavedAt(Date.now())
         } catch (saveError) {
             setError(getApiErrorMessage(saveError))
@@ -75,6 +78,7 @@ export function GeneralSettingsPage() {
     }
 
     async function leave() {
+        if (!canLeave || isLeaving) return
         setError("")
         try {
             await leaveOrganization(organization.id).unwrap()
@@ -85,6 +89,7 @@ export function GeneralSettingsPage() {
     }
 
     async function remove() {
+        if (!canDelete || confirmation !== organization.name || isDeleting) return
         try {
             await deleteOrganization(organization.id).unwrap()
             setDeleteOpen(false)
@@ -104,21 +109,21 @@ export function GeneralSettingsPage() {
             <section className="workshop-settings-card">
                 <header>
                     <h3>Organization profile</h3>
-                    {!canEdit && <p>You need the Manage organization permission to edit these details.</p>}
+                    {!canEdit && <p>{!isPersistedOrganization ? "Profile editing is available for organizations saved to your account." : savedDescription === undefined ? "Loading the saved profile…" : "You need the Manage organization permission to edit these details."}</p>}
                 </header>
                 <form className="workshop-settings-form" onSubmit={save}>
                     <div className="workshop-settings-identity">
                         <span className="workshop-org-mark" aria-hidden="true">{initials}</span>
                         <Label>Organization name
-                            <Input disabled={!canEdit} maxLength={150} onChange={(event) => {
-                                setName(event.target.value);
+                            <Input disabled={!canEdit || isSaving} maxLength={150} onChange={(event) => {
+                                setProfile(current => ({...current, name: event.target.value}));
                                 setSavedAt(0)
                             }} required value={name}/>
                         </Label>
                     </div>
                     <Label><span>Description <small>Optional</small></span>
-                        <Textarea disabled={!canEdit} maxLength={1000} onChange={(event) => {
-                            setDescription(event.target.value);
+                        <Textarea disabled={!canEdit || isSaving} maxLength={1000} onChange={(event) => {
+                            setProfile(current => ({...current, description: event.target.value}));
                             setSavedAt(0)
                         }} placeholder="What are you building together?" rows={3} value={description}/>
                     </Label>
@@ -127,8 +132,7 @@ export function GeneralSettingsPage() {
                             {savedAt > 0 && !isDirty &&
                                 <small className="workshop-settings-saved"><Check/> Saved</small>}
                             <Button disabled={!isDirty || isSaving} onClick={() => {
-                                setName(organization.name);
-                                setDescription(savedDescription)
+                                setProfile(organizationProfileDraft(organization.id, organization.name, savedDescription ?? ""))
                             }} type="button" variant="ghost">Reset</Button>
                             <Button disabled={!isDirty || isSaving} type="submit">{isSaving ?
                                 <LoaderCircle className="animate-spin"/> : <Check/>} Save changes</Button>
@@ -145,17 +149,18 @@ export function GeneralSettingsPage() {
                 </div>
             </section>
 
-            {error && <p className="workshop-form-error">{error}</p>}
+            {profileQuery.isError && isPersistedOrganization && <p role="alert" className="workshop-form-error">Could not load the saved organization profile. <button type="button" onClick={() => void profileQuery.refetch()}>Retry</button></p>}
+            {error && <p role="alert" className="workshop-form-error">{error}</p>}
 
             <section className="workshop-settings-card danger">
                 <header>
                     <h3><AlertTriangle/> Danger zone</h3>
                 </header>
                 <div className="workshop-settings-row">
-                    <strong>Leave organization</strong>
+                    <div><strong>Leave organization</strong>{currentMember?.isOwner && ownerCount <= 1 ? <p className="mt-1 text-xs text-muted-foreground">Promote another owner in Members before leaving.</p> : leadsTeam && !currentMember?.isOwner ? <p className="mt-1 text-xs text-muted-foreground">Reassign your team leadership before leaving.</p> : null}</div>
                     <Button disabled={!canLeave || isLeaving}
                             title={currentMember?.isOwner && ownerCount <= 1 ? "Promote another owner before leaving" : undefined}
-                            onClick={() => void leave()} type="button" variant="outline">{isLeaving ?
+                            onClick={() => setLeaveOpen(true)} type="button" variant="outline">{isLeaving ?
                         <LoaderCircle className="animate-spin"/> : <LogOut/>} Leave</Button>
                 </div>
                 <div className="workshop-settings-row">
@@ -167,6 +172,8 @@ export function GeneralSettingsPage() {
                     }} type="button" variant="destructive"><Trash2/> Delete</Button>
                 </div>
             </section>
+
+            <Dialog open={leaveOpen} onOpenChange={open => {if (!isLeaving) setLeaveOpen(open)}}><DialogContent><DialogHeader><DialogTitle>Leave {organization.name}?</DialogTitle><DialogDescription>You will lose access to this organization, its teams, and its projects. An invitation is needed to join again.</DialogDescription></DialogHeader>{error && <p role="alert" className="workshop-form-error">{error}</p>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={isLeaving} onClick={() => setLeaveOpen(false)}>Cancel</Button><Button variant="destructive" disabled={!canLeave || isLeaving} onClick={() => void leave()}>{isLeaving ? "Leaving…" : "Leave organization"}</Button></div></DialogContent></Dialog>
 
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 {deleteOpen && (

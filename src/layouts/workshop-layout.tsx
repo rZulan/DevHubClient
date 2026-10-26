@@ -71,6 +71,8 @@ import type {
 } from "@/features/workshop/workshop-types"
 import {cn} from "@/lib/utils"
 import {ProjectToolsNavigation} from "@/features/workshop/project-tools-navigation"
+import {WorkshopNavigationGroup} from "@/features/workshop/workshop-navigation-group"
+import {organizationNavigation, projectResourcesNavigation} from "@/features/workshop/workshop-navigation"
 import {projectToolIds} from "@/features/workshop/project-tools"
 import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
 import {ResponsiveWorkshopPanel} from "@/features/workshop/responsive-workshop-panel"
@@ -102,29 +104,23 @@ const statusLabels: Record<Exclude<WorkshopPresenceStatus, "offline">, string> =
 }
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-const primaryNavigation = [
-    {label: "Dashboard", path: "dashboard"},
-]
-
-const organizationNavigation = [
-    {label: "Teams", path: "teams"},
-    {label: "Org chart", path: "org-chart"},
-]
-
 const pageTitles: Record<string, string> = {
     dashboard: "Dashboard",
+    "project-wiki": "Project Wiki",
+    "bug-reports": "Bug Reports",
     todo: "TODOs",
     notes: "Notes",
     erd: "ERD maker",
     "ui-editor": "UI/UX Editor",
     sdlc: "SDLC Roadmap",
+    "state-machine": "State Machine",
     projects: "Projects",
     "project-detail": "Project details",
     teams: "Teams",
     "org-chart": "Organization chart",
     settings: "Organization settings",
 }
-const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "projects", "project-detail", "teams", "org-chart"])
+const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "state-machine", "projects", "project-detail", "teams", "org-chart", "project-wiki", "bug-reports"])
 
 export function WorkshopLayout() {
     const {organizationId} = useParams()
@@ -147,7 +143,6 @@ export function WorkshopLayout() {
     useEffect(() => {setNavigationOpen(false); setCompactMembersOpen(false)}, [location.pathname, compact, compactMembers])
     const [projectToolsOpen, setProjectToolsOpen] = useState(true)
     const [projectsOpen, setProjectsOpen] = useState(true)
-    const [organizationMenuOpen, setOrganizationMenuOpen] = useState(true)
     const [memberQuery, setMemberQuery] = useState("")
     const [inviteOpen, setInviteOpen] = useState(false)
     const [inviteLink, setInviteLink] = useState("")
@@ -244,7 +239,7 @@ export function WorkshopLayout() {
         }
     }, [apiMembers, apiProjects, apiRoles, apiTeams, baseOrganization, presenceByUserId])
     const [projectId, setProjectId] = useState(() =>
-        organizationId ? getSelectedProjectId(user?.id, organizationId) : null,
+        (location.pathname.endsWith("/project-wiki") ? new URLSearchParams(location.search).get("project") : null) ?? (organizationId ? getSelectedProjectId(user?.id, organizationId) : null),
     )
 
     const visibleProjects = useMemo(() => {
@@ -268,6 +263,11 @@ export function WorkshopLayout() {
     const selectedProject = visibleProjects.find((candidate) => candidate.id === projectId)
     const shouldUseFirstProject = !projectId || !isPersistedOrganization || !areProjectsFetching
     const project = selectedProject ?? (shouldUseFirstProject ? visibleProjects[0] : undefined)
+
+    useEffect(() => {
+        const linkedProject = location.pathname.endsWith("/project-wiki") ? new URLSearchParams(location.search).get("project") : null
+        if (linkedProject && linkedProject !== projectId && visibleProjects.some(candidate => candidate.id === linkedProject)) setProjectId(linkedProject)
+    }, [location.pathname, location.search, projectId, visibleProjects])
 
     useEffect(() => {
         if (!organization || !project) return
@@ -300,7 +300,6 @@ export function WorkshopLayout() {
     useEffect(() => {
         if (projectToolIds.some(path => path === activePath)) setProjectToolsOpen(true)
         if (activePath === "projects" || activePath === "project-detail") setProjectsOpen(true)
-        if (organizationNavigation.some((item) => item.path === activePath)) setOrganizationMenuOpen(true)
     }, [activePath])
 
     const accessDenied = membershipError && "status" in membershipError &&
@@ -318,6 +317,7 @@ export function WorkshopLayout() {
     function selectProject(nextProjectId: string) {
         setProjectId(nextProjectId)
         setSelectedProjectId(user?.id, activeOrganizationId, nextProjectId)
+        if (location.pathname.endsWith("/project-wiki")) navigate(location.pathname, {replace: true})
     }
 
     const canInvite = isPersistedOrganization &&
@@ -396,13 +396,8 @@ export function WorkshopLayout() {
                 </div>
 
                 <nav aria-label="Workshop navigation" className="workshop-nav">
-                    <p>Workspace</p>
-                    {primaryNavigation.map(({label, path}) => (
-                        <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")} key={path}
-                                 to={path}>
-                            <span className="workshop-construction-label">{label}<UnderConstructionIndicator/></span>
-                        </NavLink>
-                    ))}
+                    <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={activePath} underConstruction/>
+                    <WorkshopNavigationGroup title="Project resources" items={projectResourcesNavigation} activePath={activePath}/>
                     <ProjectToolsNavigation key={`${user?.id}:${activeOrganizationId}`} userId={user?.id ?? "current"}
                                             organizationId={activeOrganizationId} expanded={projectToolsOpen}
                                             onToggle={() => setProjectToolsOpen(open => !open)}/>
@@ -421,7 +416,7 @@ export function WorkshopLayout() {
                         <div className="workshop-nav-submenu">
                             <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")}
                                      end to="projects">
-                                <span>All projects</span>
+                                <span className="workshop-construction-label">All projects<UnderConstructionIndicator/></span>
                             </NavLink>
                             {visibleProjects.map((candidate) => {
                                 const isCurrent = candidate.id === project?.id
@@ -438,7 +433,7 @@ export function WorkshopLayout() {
                                                 title={`${candidate.name}${isCurrent ? " — current project" : ""}`}
                                                 to={`projects/${candidate.id}`}
                                             >
-                                                <span>{candidate.name}</span>
+                                                <span className="workshop-construction-label"><span className="workshop-project-name">{candidate.name}</span><UnderConstructionIndicator/></span>
                                                 {isCurrent && <i aria-hidden="true" className="workshop-current-project-dot"/>}
                                             </NavLink>
                                         </ContextMenuTrigger>
@@ -470,24 +465,6 @@ export function WorkshopLayout() {
                                     </ContextMenu>
                                 )
                             })}
-                        </div>
-                    </div>
-                    <div className={cn("workshop-nav-group", organizationMenuOpen && "open")}>
-                        <button
-                            aria-expanded={organizationMenuOpen}
-                            className="workshop-nav-group-trigger"
-                            onClick={() => setOrganizationMenuOpen((open) => !open)}
-                            type="button"
-                        >
-                            <span className="workshop-construction-label">Organization<UnderConstructionIndicator/></span><CaretRightIcon className="workshop-nav-chevron"/>
-                        </button>
-                        <div className="workshop-nav-submenu">
-                            {organizationNavigation.map(({label, path}) => (
-                                <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")}
-                                         key={path} to={path}>
-                                    <span>{label}</span>
-                                </NavLink>
-                            ))}
                         </div>
                     </div>
                 </nav>

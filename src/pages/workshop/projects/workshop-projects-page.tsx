@@ -26,6 +26,7 @@ import {Link, useOutletContext} from "react-router-dom"
 
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
+import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
@@ -256,7 +257,7 @@ export function WorkshopProjectsPage() {
                                           data-status={project.status}>{project.status}</span>
                                 </header>
                                 <div className="workshop-project-title">
-                                    <h3>{project.name}</h3>
+                                    <h3 className="workshop-construction-label">{project.name}<UnderConstructionIndicator/></h3>
                                     {currentProject?.id === project.id && <small>Current</small>}
                                 </div>
                                 <p>{project.summary}</p>

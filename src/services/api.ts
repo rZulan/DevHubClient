@@ -18,6 +18,7 @@ import type {
 import type {
     ApiOrganization,
     ApiOrganizationInvite,
+    ActiveOrganizationInvite,
     ApiOrganizationMember,
     ApiOrganizationRole,
     ApiProject,
@@ -120,6 +121,7 @@ export const api = createApi({
         "TeamMembers",
         "OrganizationMembers",
         "OrganizationRoles",
+        "OrganizationInvites",
         "Projects",
         "Chats",
         "ChatMessages",
@@ -215,6 +217,15 @@ export const api = createApi({
                 url: `/organizations/${organizationId}/invites`,
                 method: "POST",
             }),
+            invalidatesTags: (_data, _error, organizationId) => [{type: "OrganizationInvites", id: organizationId}],
+        }),
+        listOrganizationInvites: builder.query<ActiveOrganizationInvite[], string>({
+            query: organizationId => `/organizations/${organizationId}/invites`,
+            providesTags: (_data, _error, organizationId) => [{type: "OrganizationInvites", id: organizationId}],
+        }),
+        revokeOrganizationInvite: builder.mutation<void, {organizationId: string; inviteId: string}>({
+            query: ({organizationId, inviteId}) => ({url: `/organizations/${organizationId}/invites/${inviteId}`, method: "DELETE"}),
+            invalidatesTags: (_data, _error, {organizationId}) => [{type: "OrganizationInvites", id: organizationId}],
         }),
         acceptOrganizationInvite: builder.mutation<ApiOrganization, string>({
             query: (token) => ({
@@ -299,6 +310,10 @@ export const api = createApi({
                 {type: "OrganizationMembers", id: organizationId},
                 {type: "Projects", id: organizationId},
             ],
+        }),
+        moveOrganizationRole: builder.mutation<void, {organizationId: string; roleId: string; direction: -1 | 1}>({
+            query: ({organizationId, roleId, direction}) => ({url: `/organizations/${organizationId}/roles/${roleId}/move`, method: "POST", body: {direction}}),
+            invalidatesTags: (_data, _error, {organizationId}) => [{type: "OrganizationRoles", id: organizationId}],
         }),
         assignOrganizationRole: builder.mutation<
             void,
@@ -634,6 +649,8 @@ export const {
     useCreateOrganizationMutation,
     useUpdateOrganizationMutation,
     useCreateOrganizationInviteMutation,
+    useListOrganizationInvitesQuery,
+    useRevokeOrganizationInviteMutation,
     useAcceptOrganizationInviteMutation,
     useListOrganizationMembersQuery,
     useRemoveOrganizationMemberMutation,
@@ -642,6 +659,7 @@ export const {
     useCreateOrganizationRoleMutation,
     useUpdateOrganizationRoleMutation,
     useDeleteOrganizationRoleMutation,
+    useMoveOrganizationRoleMutation,
     useAssignOrganizationRoleMutation,
     usePromoteOrganizationOwnerMutation,
     useLeaveOrganizationMutation,

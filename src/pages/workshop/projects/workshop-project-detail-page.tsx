@@ -24,6 +24,7 @@ import {Link, useOutletContext, useParams} from "react-router-dom"
 import {useAppSelector} from "@/app/hooks"
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
+import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/components/ui/card"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
@@ -170,7 +171,7 @@ export function WorkshopProjectDetailPage() {
                         <div><span className="workshop-status-badge"
                                    data-status={project.status}>{project.status}</span>{isCurrent &&
                             <Badge variant="secondary">Current project</Badge>}</div>
-                        <h2>{project.name}</h2>
+                        <h2 className="workshop-construction-label">{project.name}<UnderConstructionIndicator/></h2>
                         <p>{project.summary}</p>
                     </div>
                 </div>

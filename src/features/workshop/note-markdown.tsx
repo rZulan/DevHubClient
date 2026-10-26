@@ -54,12 +54,12 @@ const compactComponents: Components = {
     pre: ({children}) => <NoteCodeBlock compact>{children}</NoteCodeBlock>,
 }
 
-export function NoteMarkdown({body, compact = false}: {body: string; compact?: boolean}) {
+export function NoteMarkdown({body, compact = false, components: customComponents}: {body: string; compact?: boolean; components?: Components}) {
     const prefix = `note-${useId().replaceAll(":", "")}-`
     const heading: Components["h2"] = ({node: _node, id, ...props}) => <h2 {...props} id={id === "footnote-label" ? `${prefix}footnote-label` : id}/>
     const link: Components["a"] = ({node: _node, ...props}) => <MarkdownLink {...props} aria-describedby={props["aria-describedby"] === "footnote-label" ? `${prefix}footnote-label` : props["aria-describedby"]}/>
     return <div className={`note-markdown${compact ? " note-markdown-compact" : ""}`}>
-        <Markdown remarkPlugins={[remarkGfm]} remarkRehypeOptions={{clobberPrefix: prefix}} skipHtml components={{...components, a: link, ...(compact ? compactComponents : {}), h2: heading}}>{body}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} remarkRehypeOptions={{clobberPrefix: prefix}} skipHtml components={{...components, a: link, ...(compact ? compactComponents : {}), h2: heading, ...customComponents}}>{body}</Markdown>
     </div>
 }
 

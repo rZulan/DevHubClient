@@ -9,10 +9,11 @@ import {api} from "@/services/api"
 let sessionRestoration: Promise<void> | undefined
 
 export async function rootLoader({request}: LoaderFunctionArgs) {
+    const url = new URL(request.url)
+    if (url.pathname.startsWith("/report-bug/")) return null
     await ensureSessionRestored()
 
     const user = store.getState().auth.user
-    const url = new URL(request.url)
     if (user && url.pathname === "/" && !url.search) {
         const workshopPath = getWorkshopResumePath(user.id)
         if (workshopPath) throw redirect(workshopPath)

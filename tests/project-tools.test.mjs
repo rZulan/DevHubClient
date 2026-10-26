@@ -4,19 +4,19 @@ import {normalizeToolPreferences, moveTool, reorderTool} from '../src/features/w
 import {newField, removeField, removeTable, erdSql, designSvg} from '../src/features/workshop/tool-documents.ts'
 
 test('preferences retain customized order, deduplicate and exclude archived tools', () => {
-    assert.deepEqual(normalizeToolPreferences({order: ['todo', 'todo', 'unknown', 'ideation'], hidden: ['todo', 'unknown', 'ideation']}), {order: ['todo', 'notes', 'erd', 'ui-editor', 'sdlc'], hidden: ['todo']})
+    assert.deepEqual(normalizeToolPreferences({order: ['todo', 'todo', 'unknown', 'ideation'], hidden: ['todo', 'unknown', 'ideation']}), {order: ['todo', 'notes', 'erd', 'ui-editor', 'sdlc', 'state-machine'], hidden: ['todo']})
     const preferences = normalizeToolPreferences(null)
     assert.equal(moveTool(preferences, 'todo', -1), preferences)
-    assert.deepEqual(moveTool(preferences, 'erd', -1).order, ['todo', 'erd', 'notes', 'ui-editor', 'sdlc'])
+    assert.deepEqual(moveTool(preferences, 'erd', -1).order, ['todo', 'erd', 'notes', 'ui-editor', 'sdlc', 'state-machine'])
 })
 test('drag arrangement moves tools across the list while preserving visibility and rejecting invalid drops', () => {
     const original = {...normalizeToolPreferences(null), hidden: ['todo']}
-    const last = reorderTool(original, 'todo', 4)
-    assert.deepEqual(last.order, ['notes', 'erd', 'ui-editor', 'sdlc', 'todo'])
+    const last = reorderTool(original, 'todo', 5)
+    assert.deepEqual(last.order, ['notes', 'erd', 'ui-editor', 'sdlc', 'state-machine', 'todo'])
     assert.deepEqual(last.hidden, ['todo'])
-    assert.deepEqual(reorderTool(last, 'sdlc', 0).order, ['sdlc', 'notes', 'erd', 'ui-editor', 'todo'])
+    assert.deepEqual(reorderTool(last, 'sdlc', 0).order, ['sdlc', 'notes', 'erd', 'ui-editor', 'state-machine', 'todo'])
     assert.equal(reorderTool(original, 'erd', -1), original)
-    assert.equal(reorderTool(original, 'erd', 5), original)
+    assert.equal(reorderTool(original, 'erd', 6), original)
     assert.equal(reorderTool(original, 'erd', 1.5), original)
     assert.equal(reorderTool(original, 'erd', 2), original)
     assert.deepEqual(original.order, normalizeToolPreferences(null).order)
