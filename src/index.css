@@ -11968,20 +11968,21 @@
     .sdlc-viewport { position: relative; flex: 1; min-height: 260px; overflow: hidden; cursor: grab; touch-action: none; user-select: none; overscroll-behavior: none; }
     .sdlc-viewport.is-dragging, .sdlc-viewport.is-dragging * { cursor: grabbing; }
     .sdlc-viewport:focus-visible { outline: 1px solid var(--primary); outline-offset: -4px; border-radius: 8px; }
-    .sdlc-camera { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-    .sdlc-constellation { position: relative; width: 100%; height: 100%; transform: perspective(1800px) rotateX(8deg) rotateZ(-1deg); transform-style: preserve-3d; }
+    /* Layout zoom keeps SVG strokes and text rasterized at their displayed size. */
+    .sdlc-camera { position: absolute; left: 0; top: 0; }
+    .sdlc-constellation { position: relative; width: 100%; height: 100%; }
     .sdlc-constellation > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
     .sdlc-roadmap-links > path { stroke: var(--sdlc-ink); stroke-width: 1.4; fill: none; opacity: .5; }
     .sdlc-roadmap-links > path.completed { stroke: var(--sdlc-starlight); stroke-width: 1.8; opacity: .95; filter: drop-shadow(0 0 5px var(--sdlc-ink)); }
     .sdlc-roadmap-links > path.sdlc-cycle-return { stroke-dasharray: 3 9; stroke-width: 1; opacity: .24; }
     .sdlc-constellation .sdlc-path-shadow { transform: translateY(9px); filter: blur(4px); opacity: .15; }
     .sdlc-constellation .sdlc-path-shadow path { stroke: var(--foreground); stroke-width: 3; stroke-dasharray: none; }
-    .sdlc-model-art { stroke: var(--sdlc-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: translateZ(-12px); pointer-events: none; }
+    .sdlc-model-art { stroke: var(--sdlc-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     .sdlc-illustration-contour { opacity: .42; }
     .sdlc-illustration-detail { opacity: .5; stroke-width: 1.2; }
     .sdlc-art-waterfall .sdlc-illustration-contour { opacity: .58; stroke-width: 2.6; }
     .sdlc-art-waterfall .sdlc-illustration-detail { stroke-width: 1.6; }
-    .sdlc-phase-star { position: absolute; transform: translate3d(-50%, -50%, 12px); display: grid; place-items: center; cursor: pointer; width: 60px; height: 60px; color: var(--muted-foreground); border-radius: 50%; }
+    .sdlc-phase-star { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; cursor: pointer; width: 60px; height: 60px; color: var(--muted-foreground); border-radius: 50%; }
     .sdlc-star-core { --sdlc-glow-low: .5; --sdlc-glow-high: .85; --sdlc-glow-radius: 8px; position: relative; display: grid; place-items: center; width: 48px; height: 48px; color: var(--sdlc-ink); transition: transform .2s; }
     .sdlc-star-core svg { width: 100%; height: 100%; overflow: visible; animation: sdlc-star-glow 2.4s ease-in-out infinite alternate; }
     .sdlc-phase-star:nth-of-type(even) .sdlc-star-core svg { animation-delay: -2.4s; }
@@ -11995,10 +11996,11 @@
     .sdlc-phase-star.current .sdlc-star-core, .sdlc-phase-star.completed .sdlc-star-core { --sdlc-glow-low: .7; --sdlc-glow-high: 1; --sdlc-glow-radius: 18px; color: var(--sdlc-starlight); }
     .sdlc-phase-star.current .sdlc-star-core circle, .sdlc-phase-star.completed .sdlc-star-core circle { fill: var(--sdlc-starlight); }
     .sdlc-phase-star.current .sdlc-star-core::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--primary) 25%, transparent), transparent 70%); }
-    .sdlc-star-label { position: absolute; left: 72px; top: 50%; display: flex; flex-direction: column; gap: 5px; width: max-content; text-align: left; transform: translateY(-50%) scale(var(--sdlc-label-scale)); transform-origin: left center; text-shadow: 0 1px 6px var(--background); }
+    .sdlc-star-label { position: absolute; left: 72px; top: 50%; display: flex; flex-direction: column; width: max-content; text-align: left; transform: translateY(-50%); }
+    .sdlc-star-label-content { display: flex; flex-direction: column; align-items: inherit; gap: 5px; zoom: var(--sdlc-label-scale); }
     .sdlc-phase-star.label-left .sdlc-star-label { left: auto; right: 72px; text-align: right; align-items: flex-end; transform-origin: right center; }
-    .sdlc-phase-star.label-above .sdlc-star-label { top: auto; left: 50%; bottom: 76px; align-items: center; text-align: center; transform: translateX(-50%) scale(var(--sdlc-label-scale)); transform-origin: center bottom; }
-    .sdlc-phase-star.label-below .sdlc-star-label { top: 76px; left: 50%; align-items: center; text-align: center; transform: translateX(-50%) scale(var(--sdlc-label-scale)); transform-origin: center top; }
+    .sdlc-phase-star.label-above .sdlc-star-label { top: auto; left: 50%; bottom: 76px; align-items: center; text-align: center; transform: translateX(-50%); }
+    .sdlc-phase-star.label-below .sdlc-star-label { top: 76px; left: 50%; align-items: center; text-align: center; transform: translateX(-50%); }
     .sdlc-phase-star small { font-size: 10px; letter-spacing: 2px; color: var(--muted-foreground); }
     .sdlc-phase-star.current small { color: var(--primary); }
     .sdlc-phase-star strong { font-size: 13px; white-space: nowrap; font-weight: 500; }

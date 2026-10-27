@@ -50,7 +50,6 @@ function SdlcRoadmap() {
     const navigation = useSdlcCamera(!isIterative && !overview)
     const tornado = useRef<TornadoControls>(null)
     const [tornadoZoom, setTornadoZoom] = useState(1)
-    const markerId = useId()
     const model = sdlcModels[document.model], phases = model.phases, positions = model.positions
     const phaseLinks = sdlcLinks(document.model)
     const archive = archiveSelection?.model === document.model ? document.history?.find(entry => entry.cycle === archiveSelection.cycle) : undefined
@@ -176,17 +175,15 @@ function SdlcRoadmap() {
                 : <div className="sdlc-scene-container" role="tabpanel" id={`${viewId}-map`}>{document.model === "iterative" ? <IterativeTornado ref={tornado} cycles={document.cycle ?? 1} phases={phases} currentPhase={document.currentPhase} completed={document.completed} work={document.work}
                     selectedCycle={cycle} selectedPhase={releaseView ? -1 : selected} onSelect={selectTornadoPhase} onZoomChange={setTornadoZoom}/>
                 : <div ref={navigation.viewport} className={`sdlc-viewport ${navigation.dragging ? "is-dragging" : ""}`} tabIndex={0} role="region" aria-label={`${model.title} roadmap canvas`} aria-describedby="sdlc-navigation-help" {...navigation.handlers}>
-                <div className="sdlc-camera" style={{width: roadmapSize.width, height: roadmapSize.height, "--sdlc-label-scale": Math.min(4, Math.max(.7, 1 / navigation.camera.zoom)), transform: `translate3d(${navigation.camera.x}px, ${navigation.camera.y}px, 0) scale(${navigation.camera.zoom})`} as CSSProperties}>
+                <div className="sdlc-camera" style={{width: roadmapSize.width, height: roadmapSize.height, left: navigation.camera.x / navigation.camera.zoom, top: navigation.camera.y / navigation.camera.zoom, zoom: navigation.camera.zoom, "--sdlc-label-scale": Math.min(4, Math.max(.7, 1 / navigation.camera.zoom))} as CSSProperties}>
                 <div className={`sdlc-constellation ${navigation.camera.zoom < .48 ? "compact-labels" : ""}`} aria-label={`${model.title} roadmap`}>
                     <SdlcConstellationIllustration model={document.model}/>
                     <svg className="sdlc-roadmap-links" viewBox={`0 0 ${roadmapSize.width} ${roadmapSize.height}`} aria-hidden="true">
-                        <defs><marker id={markerId} viewBox="0 0 10 10" refX="37" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--sdlc-ink)" strokeWidth="1.3"/></marker></defs>
                         <g className="sdlc-path-shadow">{phaseLinks.filter(link => link.kind === "flow").map((link, index) => <path key={index} d={link.path}/>)}</g>
                         {phaseLinks.map((link, index) => {
                             const highlighted = link.kind === "validation" && (selected === link.from || selected === link.to)
                             if (link.kind === "feedback" && document.model === "waterfall" && selected !== 3) return null
                             return <path key={index} d={link.path} data-from={phases[link.from].id} data-to={phases[link.to].id} data-kind={link.kind}
-                                markerEnd={link.kind === "validation" ? undefined : `url(#${markerId})`}
                                 className={`sdlc-link sdlc-link-${link.kind} ${highlighted ? "selected" : ""} ${link.kind === "flow" && sdlcPhaseDone(active, link.from) ? "completed" : ""}`}><title>{phases[link.from].title} → {phases[link.to].title}{link.label ? ` · ${link.label}` : ""}</title></path>
                         })}
                         {phaseLinks.filter(link => link.label && link.labelX !== undefined).map((link, index) => <text key={index} x={link.labelX} y={link.labelY} className={`sdlc-link-label ${selected === link.from || selected === link.to ? "selected" : ""}`}>{link.label}</text>)}
@@ -197,7 +194,7 @@ function SdlcRoadmap() {
                         return <button type="button" key={`${document.model}:${item.id}`} aria-label={`${item.title}, ${done ? "completed" : active.work?.[item.id]?.blocked ? "blocked" : currentPhase ? "current phase" : item.ongoing ? "ongoing" : item.optional ? "optional" : "upcoming"}`} aria-pressed={selected === index}
                             className={`sdlc-phase-star label-${positions[index].label} ${item.optional ? "optional" : ""} ${done ? "completed" : ""} ${currentPhase ? "current" : ""} ${!done && active.work?.[item.id]?.blocked ? "blocked" : ""} ${selected === index ? "selected" : ""} ${pairedPhase === index ? "paired" : ""}`}
                             style={{left: positions[index].x, top: positions[index].y}} onFocus={event => {if (event.currentTarget.matches(":focus-visible")) navigation.reveal(positions[index])}} onClick={() => {setSelectedPhase({model: document.model, index}); openDetails()}}>
-                            <span className="sdlc-star-core"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path className="sdlc-star-rays" d="M32 0L35 25L48 16L39 29L64 32L39 35L48 48L35 39L32 64L29 39L16 48L25 35L0 32L25 29L16 16L29 25Z"/><path className="sdlc-star-light" d="M32 8L36 28L56 32L36 36L32 56L28 36L8 32L28 28Z"/><circle cx="32" cy="32" r="4"/></svg></span><span className="sdlc-star-label"><small>{item.optional ? "OPTIONAL" : item.ongoing ? "ONGOING" : String(phaseNumber(index)).padStart(2, "0")}</small><strong>{item.title}</strong><em>{done ? <><Check/> Completed</> : active.work?.[item.id]?.blocked ? "Blocked" : currentPhase ? "You are here" : item.optional ? "Release when ready" : item.ongoing ? "Refine throughout" : "Upcoming"}</em></span>
+                            <span className="sdlc-star-core"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path className="sdlc-star-rays" d="M32 0L35 25L48 16L39 29L64 32L39 35L48 48L35 39L32 64L29 39L16 48L25 35L0 32L25 29L16 16L29 25Z"/><path className="sdlc-star-light" d="M32 8L36 28L56 32L36 36L32 56L28 36L8 32L28 28Z"/><circle cx="32" cy="32" r="4"/></svg></span><span className="sdlc-star-label"><span className="sdlc-star-label-content"><small>{item.optional ? "OPTIONAL" : item.ongoing ? "ONGOING" : String(phaseNumber(index)).padStart(2, "0")}</small><strong>{item.title}</strong><em>{done ? <><Check/> Completed</> : active.work?.[item.id]?.blocked ? "Blocked" : currentPhase ? "You are here" : item.optional ? "Release when ready" : item.ongoing ? "Refine throughout" : "Upcoming"}</em></span></span>
                         </button>
                     })}
                 </div>

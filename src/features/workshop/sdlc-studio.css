@@ -19,13 +19,17 @@
 .sdlc-scene-container { display: flex; flex-direction: column; flex: 1; min-height: 260px; min-width: 0; }
 .sdlc-sky { position: absolute; inset: 0; overflow: clip; pointer-events: none; z-index: -1; }
 .sdlc-workspace .sdlc-universe { overflow-y: auto; }
+.sdlc-workspace .sdlc-universe:has(.sdlc-viewport):not(:has(.sdlc-workflow-guide[open])) { overflow: clip; }
+/* Let the roadmap cross the inner viewport, with clipping only at the map's outer edge. */
+.sdlc-workspace .sdlc-viewport { overflow: visible; }
+.sdlc-workspace .sdlc-canvas-toolbar, .sdlc-workspace .sdlc-workflow-guide, .sdlc-workspace .sdlc-canvas-footer { z-index: 1; }
 .sdlc-workspace .sdlc-canvas-toolbar, .sdlc-workspace .sdlc-canvas-footer { flex-shrink: 0; }
 .sdlc-workspace .sdlc-canvas-footer { padding: 10px 20px; gap: 14px; align-items: center; flex-wrap: nowrap; }
 .sdlc-workspace .sdlc-progress-card { padding: 10px 12px; max-width: 230px; }
 .sdlc-workspace .sdlc-progress-card > div, .sdlc-workspace .sdlc-progress-card small { font-size: 10px; }
 .sdlc-workspace .sdlc-progress-card progress { margin: 7px 0; }
 .sdlc-workspace .sdlc-navigation > p { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
-.sdlc-constellation.compact-labels .sdlc-star-label > small, .sdlc-constellation.compact-labels .sdlc-star-label > em { display: none; }
+.sdlc-constellation.compact-labels .sdlc-star-label-content > small, .sdlc-constellation.compact-labels .sdlc-star-label-content > em { display: none; }
 .sdlc-constellation.compact-labels .sdlc-star-label strong { font-size: 12px; }
 .sdlc-constellation.compact-labels .sdlc-link-label { display: none; }
 .sdlc-workspace .sdlc-canvas-toolbar { padding-top: 18px; }
