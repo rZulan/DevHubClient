@@ -1,0 +1,59 @@
+.erd-endpoint-editor { display: grid; gap: 14px; min-width: 0; }
+.erd-endpoint-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.erd-endpoint-heading > strong { font-size: 12px; }
+.erd-endpoint-heading > span { font: 10px var(--workshop-font-code); color: var(--muted-foreground); }
+.erd-endpoint-preview { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: center; }
+.erd-properties-panel .erd-endpoint-preview > button { display: grid; gap: 5px; min-width: 0; min-height: 78px; padding: 10px 8px; border: 1px solid var(--border); border-radius: 8px; text-align: left; background: var(--background); cursor: pointer; }
+.erd-endpoint-preview > button:first-child { grid-column: 1; grid-row: 1; }
+.erd-endpoint-preview > button:nth-child(2) { grid-column: 3; grid-row: 1; }
+.erd-properties-panel .erd-endpoint-preview > button[aria-selected="true"] { background: color-mix(in oklab, var(--primary) 7%, var(--background)); border-color: color-mix(in oklab, var(--primary) 55%, var(--border)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 15%, transparent); }
+.erd-endpoint-preview > button > small { justify-self: start; color: var(--muted-foreground); font: 10px var(--workshop-font-code); }
+.erd-endpoint-preview > button[aria-selected="true"] > small { color: var(--primary); }
+.erd-endpoint-preview > button > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px var(--workshop-font-code); }
+.erd-endpoint-preview > button > code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 10px var(--workshop-font-code); color: var(--muted-foreground); }
+.erd-endpoint-connector { grid-column: 2; grid-row: 1; width: 100%; height: 28px; stroke: var(--muted-foreground); stroke-width: 1.8; fill: none; }
+.erd-endpoint-editor .erd-end-open { fill: var(--background); }
+.erd-properties-panel .erd-endpoint-settings { display: grid; gap: 12px; padding: 0; }
+.erd-endpoint-question { display: grid; gap: 4px; min-width: 0; }
+.erd-endpoint-question > strong { font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
+.erd-endpoint-question b { font-weight: 600; }
+.erd-endpoint-question > p { color: var(--muted-foreground); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.erd-endpoint-rows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 7px; }
+.erd-properties-panel .erd-endpoint-rows > button { display: grid; gap: 8px; min-width: 0; min-height: 66px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--background); text-align: left; cursor: pointer; }
+.erd-endpoint-row-option > span { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.erd-endpoint-row-option svg { width: 34px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+.erd-endpoint-row-option code { color: var(--muted-foreground); font: 10px var(--workshop-font-code); }
+.erd-endpoint-row-option > strong { font-size: 11px; font-weight: 500; }
+.erd-properties-panel .erd-endpoint-rows > button[data-state="checked"] { border-color: color-mix(in oklab, var(--primary) 55%, var(--border)); background: color-mix(in oklab, var(--primary) 7%, var(--background)); }
+.erd-endpoint-rows > button[data-state="checked"] svg, .erd-endpoint-rows > button[data-state="checked"] code { color: var(--primary); }
+.erd-endpoint-editor button:focus-visible, .erd-endpoint-routing > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.erd-endpoint-editor button:hover:not(:disabled) { border-color: var(--muted-foreground); }
+.erd-endpoint-editor button:disabled { cursor: default; }
+.erd-endpoint-routing { border-top: 1px solid var(--border); padding-top: 10px; }
+.erd-endpoint-routing > summary { display: flex; align-items: center; gap: 7px; padding: 4px 0; list-style: none; cursor: pointer; font-size: 11px; }
+.erd-endpoint-routing > summary::-webkit-details-marker { display: none; }
+.erd-endpoint-routing > summary::before { content: ""; width: 5px; height: 5px; border-top: 1px solid currentColor; border-right: 1px solid currentColor; transform: rotate(45deg); transition: transform .15s; }
+.erd-endpoint-routing[open] > summary::before { transform: rotate(135deg); }
+.erd-endpoint-routing > summary > span { flex: 1; }
+.erd-endpoint-routing > summary > small { font-size: 10px; color: var(--muted-foreground); }
+.erd-endpoint-routing > div { padding-top: 12px; }
+.erd-endpoint-ports { display: grid; gap: 10px; }
+.erd-endpoint-port-map { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; grid-template-rows: 30px 64px 30px; align-items: center; justify-items: center; gap: 5px; padding: 4px; background: color-mix(in oklab, var(--secondary) 45%, var(--background)); border: 1px dashed var(--border); border-radius: 8px; }
+.erd-endpoint-mini-table { position: relative; grid-column: 2; grid-row: 2; width: min(100%, 110px); border: 1px solid var(--border); border-radius: 5px; background: var(--background); padding: 7px 8px; }
+.erd-endpoint-mini-table:not([data-edge="auto"])::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--background); }
+.erd-endpoint-mini-table[data-edge="top"]::after { top: -3px; left: calc(50% - 3px); }
+.erd-endpoint-mini-table[data-edge="bottom"]::after { bottom: -3px; left: calc(50% - 3px); }
+.erd-endpoint-mini-table[data-edge="left"]::after { left: -3px; top: calc(50% - 3px); }
+.erd-endpoint-mini-table[data-edge="right"]::after { right: -3px; top: calc(50% - 3px); }
+.erd-endpoint-mini-table > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid var(--border); font: 10px var(--workshop-font-code); }
+.erd-endpoint-mini-table i { display: block; width: 70%; height: 2px; margin-top: 4px; border-radius: 2px; background: var(--border); }
+.erd-endpoint-mini-table i:nth-last-child(2) { width: 50%; }
+.erd-properties-panel .erd-endpoint-port-map > button { padding: 4px 5px; min-width: 36px; min-height: 28px; border: 1px solid var(--border); border-radius: 5px; background: var(--background); font-size: 10px; cursor: pointer; }
+.erd-endpoint-port-top { grid-column: 2; grid-row: 1; }
+.erd-endpoint-port-left { grid-column: 1; grid-row: 2; }
+.erd-endpoint-port-right { grid-column: 3; grid-row: 2; }
+.erd-endpoint-port-bottom { grid-column: 2; grid-row: 3; }
+.erd-properties-panel .erd-endpoint-ports .erd-endpoint-auto { min-height: 32px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; cursor: pointer; }
+.erd-properties-panel .erd-endpoint-ports button[data-state="checked"] { border-color: color-mix(in oklab, var(--primary) 55%, var(--border)); color: var(--primary); background: color-mix(in oklab, var(--primary) 7%, var(--background)); }
+.workshop-drawer .erd-properties-panel .erd-endpoint-port-map > button { min-height: 32px; }
+.workshop-drawer .erd-endpoint-port-map { grid-template-rows: 34px 64px 34px; }

@@ -1,4 +1,5 @@
-import {useCallback, useMemo, useRef, useState} from "react"
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
+import {useCallback, useMemo, useRef, useState, type SetStateAction} from "react"
 import {useOutletContext} from "react-router-dom"
 import {Database, FileCode, ImageDown, KeyRound, LayoutGrid, Link2, Plus} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
@@ -8,7 +9,7 @@ import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {ToolCanvas} from "@/features/workshop/tool-canvas"
 import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
-import {dataTypes, erdDialects, erdDialectLabels, downloadFile, erdSql, newField, removeField, removeTable, tableHeight, cardinalityForEnds, relationshipEnds, type ErdDialect, type ErdField, type ErdRelationship, type ErdTable} from "@/features/workshop/tool-documents"
+import {erdDialects, erdDialectLabels, downloadFile, erdSql, newField, removeField, removeTable, tableHeight, cardinalityForEnds, relationshipEnds, type ErdDocument, type ErdDialect, type ErdField, type ErdRelationship, type ErdTable} from "@/features/workshop/tool-documents"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import {ErdImportDialog} from "@/features/workshop/erd-import-dialog"
@@ -20,9 +21,9 @@ import {ErdEditableName} from "@/features/workshop/erd-editable-name"
 import {ErdPanel} from "@/features/workshop/erd-panel"
 import {ErdRelationshipDialog} from "@/features/workshop/erd-relationship-dialog"
 import {erdRelationshipError, reattachErdEnd} from "@/features/workshop/erd-relationship-draft"
-import {arrangeErd} from "@/features/workshop/erd-layout"
+import {applyErdAutoArrange, arrangeErd} from "@/features/workshop/erd-layout"
 import {createErdJunction, erdSchemaIssues, erdDisplayType} from "@/features/workshop/erd-schema"
-import {ErdTableConstraints} from "@/features/workshop/erd-table-constraints"
+import {ErdTableProperties, type ErdPropertiesTab} from "@/features/workshop/erd-table-properties"
 import {exportErdPng} from "@/features/workshop/erd-image-export"
 import {erdRenderIndex} from "@/features/workshop/erd-render-index"
 import {ErdSchemaSidebar} from "@/features/workshop/erd-schema-sidebar"
@@ -43,7 +44,13 @@ function ErdEditor() {
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
     const canWrite = hasWorkshopPermission(organization, userId, "Edit ERD")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "erd"}, userId, canWrite, isPersistedOrganization)
-    const {document, setDocument, canEdit} = editor
+    const {document, setDocument: applyDocument, canEdit} = editor
+    const autoArrangeKey = `devhub.erd.auto-arrange:${userId}:${organization.id}:${project!.id}`
+    const [autoArrange, setAutoArrange] = useState(() => {
+        try {return localStorage.getItem(autoArrangeKey) === "true"} catch {return false}
+    })
+    const setDocument = useCallback((action: SetStateAction<ErdDocument>) => applyDocument(current =>
+        applyErdAutoArrange(current, typeof action === "function" ? action(current) : action, autoArrange)), [applyDocument, autoArrange])
     const dialect = document.dialect ?? "postgresql"
     const schemaIssues = useMemo(() => erdSchemaIssues(document), [document])
     const connectionBounds = useMemo(() => erdConnectionBounds(document), [document])
@@ -51,6 +58,7 @@ function ErdEditor() {
     const canvasNodes = useMemo(() => document.tables.map(table => ({...table, width: 300, height: tableHeight(table)})), [document.tables])
     const [selectedIds, setSelectedIds] = useState<string[]>([]), [fieldId, setFieldId] = useState("")
     const [selectedRelationId, setSelectedRelationId] = useState("")
+    const [propertiesTab, setPropertiesTab] = useState<ErdPropertiesTab>("columns")
     const [reattaching, setReattaching] = useState<{draft: ErdRelationship; original: ErdRelationship} | null>(null)
     const [tablesCollapsed, setTablesCollapsed] = useState(false), [propertiesCollapsed, setPropertiesCollapsed] = useState(false)
     const [connecting, setConnecting] = useState<{fromId: string; toId: string} | null>(null)
@@ -68,7 +76,7 @@ function ErdEditor() {
     }
     const selected = renderIndex.tables.get(selectedIds[0])
     const selectedRelation = document.relationships.find(relation => relation.id === selectedRelationId)
-    const visibleRelations = document.relationships.filter(relation => selectedRelation ? relation.id === selectedRelation.id : selectedIds.includes(relation.fromTable) || selectedIds.includes(relation.toTable))
+    const visibleRelations = document.relationships.filter(relation => selectedRelation ? relation.id === selectedRelation.id : relation.fromTable === selected?.id || relation.toTable === selected?.id)
     const field = selected?.fields.find(item => item.id === fieldId) ?? selected?.fields[0]
     function selectTables(ids: string[]) {setSelectedIds(ids); setSelectedRelationId("")}
     function focusCanvas() {workspace.current?.querySelector<HTMLElement>(".tool-canvas")?.focus({preventScroll: true})}
@@ -82,10 +90,11 @@ function ErdEditor() {
         } catch (failure) {setExportError(failure instanceof Error ? failure.message : "Could not paste tables.")}
         return true
     }
-    function selectRelation(id: string) {setSelectedRelationId(id); setSelectedIds([]); setFieldId("")}
+    function selectRelation(id: string) {setSelectedRelationId(id); setSelectedIds([]); setFieldId(""); setPropertiesCollapsed(false); setRelationError("")}
     const updateTable = useCallback((id: string, changes: Partial<ErdTable>) => {
         const next = {...document, tables: document.tables.map(table => table.id === id ? {...table, ...changes} : table)}
-        if (document.relationships.some(relation => !erdRelationshipError(document, relation) && erdRelationshipError(next, relation))) {setRelationError(""); return}
+        const invalidRelation = document.relationships.find(relation => !erdRelationshipError(document, relation) && erdRelationshipError(next, relation))
+        if (invalidRelation) {setRelationError(erdRelationshipError(next, invalidRelation)); return}
         setDocument(next); setRelationError("")
     }, [document, setDocument])
     const addColumn = useCallback((table: ErdTable) => {
@@ -95,7 +104,7 @@ function ErdEditor() {
         while (names.has(`column_${number}`)) number++
         const item = newField(`column_${number}`)
         updateTable(table.id, {fields: [...table.fields, item]})
-        setSelectedIds([table.id]); setSelectedRelationId(""); setFieldId(item.id); setPropertiesCollapsed(false)
+        setSelectedIds([table.id]); setSelectedRelationId(""); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)
     }, [canEdit, updateTable])
     function updateField(changes: Partial<ErdField>) {
         if (!selected || !field) return
@@ -108,7 +117,9 @@ function ErdEditor() {
             const names = new Set(current.tables.map(table => table.name.toLowerCase()))
             let number = current.tables.length + 1
             while (names.has(`table_${number}`)) number++
-            return arrangeErd({...current, tables: [...current.tables, {id, name: `table_${number}`, x: 80, y: 80, fields: [newField()]}]})
+            const x = current.tables.length ? Math.max(...current.tables.map(table => table.x + 300)) + 80 : 80
+            const y = current.tables.length ? Math.min(...current.tables.map(table => table.y)) : 80
+            return {...current, tables: [...current.tables, {id, name: `table_${number}`, x, y, fields: [newField()]}]}
         })
         selectTables([id]); setFieldId(""); setArrangement(value => value + 1)
     }
@@ -180,7 +191,7 @@ function ErdEditor() {
         selectTables([])
     }
     const renderedTables = useMemo(() => new Map(document.tables.map(table => [table.id, <div key={table.id} className="erd-table-card"><article className="erd-table"><header><Database/><strong><ErdEditableName name={table.name} label={`Rename table ${table.name}`} canEdit={canEdit} onChange={name => updateTable(table.id, {name})}/></strong><small>{table.fields.length} columns</small></header>
-                        {table.fields.map(item => <div role="button" tabIndex={0} key={item.id} className={`erd-field-row ${selected?.id === table.id && field?.id === item.id ? "active" : ""}`} onPointerDown={event => event.stopPropagation()} onClick={() => {selectTables([table.id]); setFieldId(item.id)}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); selectTables([table.id]); setFieldId(item.id)}}}>
+                        {table.fields.map(item => <div role="button" tabIndex={0} key={item.id} className={`erd-field-row ${selected?.id === table.id && field?.id === item.id ? "active" : ""}`} onPointerDown={event => event.stopPropagation()} onClick={() => {selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}}}>
                             <span className="erd-field-key">{item.primary ? <KeyRound/> : renderIndex.foreignKeys.get(table.id)?.has(item.id) ? <Link2/> : null}</span><ErdEditableName name={item.name} label={`Rename column ${table.name}.${item.name}`} canEdit={canEdit} onChange={name => setDocument(current => ({...current, tables: current.tables.map(value => value.id === table.id ? {...value, fields: value.fields.map(column => column.id === item.id ? {...column, name} : column)} : value)}))}/><small title={item.autoIncrement ? "Generated ID" : undefined}>{erdDisplayType(item)}{item.autoIncrement ? " ↗" : ""}</small><i>{item.nullable ? "?" : ""}</i>
                         </div>)}
                         {!table.fields.length && <p>No columns yet</p>}
@@ -191,10 +202,13 @@ function ErdEditor() {
             <DropdownMenuItem title={schemaIssues.length ? "Resolve schema issues before exporting SQL" : `Export ${erdDialectLabels[dialect]} SQL`} disabled={!document.tables.length || !!schemaIssues.length} onSelect={() => {setExportError(""); try {downloadFile(erdSql(document), `schema-${dialect}.sql`, "text/plain")} catch (error) {setExportError(error instanceof Error ? error.message : "Could not export SQL.")}}}><FileCode/>Export as SQL</DropdownMenuItem>
             <DropdownMenuItem disabled={!document.tables.length} onSelect={() => void exportPng()}><ImageDown/>Export as PNG</DropdownMenuItem>
         </>}>
-            <label className="erd-database-target">Database<select aria-label="Database target" disabled={!canEdit} value={dialect} onChange={event => setDocument(current => ({...current, dialect: event.target.value as ErdDialect}))}>{erdDialects.map(value => <option key={value} value={value}>{erdDialectLabels[value]}</option>)}</select></label>
-            <Button size="sm" variant="secondary" disabled={!canEdit || !document.tables.length} title="Arrange related tables and tidy relationship paths" onClick={() => {
-                setDocument(arrangeErd); setArrangement(value => value + 1)
-            }}><LayoutGrid/> Auto arrange</Button>
+            <label className="erd-database-target">Database<WorkshopSelect aria-label="Database target" disabled={!canEdit} value={dialect} onValueChange={selectedValue => setDocument(current => ({...current, dialect: selectedValue as ErdDialect}))}>{erdDialects.map(value => <option key={value} value={value}>{erdDialectLabels[value]}</option>)}</WorkshopSelect></label>
+            <Button size="sm" variant="outline" className="erd-auto-arrange" role="switch" aria-label="Auto arrange" aria-checked={autoArrange} disabled={!canEdit} title={autoArrange ? "Auto arrange is on. Tables rearrange after dropping or updating them." : "Auto arrange is off. Keep tables in their manual positions."} onClick={() => {
+                const enabled = !autoArrange
+                setAutoArrange(enabled)
+                try {localStorage.setItem(autoArrangeKey, String(enabled))} catch { /* Keep the preference for this session when storage is unavailable. */ }
+                if (enabled) {applyDocument(arrangeErd); setArrangement(value => value + 1)}
+            }}><LayoutGrid/> Auto arrange<span className="erd-auto-arrange-track" aria-hidden="true"><i/></span></Button>
             <ErdImportDialog canEdit={canEdit} tableCount={document.tables.length} dialect={dialect} onImport={imported => {
                 setDocument(imported); selectTables(imported.tables[0] ? [imported.tables[0].id] : []); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
             }}/>
@@ -224,30 +238,18 @@ function ErdEditor() {
                 {!document.tables.length && <Button size="sm" variant="ghost" disabled={!canEdit} onClick={addExample}>Load example</Button>}
             </ToolCanvas>
             {(selected || selectedRelation) && <ErdPanel className="erd-properties-panel" side="right" title="Properties" detail={selected ? "Table & column" : "Relationship"} collapsed={propertiesCollapsed} onToggle={() => setPropertiesCollapsed(value => !value)}>
-                <fieldset disabled={!canEdit}>
-                {selected && <>
-                    <label>Table name<input maxLength={150} value={selected.name} onChange={event => updateTable(selected.id, {name: event.target.value || "table"})}/></label>
-                    <div className="tool-property-grid"><label>X<input type="number" value={Math.round(selected.x)} onChange={event => updateTable(selected.id, {x: Number(event.target.value)})}/></label><label>Y<input type="number" value={Math.round(selected.y)} onChange={event => updateTable(selected.id, {y: Number(event.target.value)})}/></label></div>
-                    <div className="tool-section-heading"><strong>Columns</strong><button type="button" aria-label="Add column" disabled={selected.fields.length >= 200} onClick={() => addColumn(selected)}><Plus/></button></div>
-                    <label>Edit column<select value={field?.id ?? ""} onChange={event => setFieldId(event.target.value)}>{selected.fields.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-                    {field && <><label>Column name<input maxLength={150} value={field.name} onChange={event => updateField({name: event.target.value || "column"})}/></label>
-                        <div className="tool-property-grid"><label>Data type<select value={field.type} onChange={event => updateField({type: event.target.value as ErdField["type"], length: ""})}>{dataTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
-                        <label>Length / precision<input placeholder="255 or 10,2" maxLength={30} disabled={!["VARCHAR", "DECIMAL"].includes(field.type)} value={field.length} onChange={event => updateField({length: event.target.value})}/></label></div>
-                        <label className="tool-checkbox"><input type="checkbox" checked={field.primary} onChange={event => updateField({primary: event.target.checked})}/>Primary key</label>
-                        <label className="tool-checkbox"><input type="checkbox" checked={field.nullable} disabled={field.primary || field.autoIncrement} onChange={event => updateField({nullable: event.target.checked})}/>Nullable</label>
-                        <label className="tool-checkbox"><input type="checkbox" checked={field.unique} onChange={event => updateField({unique: event.target.checked})}/>Unique</label>
-                        <label className="tool-checkbox"><input type="checkbox" checked={field.autoIncrement ?? false} disabled={!["INT", "BIGINT"].includes(field.type)} onChange={event => updateField({autoIncrement: event.target.checked})}/>Generated integer ID</label>
-                        <label>Default SQL expression<input maxLength={500} disabled={field.autoIncrement} placeholder="e.g. CURRENT_TIMESTAMP" value={field.defaultValue} onChange={event => updateField({defaultValue: event.target.value})}/></label>
-                        <Button size="sm" variant="ghost" className="tool-delete" onClick={() => setDocument(current => removeField(current, selected.id, field.id))}>Delete column</Button>
-                    </>}
-                    <ErdTableConstraints key={selected.id} table={selected} onChange={changes => updateTable(selected.id, changes)}/>
-                    <Button size="sm" variant="ghost" className="tool-delete" onClick={deleteSelected}>Delete table</Button>
-                </>}
-                <div className="tool-section-heading"><strong>Relationships</strong></div>
-                {!visibleRelations.length && <p className="tool-help">Drag a handle from a table edge onto another table to create a relationship.</p>}
+                {selectedIds.length > 1 && <p className="tool-help">{selectedIds.length} tables selected. Editing {selected?.name}.</p>}
+                {!canEdit && <p className="tool-help">Read-only · editing is unavailable.</p>}
                 {relationError && <p className="tool-inline-error" role="alert">{relationError}</p>}
-                {visibleRelations.map((relation, index) => <ErdRelationshipProperties key={relation.id} document={document} relation={relation} initiallyOpen={relation.id === selectedRelationId || index === 0} onChange={changes => updateRelation(relation, changes)} onEditColumns={() => setReattaching({draft: relation, original: relation})} onCreateJunction={() => setJunctionDraft({relation, original: relation})} onDelete={() => setDocument(current => ({...current, relationships: current.relationships.filter(item => item.id !== relation.id)}))}/>)}
-                </fieldset>
+                {selected ? <ErdTableProperties table={selected} field={field} tab={propertiesTab} onTabChange={setPropertiesTab} canEdit={canEdit} relationshipCount={visibleRelations.length}
+                    onSelectField={setFieldId} onAddColumn={() => addColumn(selected)} onUpdateField={updateField} onUpdateTable={changes => updateTable(selected.id, changes)}
+                    onDeleteField={() => {if (field) setDocument(current => removeField(current, selected.id, field.id))}} onDeleteTable={() => {setDocument(current => removeTable(current, selected.id)); selectTables(selectedIds.filter(id => id !== selected.id))}}
+                    relationships={<fieldset>
+                        {!visibleRelations.length && <p className="erd-properties-empty">No relationships</p>}
+                        {visibleRelations.map(relation => <ErdRelationshipProperties key={relation.id} document={document} relation={relation} canEdit={canEdit} initiallyOpen={false} onChange={changes => updateRelation(relation, changes)} onEditColumns={() => setReattaching({draft: relation, original: relation})} onCreateJunction={() => setJunctionDraft({relation, original: relation})} onDelete={() => setDocument(current => ({...current, relationships: current.relationships.filter(item => item.id !== relation.id)}))}/>)}
+                    </fieldset>}/>
+                    : selectedRelation && <fieldset><ErdRelationshipProperties key={selectedRelation.id} document={document} relation={selectedRelation} canEdit={canEdit} initiallyOpen onChange={changes => updateRelation(selectedRelation, changes)} onEditColumns={() => setReattaching({draft: selectedRelation, original: selectedRelation})} onCreateJunction={() => setJunctionDraft({relation: selectedRelation, original: selectedRelation})} onDelete={deleteSelected}/></fieldset>}
+
             </ErdPanel>}
         </div>
         {connecting && <ErdRelationshipDialog document={document} {...connecting} canEdit={canEdit} onClose={() => setConnecting(null)} onSave={addRelation}/>}

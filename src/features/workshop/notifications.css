@@ -1,0 +1,53 @@
+.workshop-notifications-trigger { position: relative; flex-shrink: 0; overflow: visible; }
+.workshop-notification-badge { position: absolute; top: -2px; right: -3px; display: grid; place-items: center; height: 17px; min-width: 17px; padding: 0 4px; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); border: 2px solid var(--background); font-size: 9px; font-weight: 700; line-height: 1; }
+.workshop-notifications-panel { position: relative; z-index: 50; display: flex; flex-direction: column; gap: 0; width: 420px; max-width: calc(100vw - 24px); max-height: min(580px, var(--radix-popover-content-available-height)); padding: 0; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 40px #0003; outline: none; transform-origin: var(--radix-popover-content-transform-origin); }
+.workshop-notifications-panel[data-state="open"] { animation: workshop-notifications-drop 140ms ease-out; }
+.workshop-notifications-arrow { fill: var(--popover); }
+.workshop-notifications-close { position: absolute; right: 12px; top: 16px; }
+.workshop-notifications-heading { position: relative; flex-shrink: 0; padding: 22px 20px 18px; border-bottom: 1px solid var(--border); text-align: left; }
+.workshop-notifications-title { display: flex; align-items: center; gap: 10px; padding-right: 32px; }
+.workshop-notifications-title > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); }
+.workshop-notifications-title svg { width: 17px; height: 17px; }
+.workshop-notifications-title h2 { font-size: 19px; letter-spacing: -.025em; }
+.workshop-notifications-title small { margin-left: auto; color: var(--primary); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.workshop-notifications-heading p { margin-top: 6px; font-size: 12px; line-height: 1.7; color: var(--muted-foreground); }
+.workshop-notifications-controls { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.workshop-notifications-controls > div { display: flex; gap: 3px; }
+.workshop-notifications-controls button { font-size: 11px; }
+.workshop-notifications-controls button[aria-pressed="true"] { color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); }
+.workshop-notifications-controls svg { width: 14px; height: 14px; }
+.workshop-notifications-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent; }
+.workshop-notifications-list { list-style: none; padding: 0; margin: 0; }
+.workshop-notifications-list > li { display: flex; align-items: center; position: relative; border-bottom: 1px solid var(--border); padding-right: 12px; }
+.workshop-notifications-list > li[data-unread="true"] { background: color-mix(in oklch, var(--primary) 4%, transparent); }
+.workshop-notifications-list > li[data-unread="true"]::before { content: ""; position: absolute; left: 5px; top: 38px; width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+.workshop-notification-open { display: flex; flex: 1; align-items: flex-start; min-width: 0; gap: 12px; padding: 20px 12px 20px 20px; text-align: left; cursor: pointer; }
+.workshop-notification-open:hover { background: var(--accent); }
+.workshop-notification-open:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.workshop-notification-icon { display: grid; flex-shrink: 0; place-items: center; width: 33px; height: 33px; border: 1px solid var(--border); background: var(--background); border-radius: 10px; color: var(--muted-foreground); }
+.workshop-notification-icon svg { width: 15px; height: 15px; }
+.workshop-notification-copy { display: flex; flex-direction: column; min-width: 0; gap: 4px; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.workshop-notification-copy > span { color: var(--muted-foreground); }
+.workshop-notification-copy strong { color: var(--foreground); font-weight: 500; }
+.workshop-notification-copy > b { font-weight: 600; line-height: 1.5; }
+.workshop-notification-copy small { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; color: var(--muted-foreground); font-size: 10px; }
+.workshop-notification-copy small i { font-style: normal; padding-left: 6px; }
+.workshop-notification-arrow { width: 13px; height: 13px; flex-shrink: 0; margin: 8px 0 0 auto; color: var(--muted-foreground); opacity: .5; }
+.workshop-notification-read { flex-shrink: 0; color: var(--muted-foreground); }
+.workshop-notifications-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 64px 32px; text-align: center; min-height: 300px; }
+.workshop-notifications-empty > svg { width: 25px; height: 25px; color: var(--muted-foreground); }
+.workshop-notifications-empty h3 { font-size: 16px; font-weight: 600; }
+.workshop-notifications-empty p { max-width: 265px; font-size: 12px; line-height: 1.8; color: var(--muted-foreground); }
+.workshop-notifications-empty-icon { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--border); border-radius: 16px; color: var(--primary); background: color-mix(in oklch, var(--primary) 6%, transparent); margin-bottom: 8px; }
+.workshop-notifications-empty-icon svg { width: 23px; height: 23px; }
+.workshop-notifications-error { padding: 12px 24px; font-size: 12px; line-height: 1.6; color: var(--destructive); background: color-mix(in oklch, var(--destructive) 7%, transparent); }
+.workshop-notifications-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted-foreground); }
+.workshop-notifications-more { padding: 20px; text-align: center; }
+@keyframes workshop-notifications-drop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .workshop-notifications-panel[data-state="open"] { animation: none; } }
+@media (max-width: 520px) {
+    .workshop-notifications-panel { width: calc(100vw - 24px); border-radius: 12px; }
+    .workshop-notifications-heading { padding: 20px 18px 16px; }
+    .workshop-notifications-controls { padding-inline: 12px; }
+    .workshop-notification-open { padding-left: 16px; gap: 10px; }
+}

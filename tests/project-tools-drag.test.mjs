@@ -13,9 +13,10 @@ const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop
 
 // Drive the real component handlers while holding capture, including intermediate drag frames.
 function navigation() {
+    const dragTools = projectTools.projectToolIds.filter(id => !['calendar', 'bug-reports', 'project-wiki'].includes(id))
     const states = [], storage = new Map()
-    let cursor = 0, order = [...projectTools.projectToolIds]
-    const bounds = {left:100, right:364, top:100, bottom:100 + projectTools.projectToolIds.length * 45 - 3}
+    let cursor = 0, order = [...dragTools]
+    const bounds = {left:100, right:364, top:100, bottom:100 + dragTools.length * 45 - 3}
     const container = {
         setPointerCapture() {},
         getBoundingClientRect: () => bounds,
@@ -43,7 +44,7 @@ function navigation() {
     }
     function render() {
         cursor = 0
-        const all = nodes(exports.ProjectToolsNavigation({userId:'test',organizationId:'preview',expanded:true,onToggle(){}}))
+        const all = nodes(exports.ProjectToolsNavigation({userId:'test',organizationId:'preview',expanded:true,onToggle(){},category:{id:'drag-preview',title:'Pages',tools:dragTools}}))
         const list = all.find(node => node.props.className === 'project-tools-sort-list')
         list.props.ref.current = container
         order = all.filter(node=>node.props['data-tool-id']).map(node=>node.props['data-tool-id'])

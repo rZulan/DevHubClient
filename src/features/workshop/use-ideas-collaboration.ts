@@ -97,7 +97,7 @@ export function useIdeasCollaboration(key: IdeasKey, selectedIds: string[], onDo
         publishTimer.current = setTimeout(() => {
             const hub = connection.current
             if (hub?.state === HubConnectionState.Connected) void hub.invoke("SetIdeasSelection", pendingSelection.current).catch(() => undefined)
-        }, 50)
+        }, 100)
         return () => clearTimeout(publishTimer.current)
     }, [selectedIds])
 

@@ -1,7 +1,7 @@
 export const bugStatuses = [{id: "new", label: "New"}, {id: "triaged", label: "Triaged"}, {id: "in-progress", label: "In progress"}, {id: "resolved", label: "Resolved"}, {id: "closed", label: "Closed"}] as const
 export const bugPriorities = [{id: "low", label: "Low"}, {id: "medium", label: "Medium"}, {id: "high", label: "High"}, {id: "critical", label: "Critical"}] as const
 export type BugCategory = {id: string; name: string; archived: boolean}
-export type BugPortal = {token: string; enabled: boolean; revision: number}
+export type BugPortal = {token: string; enabled: boolean; revision: number; shortCode?: string | null}
 export type BugSummary = {id: string; reference: string; email: string; title: string; status: string; priority: string; categoryId: string | null; source: string; createdAtUtc: string; attachmentCount: number}
 export type BugAttachment = {id: string; fileName: string; contentType: string; size: number}
 export type BugDetail = Omit<BugSummary, "attachmentCount"> & {description: string; steps: string; environment: string; internalNotes: string; updatedAtUtc: string | null; revision: number; attachments: BugAttachment[]}

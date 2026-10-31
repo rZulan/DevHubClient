@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useRef, useState, type CSSProperties, type KeyboardEvent} from "react"
 import {Textarea} from "@/components/ui/textarea"
 import {splitNoteBody, replaceNoteCode, type NoteCodeSegment} from "./note-code-fences.ts"
@@ -34,15 +35,15 @@ function InlineCodeEditor({block, readOnly, onChange, onRemove}: {block: NoteCod
     return <section className="note-code-block note-code-editor" aria-label="Code block editor" style={{background: palette.background, color: palette.foreground, colorScheme: palette.type, "--code-ink": palette.foreground, "--code-paper": palette.background} as CSSProperties} data-theme={palette.id}>
         <div className="note-code-header">
             <div className="note-code-selectors">
-                <label>Grammar<select aria-label="Code grammar" value={selectedLanguage} disabled={readOnly || !options} onChange={event => onChange(block.source, event.target.value, block.theme)}>
+                <label>Grammar<WorkshopSelect aria-label="Code grammar" value={selectedLanguage} disabled={readOnly || !options} onValueChange={selectedValue => onChange(block.source, selectedValue, block.theme)}>
                     <option value="text">Plain text</option>
                     {selectedLanguage !== "text" && !options?.languages.some(item => item.id === selectedLanguage) && <option value={selectedLanguage}>{selectedLanguage}</option>}
                     {options?.languages.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select></label>
-                <label>Theme<select aria-label="Code theme" value={block.theme} disabled={readOnly || !options} onChange={event => onChange(block.source, block.language, event.target.value)}>
+                </WorkshopSelect></label>
+                <label>Theme<WorkshopSelect aria-label="Code theme" value={block.theme} disabled={readOnly || !options} onValueChange={selectedValue => onChange(block.source, block.language, selectedValue)}>
                     {!options?.themes.some(item => item.id === block.theme) && <option value={block.theme}>{block.theme === noteCodeTheme.id ? noteCodeTheme.label : block.theme}</option>}
                     {options?.themes.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select></label>
+                </WorkshopSelect></label>
             </div>
             {!readOnly && <button type="button" aria-label="Remove code block" onClick={onRemove}>Remove</button>}
         </div>

@@ -1,0 +1,11 @@
+.workspace-avatar { overflow: hidden; flex-shrink: 0; }
+.workspace-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.workspace-avatar-editor { display: grid; gap: 12px; margin-bottom: 20px; }
+.workspace-avatar-editor-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.workspace-avatar-preview { width: 72px; height: 72px; border-radius: 14px; border: 1px solid var(--border); background: var(--secondary); font-size: 22px; }
+.workspace-avatar-editor-main > div { min-width: 0; }
+.workspace-avatar-editor-main strong { font-size: 13px; font-weight: 550; }
+.workspace-avatar-editor-main p { font-size: 11px; color: var(--muted-foreground); line-height: 1.7; margin: 4px 0 10px; }
+.workspace-avatar-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.workspace-avatar-input { display: none; }
+@media (max-width: 480px) { .workspace-avatar-editor-main { align-items: flex-start; gap: 12px; } .workspace-avatar-preview { width: 56px; height: 56px; border-radius: 11px; } }

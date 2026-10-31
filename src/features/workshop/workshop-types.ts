@@ -54,6 +54,7 @@ export type WorkshopTeam = {
     id: string
     name: string
     description: string
+    avatarUrl?: string | null
     color: string
     leaderId: string
     memberIds: string[]
@@ -107,6 +108,7 @@ export type WorkshopOrganization = {
     name: string
     description: string
     initials: string
+    avatarUrl?: string | null
     roles: WorkshopRole[]
     members: WorkshopMember[]
     teams: WorkshopTeam[]
@@ -121,6 +123,7 @@ export type ApiOrganization = {
     ownerUserId: string
     name: string
     description?: string | null
+    avatarUrl?: string | null
     createdAtUtc: string
     updatedAtUtc?: string | null
     memberCount: number
@@ -205,6 +208,7 @@ export type ApiTeam = {
     leaderUserId: string
     name: string
     description?: string | null
+    avatarUrl?: string | null
     createdAtUtc: string
     updatedAtUtc?: string | null
     memberCount: number

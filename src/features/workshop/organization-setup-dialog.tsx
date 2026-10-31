@@ -1,4 +1,4 @@
-import type {FormEvent} from "react"
+import {useState, type FormEvent} from "react"
 import {ArrowRight, Building2, Link2, LoaderCircle, Plus} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
@@ -7,6 +7,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import type {OrganizationSetupMode} from "@/features/workshop/use-create-or-join-organization"
+import {extractInviteToken} from "./organization-invite-code"
 
 export function OrganizationSetupDialog({
                                             busy,
@@ -35,7 +36,7 @@ export function OrganizationSetupDialog({
                     <DialogHeader>
                         <DialogTitle
                             id="workshop-modal-title">{mode === "create" ? "Create an organization" : "Join a workshop"}</DialogTitle>
-                        <DialogDescription>{mode === "create" ? "Give your team a place to plan, make, and ship." : "Ask an organization member for their Workshop invite link."}</DialogDescription>
+                        <DialogDescription>{mode === "create" ? "Give your team a place to plan, make, and ship." : "Enter an invite code or paste an invite link to join."}</DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={mode === "create" ? onSubmitCreate : onSubmitJoin}>
@@ -48,10 +49,7 @@ export function OrganizationSetupDialog({
                                                                                   rows={3}/></Label>
                             </>
                         ) : (
-                            <Label>Invite link<Input autoFocus
-                                                     defaultValue={inviteFromUrl ? `${window.location.origin}/workshop?invite=${inviteFromUrl}` : ""}
-                                                     name="inviteLink"
-                                                     placeholder="https://devhub.app/workshop?invite=…"/></Label>
+                            <InviteCodeInput initialValue={inviteFromUrl}/>
                         )}
                         {error && <p className="workshop-form-error">{error}</p>}
                         <Button className="workshop-primary-action" disabled={busy} type="submit">
@@ -64,4 +62,9 @@ export function OrganizationSetupDialog({
             )}
         </Dialog>
     )
+}
+
+function InviteCodeInput({initialValue = ""}: {initialValue?: string}) {
+    const [value, setValue] = useState(() => extractInviteToken(initialValue) ?? "")
+    return <Label className="flex-col items-stretch">Invite code<Input autoFocus name="inviteCode" placeholder="ABCD2345EFGH" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={value} onChange={event => setValue(extractInviteToken(event.target.value) ?? event.target.value)} onPaste={event => {const code = extractInviteToken(event.clipboardData.getData("text")); if (code) {event.preventDefault(); setValue(code)}}}/></Label>
 }

@@ -15,7 +15,7 @@ import {
     hasWorkshopPermission,
 } from "@/features/workshop/workshop-access"
 import type {WorkshopMember, WorkshopPermission, WorkshopRole,} from "@/features/workshop/workshop-types"
-import {OwnerPromotionDialog} from "@/features/workshop/owner-promotion-dialog"
+import {OwnershipTransferDialog} from "@/features/workshop/ownership-transfer-dialog"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {availablePermissions, permissionGroups, permissionDescriptions, permissionLabels, impliedPermissionSources} from "@/features/workshop/workshop-permissions"
 import {
@@ -23,7 +23,7 @@ import {
     useCreateOrganizationRoleMutation,
     useDeleteOrganizationRoleMutation,
     useMoveOrganizationRoleMutation,
-    usePromoteOrganizationOwnerMutation,
+    useTransferOrganizationOwnershipMutation,
     useUpdateOrganizationRoleMutation,
 } from "@/services/api"
 
@@ -38,10 +38,10 @@ export function WorkshopRolesPage() {
     const [deleteRole, {isLoading: isDeletingRole}] = useDeleteOrganizationRoleMutation()
     const [moveRoleRequest, {isLoading: isMovingRole}] = useMoveOrganizationRoleMutation()
     const [assignRole, {isLoading: isAssigning}] = useAssignOrganizationRoleMutation()
-    const [promoteOwner, {isLoading: isPromoting}] = usePromoteOrganizationOwnerMutation()
+    const [transferOwner, {isLoading: isTransferring}] = useTransferOrganizationOwnershipMutation()
     const [deletingRole, setDeletingRole] = useState<WorkshopRole | null>(null)
     const [ownerCandidate, setOwnerCandidate] = useState<WorkshopMember | null>(null)
-    const busy = isCreatingRole || isUpdatingRole || isDeletingRole || isMovingRole || isAssigning || isPromoting
+    const busy = isCreatingRole || isUpdatingRole || isDeletingRole || isMovingRole || isAssigning || isTransferring
     const canCreateRoles = isPersistedOrganization && hasWorkshopPermission(organization, currentUserId, "Manage roles")
     const roles = useMemo(
         () => [...organization.roles].sort((left, right) => left.order - right.order),
@@ -99,7 +99,6 @@ export function WorkshopRolesPage() {
             <header className="workshop-settings-heading with-actions">
                 <div>
                     <h2>Roles & access</h2>
-                    <p>Roles grant permissions and set the hierarchy for managing members.</p>
                 </div>
                 {canCreateRoles && <Button onClick={() => {
                     setError("");
@@ -170,7 +169,7 @@ export function WorkshopRolesPage() {
                 })}
             </div>
 
-            <OwnerPromotionDialog member={ownerCandidate} organizationName={organization.name} onClose={() => setOwnerCandidate(null)} onConfirm={async () => {if (ownerCandidate) await promoteOwner({organizationId: organization.id, userId: ownerCandidate.id}).unwrap()}}/>
+            <OwnershipTransferDialog member={ownerCandidate} organizationName={organization.name} onClose={() => setOwnerCandidate(null)} onConfirm={async () => {if (ownerCandidate) {await transferOwner({organizationId: organization.id, userId: ownerCandidate.id}).unwrap(); setEditingRole(null)}}}/>
 
             <RoleDialog
                 busy={isCreatingRole}
@@ -307,7 +306,7 @@ function RoleDialog({
                         <DialogTitle>{role ? `Manage ${role.name}` : "Create a custom role"}</DialogTitle>
                         <DialogDescription>
                             {role?.isOwnerRole
-                                ? "The highest role is protected. Owners may rename it and promote additional owners."
+                                ? "The owner role is protected and belongs to one person. Only the current owner can transfer ownership."
                                 : "Configure permissions and assign this role only to members below you."}
                         </DialogDescription>
                     </DialogHeader>
@@ -346,9 +345,9 @@ function RoleDialog({
 
                         {role && members && organization && (
                             <fieldset className="workshop-role-member-picker">
-                                <legend>{role.isOwnerRole ? "Organization owners" : "Role members"}</legend>
+                                <legend>{role.isOwnerRole ? "Organization owner" : "Role members"}</legend>
                                 {members.map((member) => {
-                                    const assigned = (member.roleIds ?? [member.roleId]).includes(role.id)
+                                    const assigned = role.isOwnerRole ? Boolean(member.isOwner) : (member.roleIds ?? [member.roleId]).includes(role.id)
                                     const canChange = role.isOwnerRole
                                         ? organization.members.find((candidate) => candidate.id === currentUserId)?.isOwner && !member.isOwner
                                         : !role.isDefaultRole &&
@@ -357,10 +356,11 @@ function RoleDialog({
                                         <Label key={member.id}>
                                             <Checkbox
                                                 checked={assigned}
-                                                disabled={!canChange || busy}
+                                                disabled={role.isOwnerRole || !canChange || busy}
                                                 onCheckedChange={(checked) => onMemberChange?.(member.id, checked === true)}
                                             />
                                             <span><strong>{member.name}</strong><small>@{member.username}{member.isOwner ? " · Owner" : ""}</small></span>
+                                            {role.isOwnerRole && canChange && <Button type="button" variant="outline" size="sm" disabled={busy} onClick={event => {event.preventDefault(); onMemberChange?.(member.id, true)}}>Transfer ownership</Button>}
                                         </Label>
                                     )
                                 })}

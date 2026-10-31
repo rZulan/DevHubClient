@@ -1,8 +1,9 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {AlignCenter, AlignLeft, AlignRight, ChevronRight, FlipHorizontal2, FlipVertical2, Group, RotateCcw, RotateCw, Ungroup} from "lucide-react"
 import {createContext, type ReactNode, useContext, useState} from "react"
 
 import {Button} from "@/components/ui/button"
-import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
+import {useCompactWorkshopContent} from "@/hooks/use-compact-workshop"
 import {ResponsiveWorkshopPanel} from "../responsive-workshop-panel"
 import {googleFonts, systemFonts} from "../shape-fonts"
 import {normalizeRotation, type CanvasItem, type NoteTextStyle} from "../shape-clipboard"
@@ -46,18 +47,18 @@ export function ShapePropertiesPanel({
                                          onGroup,
                                          onUngroup
                                      }: ShapePropertiesPanelProps) {
-    const compact = useCompactWorkshop()
+    const compact = useCompactWorkshopContent()
     const [open, setOpen] = useState(false)
     const panel = <aside aria-label="Properties" className="workshop-shape-properties" data-shape-properties
                    onPointerDown={(event) => event.stopPropagation()} onWheel={(event) => event.stopPropagation()}>
                 <strong>Properties{selectedGroupId ? " · Group" : selectedIds.length > 1 ? ` · ${selectedIds.length} selected` : ""}</strong>
                 {selectedGroupId &&
-                    <label className="workshop-property-field workshop-group-member-picker"><span>Shape</span><select
+                    <label className="workshop-property-field workshop-group-member-picker"><span>Shape</span><WorkshopSelect
                         aria-label="Group member properties" value={selectedItem.id}
-                        onChange={(event) => onPropertyItemChange(event.target.value)}>
+                        onValueChange={selectedValue => onPropertyItemChange(selectedValue)}>
                         {selectedItems.map((item, index) => <option key={item.id}
                                                                     value={item.id}>{groupMemberLabel(item, index)}</option>)}
-                    </select></label>}
+                    </WorkshopSelect></label>}
 
                 <PropertySection title="Shape" defaultOpen>
                     <div className="workshop-property-field"><span>Appearance</span>
@@ -134,15 +135,15 @@ export function ShapePropertiesPanel({
                         const value = event.target.valueAsNumber
                         if (Number.isFinite(value)) onUpdate({outlineWidth: Math.min(20, Math.max(1, Math.round(value)))})
                     }}/></label>
-                    <label className="workshop-property-field"><span>Style</span><select aria-label="Outline style"
+                    <label className="workshop-property-field"><span>Style</span><WorkshopSelect aria-label="Outline style"
                                                                                          value={selectedItem.outlineStyle}
-                                                                                         onChange={(event) => onUpdate({outlineStyle: event.target.value as CanvasItem["outlineStyle"]})}>
+                                                                                         onValueChange={selectedValue => onUpdate({outlineStyle: selectedValue as CanvasItem["outlineStyle"]})}>
                         <option value="solid">Solid</option>
                         <option value="dashed">Dashed</option>
                         <option value="dotted">Dotted</option>
                         <option value="double">Double</option>
                         <option value="none">None</option>
-                    </select></label>
+                    </WorkshopSelect></label>
                 </PropertySection>
 
                 {selectedItem.kind === "note" ? <>
@@ -175,10 +176,8 @@ export function ShapePropertiesPanel({
                 </PropertySection>
             </aside>
     return <PropertiesShapeContext.Provider value={selectedItem.id}>
-        {compact ? <>
-            <Button className="workshop-ideas-properties-toggle" variant="outline" onPointerDown={event => event.stopPropagation()} onClick={() => setOpen(true)}>Properties</Button>
-            <ResponsiveWorkshopPanel compact open={open} onOpenChange={setOpen} title="Shape properties" side="right">{panel}</ResponsiveWorkshopPanel>
-        </> : panel}
+        {compact && <Button className="workshop-ideas-properties-toggle" variant="outline" onPointerDown={event => event.stopPropagation()} onClick={() => setOpen(true)}>Properties</Button>}
+        <ResponsiveWorkshopPanel compact={compact} open={open} onOpenChange={setOpen} title="Shape properties" side="right">{panel}</ResponsiveWorkshopPanel>
     </PropertiesShapeContext.Provider>
 }
 
@@ -255,15 +254,15 @@ function NoteTextStyleProperties({
     const updateCharactersOrStyle = (changes: CharacterStyleChanges) => useCharacterStyle ? onTextStyleUpdate(changes) : update(changes)
     const displayed = useCharacterStyle && selectedTextStyle ? selectedTextStyle : style
     return <PropertySection title={title}>
-        <label className="workshop-property-field"><span>Font</span><select aria-label={`${title} font family`}
+        <label className="workshop-property-field"><span>Font</span><WorkshopSelect aria-label={`${title} font family`}
                                                                             value={displayed.fontFamily}
-                                                                            onChange={(event) => updateCharactersOrStyle({fontFamily: event.target.value as NoteTextStyle["fontFamily"]})}>
+                                                                            onValueChange={selectedValue => updateCharactersOrStyle({fontFamily: selectedValue as NoteTextStyle["fontFamily"]})}>
             <option disabled value=""></option>
             <optgroup label="System fonts">{systemFonts.map(font => <option key={font}
                                                                             value={font}>{font}</option>)}</optgroup>
             <optgroup label="Google Fonts">{googleFonts.map(font => <option key={font}
                                                                             value={font}>{font}</option>)}</optgroup>
-        </select></label>
+        </WorkshopSelect></label>
         <label className="workshop-property-field"><span>Size (px)</span><input aria-label={`${title} font size`}
                                                                                 type="number" min={1} max={1000}
                                                                                 value={displayed.fontSize}
@@ -329,15 +328,15 @@ function TypographyProperties({
     const displayed = useCharacterStyle && selectedTextStyle ? selectedTextStyle : item
     return <>
         <PropertySection title="Typography">
-            <label className="workshop-property-field"><span>Font</span><select aria-label="Font family"
+            <label className="workshop-property-field"><span>Font</span><WorkshopSelect aria-label="Font family"
                                                                                 value={displayed.fontFamily}
-                                                                                onChange={(event) => updateCharactersOrShape({fontFamily: event.target.value as CanvasItem["fontFamily"]})}>
+                                                                                onValueChange={selectedValue => updateCharactersOrShape({fontFamily: selectedValue as CanvasItem["fontFamily"]})}>
                 <option disabled value=""></option>
                 <optgroup label="System fonts">{systemFonts.map((font) => <option key={font}
                                                                                   value={font}>{font}</option>)}</optgroup>
                 <optgroup label="Google Fonts">{googleFonts.map((font) => <option key={font}
                                                                                   value={font}>{font}</option>)}</optgroup>
-            </select></label>
+            </WorkshopSelect></label>
             <label className="workshop-property-field"><span>Size (px)</span><input aria-label="Font size" type="number"
                                                                                     min={1} max={1000}
                                                                                     value={displayed.fontSize}

@@ -2,6 +2,7 @@ import {type FormEvent, useCallback, useState} from "react"
 
 import {useWorkshop} from "@/features/workshop/workshop-context"
 import {useAcceptOrganizationInviteMutation, useCreateOrganizationMutation} from "@/services/api"
+import {extractInviteToken} from "./organization-invite-code"
 
 export type OrganizationSetupMode = "create" | "join" | null
 
@@ -52,11 +53,11 @@ export function useCreateOrJoinOrganization(onReady: (organizationId: string) =>
         event.preventDefault()
         setError("")
         const form = new FormData(event.currentTarget)
-        const inviteLink = String(form.get("inviteLink") ?? "").trim()
+        const inviteLink = String(form.get("inviteCode") ?? "").trim()
 
         const inviteToken = extractInviteToken(inviteLink)
         if (!inviteToken) {
-            setError("Paste a valid Workshop invite link.")
+            setError("Enter a valid invite code or paste an invite link.")
             return
         }
 
@@ -66,27 +67,9 @@ export function useCreateOrJoinOrganization(onReady: (organizationId: string) =>
             setMode(null)
             onReady(joined.id)
         } catch {
-            setError("This invite link is invalid or has expired.")
+            setError("This invite code is invalid or has expired.")
         }
     }
 
     return {close, error, handleCreate, handleJoin, isCreating, isJoining, mode, openCreate, openJoin}
-}
-
-export function extractInviteToken(value: string) {
-    const trimmed = value.trim()
-    if (/^[a-f0-9]{64}$/i.test(trimmed)) return trimmed
-
-    try {
-        const url = new URL(trimmed)
-        const queryToken = url.searchParams.get("invite")
-        if (queryToken && /^[a-f0-9]{64}$/i.test(queryToken)) return queryToken
-
-        const segments = url.pathname.split("/").filter(Boolean)
-        const inviteIndex = segments.indexOf("invite")
-        const pathToken = inviteIndex >= 0 ? segments[inviteIndex + 1] : undefined
-        return pathToken && /^[a-f0-9]{64}$/i.test(pathToken) ? pathToken : null
-    } catch {
-        return null
-    }
 }

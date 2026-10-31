@@ -5,13 +5,14 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import {emptyDocuments, validToolDocument} from '../src/features/workshop/tool-documents.ts'
 import {normalizeSdlcDocument, switchSdlcModel, startSdlcCycle, startSdlcRelease} from '../src/features/workshop/sdlc-document.ts'
+import * as workshopLimits from '../src/features/workshop/workshop-limits.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/use-tool-document.ts', import.meta.url), 'utf8'), {
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
 }).outputText
 const document = {model: 'waterfall', currentPhase: 2, completed: false, notes: {implementation: 'saved'}}
 function harness({saved = {revision: 4, document}, draft, canWrite = true, persisted = true, loadError = false, storageError = false} = {}) {
-    let index = 0, dirty = false, value, timerId = 0, notify, serverDocument = saved
+    let index = 0, dirty = false, value, timerId = 0, notify, serverDocument = saved, now = Date.now()
     const slots = [], effects = [], timers = new Map(), storage = new Map(), saves = [], events = new Map()
     const storageKey = 'devhub.tool-document:user:org:project:sdlc'
     if (draft) storage.set(storageKey, JSON.stringify(draft))
@@ -25,6 +26,9 @@ function harness({saved = {revision: 4, document}, draft, canWrite = true, persi
     const exports = {}
     vm.runInNewContext(source, {exports, require: name => {
         if (name === 'react') return react
+        if (name === './workshop-limits') return workshopLimits
+        if (name === './workshop-limits-api') return {useGetWorkshopLimitsQuery: () => ({data: undefined})}
+        if (name === './use-retry-countdown') return {useRetryCountdown: until => Math.max(0, Math.ceil((until - now) / 1000))}
         if (name === '@/app/hooks') return {useAppDispatch: () => dispatch}
         if (name === './use-project-tool-updates') return {useProjectToolUpdates: (_key, _enabled, callback) => {notify = callback}}
         if (name === './sdlc-document') return {normalizeSdlcDocument}
@@ -33,19 +37,30 @@ function harness({saved = {revision: 4, document}, draft, canWrite = true, persi
         throw Error(name)
     }, localStorage: {getItem: key => storage.get(key) ?? null, setItem: (key, text) => {if (storageError) throw Error('blocked'); storage.set(key, text)}},
     window: {addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name)},
-    setTimeout: fn => {timers.set(++timerId, fn); return timerId}, clearTimeout: id => timers.delete(id)})
+    Date: class extends Date {static now() {return now}}, setTimeout: fn => {timers.set(++timerId, fn); return timerId}, clearTimeout: id => timers.delete(id)})
     function render() {index = 0; dirty = false; value = exports.useToolDocument({organizationId: 'org', projectId: 'project', tool: 'sdlc'}, 'user', canWrite, persisted)}
     render(); const cleanup = effects[0]()
     return {get value() {if (dirty) render(); return value}, saves, storage, storageKey, events,
         async settle() {for (let i = 0; i < 10; i++) {await Promise.resolve(); if (dirty) render()}},
         remote(saved) {serverDocument = saved; notify(saved.revision)},
-        tick() {const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach(fn => fn())}, unmount: cleanup}
+        tick(advance = 3000) {now += advance; dirty = true; const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach(fn => fn())}, unmount: cleanup}
 }
 test('loading and failed loads never overwrite saved project content', async () => {
     const h = harness(); h.value.setDocument(emptyDocuments.sdlc); await h.settle()
     assert.equal(h.value.document.currentPhase, 2); assert.equal(h.saves.length, 0)
     const failed = harness({loadError: true}); await failed.settle(); failed.value.setDocument(document)
     assert.equal(failed.value.status, 'load-error'); assert.equal(failed.saves.length, 0)
+})
+
+test('a throttled save preserves edits and manual retry cannot bypass the cooldown', async () => {
+    const h = harness(); await h.settle(); h.value.setDocument({...document, currentPhase: 3}); h.tick()
+    h.saves[0].reject({status: 429, data: {retryAfterSeconds: 60}}); await h.settle()
+    assert.match(h.value.error, /Saving resumes in/)
+    assert.ok(h.storage.get(h.storageKey))
+    h.value.setDocument({...document, currentPhase: 4}); h.value.retry(); h.tick(1000); await h.settle()
+    assert.equal(h.saves.length, 1)
+    h.tick(60_000); await h.settle()
+    assert.equal(h.saves.length, 2); assert.equal(h.saves[1].document.currentPhase, 4)
 })
 test('read-only members ignore editable local drafts and cannot save', async () => {
     const h = harness({canWrite: false, draft: {revision: 4, pending: true, document: {...document, currentPhase: 5}}})
@@ -116,6 +131,7 @@ test('own save echoes preserve edits made during an in-flight save', async () =>
     h.remote({revision: 5, document: {...document, currentPhase: 3}}); await h.settle()
     h.value.setDocument({...document, currentPhase: 4})
     h.saves[0].resolve({revision: 5}); await h.settle()
+    assert.equal(h.saves.length, 1); h.tick(); await h.settle()
     assert.equal(h.saves.length, 2); assert.equal(h.saves[1].document.currentPhase, 4); assert.equal(h.value.status, 'saving')
 })
 test('a newer peer revision during saving cannot be overwritten by queued edits', async () => {

@@ -4,12 +4,19 @@ import {emptyDocuments, validToolDocument, type DocumentTool, type ToolDocumentM
 import {toolDocumentsApi, type ToolKey, type SavedToolDocument} from "./tool-documents-api"
 import {useProjectToolUpdates} from "./use-project-tool-updates"
 import {normalizeSdlcDocument, type SdlcDocument} from "./sdlc-document"
+import {canvasObjectCount, canGrowCanvas, retrySeconds, saveFailureDetail, workshopDefaults} from "./workshop-limits"
+import {useGetWorkshopLimitsQuery} from "./workshop-limits-api"
+import {useRetryCountdown} from "./use-retry-countdown"
 
 type Status = "loading" | "saved" | "unsaved" | "saving" | "error" | "conflict" | "load-error"
 export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}, userId: string, canWrite: boolean, persisted: boolean) {
     type Document = ToolDocumentMap[T]
     const normalize = (value: Document): Document => key.tool === "sdlc" ? normalizeSdlcDocument(value as SdlcDocument) as Document : value
     const dispatch = useAppDispatch()
+    const {data: limits} = useGetWorkshopLimitsQuery(key.organizationId, {skip: !persisted})
+    const [retryAt, setRetryAt] = useState(0)
+    const countdown = useRetryCountdown(retryAt)
+    const notBefore = useRef(0), savedObjects = useRef(0)
     const [document, renderDocument] = useState<Document>(emptyDocuments[key.tool] as Document)
     const [status, renderStatus] = useState<Status>("loading")
     const [error, setError] = useState("")
@@ -39,6 +46,7 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         }
         const next = normalize((saved.document ?? emptyDocuments[key.tool]) as Document)
         revision.current = saved.revision; current.current = next; renderDocument(next)
+        savedObjects.current = canvasObjectCount(key.tool, next) ?? 0
         past.current = []; future.current = []; transaction.current = undefined; setHistoryVersion(value => value + 1)
         queuedRemote.current = null; setError(""); setStatus("saved"); backup()
     }
@@ -54,15 +62,27 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
     async function flush() {
         clearTimeout(timer.current); timer.current = undefined
         if (saving.current || !pending.current || !canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
+        if (persisted && Date.now() < notBefore.current) {
+            if (alive.current) timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+            return
+        }
         saving.current = true
         try {
             while (pending.current) {
+                if (persisted && Date.now() < notBefore.current) {
+                    setStatus("unsaved")
+                    if (alive.current) timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+                    break
+                }
                 const snapshot = current.current
                 pending.current = false; setStatus("saving")
                 try {
                     if (persisted) {
+                        notBefore.current = Date.now() + Math.ceil(60_000 / (limits?.savesPerMinute ?? workshopDefaults.savesPerMinute)) + 100
                         const response = await dispatch(toolDocumentsApi.endpoints.saveToolDocument.initiate({...key, revision: revision.current, document: snapshot})).unwrap()
                         revision.current = response.revision
+                        savedObjects.current = canvasObjectCount(key.tool, snapshot) ?? 0
+                        if (alive.current) setRetryAt(0)
                     }
                     pending.current = current.current !== snapshot
                     const remote = queuedRemote.current; queuedRemote.current = null
@@ -73,8 +93,16 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
                 } catch (failure) {
                     pending.current = true; backup()
                     const conflict = (failure as {status?: number}).status === 409
+                    const cooldown = retrySeconds(failure)
+                    if (cooldown !== null) {
+                        notBefore.current = Date.now() + cooldown * 1000 + Math.floor(Math.random() * 300)
+                        if (alive.current) {
+                            setRetryAt(notBefore.current)
+                            timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+                        }
+                    }
                     setStatus(conflict ? "conflict" : "error")
-                    if (alive.current) setError(conflict ? "Another session saved changes. Download your draft before reloading the saved document." : persisted ? "Saving failed. Download your draft or retry to save it to the project." : "Browser storage is unavailable. Download your draft to keep your changes.")
+                    if (alive.current) setError(conflict ? "Another session saved changes. Download your draft before reloading the saved document." : saveFailureDetail(failure, persisted ? "Saving failed. Download your draft or retry to save it to the project." : "Browser storage is unavailable. Download your draft to keep your changes."))
                     break
                 }
             }
@@ -87,6 +115,7 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
             const response = persisted ? await dispatch(toolDocumentsApi.endpoints.getToolDocument.initiate(key, {forceRefetch: true, subscribe: false})).unwrap() : {revision: 0, document: null}
             if (!alive.current) return
             let next = (response.document ?? emptyDocuments[key.tool]) as Document
+            savedObjects.current = canvasObjectCount(key.tool, next) ?? 0
             revision.current = response.revision; pending.current = false
             let conflict = false
             try {
@@ -117,6 +146,11 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         if (!canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
         const next = typeof action === "function" ? (action as (value: Document) => Document)(current.current) : action
         if (next === current.current) return
+        const count = canvasObjectCount(key.tool, next)
+        if (count !== null && !canGrowCanvas(canvasObjectCount(key.tool, current.current) ?? 0, count, savedObjects.current, limits?.canvasMaximumObjects)) {
+            setError("Canvas limit reached. Edit or remove existing objects before adding more; your existing work is preserved.")
+            return
+        }
         if (!transaction.current) {past.current.push(current.current); if (past.current.length > 100) past.current.shift()}
         future.current = []; setHistoryVersion(value => value + 1); update(next)
     }
@@ -140,6 +174,6 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         return () => {alive.current = false; clearTimeout(timer.current); flushLatest(); window.removeEventListener("beforeunload", leaving); window.removeEventListener("keydown", saveShortcut)}
     }, [])
     const canEdit = canWrite && !["loading", "load-error", "conflict"].includes(status)
-    return {document, setDocument, status, error, canEdit, save: flush, retry: () => status === "load-error" ? void load() : void flush(), reload: () => void load(true),
+    return {document, setDocument, status, error: countdown > 0 ? `Saving resumes in ${countdown}s. Your draft is kept locally and remains editable.` : error, canEdit, save: flush, retry: () => status === "load-error" ? void load() : void flush(), reload: () => void load(true),
         undo, redo, canUndo: historyVersion >= 0 && past.current.length > 0, canRedo: future.current.length > 0, beginTransaction, endTransaction}
 }

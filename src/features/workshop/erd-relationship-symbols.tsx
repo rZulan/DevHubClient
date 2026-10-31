@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {relationshipEndTypes, relationshipEndLabels, type RelationshipEnd} from "./tool-documents"
 export function ErdEndSymbol({end}: {end: RelationshipEnd}) {
     const many = end === "many" || end === "zero-many", optional = end === "zero-one" || end === "zero-many"
@@ -7,7 +8,7 @@ export function ErdEndSymbol({end}: {end: RelationshipEnd}) {
     </g>
 }
 export function RelationshipEndSelect({label, value, onChange, ariaLabel, right = false}: {label: string; value: RelationshipEnd; onChange: (value: RelationshipEnd) => void; ariaLabel?: string; right?: boolean}) {
-    return <label>{label}<select aria-label={ariaLabel ?? label} value={value} onChange={event => onChange(event.target.value as RelationshipEnd)}>{relationshipEndTypes.map(end => <option key={end} value={end}>{relationshipEndLabels[end]}</option>)}</select>
+    return <label>{label}<WorkshopSelect aria-label={ariaLabel ?? label} value={value} onValueChange={selectedValue => onChange(selectedValue as RelationshipEnd)}>{relationshipEndTypes.map(end => <option key={end} value={end}>{relationshipEndLabels[end]}</option>)}</WorkshopSelect>
         <span className="erd-end-preview"><svg viewBox="0 -12 40 24" aria-hidden="true"><path d="M0 0 H40"/><g transform={right ? "translate(40 0) scale(-1 1)" : undefined}><ErdEndSymbol end={value}/></g></svg></span>
     </label>
 }

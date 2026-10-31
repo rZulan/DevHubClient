@@ -1,8 +1,39 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {highlightNoteCode, getNoteCodeTheme, loadNoteCodeOptions} from '../src/features/workshop/shiki-highlighter.ts'
+import {codeToTokens} from 'shiki'
 
 const text = tokens => tokens.map(line => line.map(token => token.content).join('')).join('\n')
+const characters = line => line.flatMap(token => Array.from(token.content, character => ({character,color:token.color,fontStyle:token.fontStyle ?? 0})))
+
+test('shell placeholders keep their final letters colored across aliases and light/dark themes', async () => {
+    const source = 'git clone <repository-url>\ncd <project-folder>\necho report>output.txt\necho abc2>output.txt'
+    for (const theme of ['one-dark-pro','material-theme-darker','github-dark','github-light']) {
+        for (const language of ['bash','sh','shell','shellscript','zsh']) {
+            const tokens = await highlightNoteCode(source,language,theme)
+            assert.equal(text(tokens),source)
+            for (const [index,word] of ['repository-url','project-folder','report','abc2'].entries()) {
+                const offset=source.split('\n')[index].indexOf(word), letters=characters(tokens[index]).slice(offset,offset+word.length)
+                assert.ok(letters.every(letter=>letter.color===letters[0].color),`${theme}/${language}: ${word} keeps one argument color`)
+            }
+        }
+    }
+})
+
+test('shell grammar correction preserves real file descriptors, quoted strings, variables, pipelines and heredocs', async () => {
+    const source = 'echo hello 2>errors.log\necho hello 2>>errors.log\necho hello 2>&1\necho "$HOME" > output.txt\ngrep "hello" input.txt | sort -u > output.txt\ncat <<EOF\nhello $USER\nEOF'
+    for (const theme of ['material-theme-darker','github-light']) {
+        const expected=(await codeToTokens(source,{lang:'bash',theme})).tokens
+        const actual=await highlightNoteCode(source,'bash',theme)
+        assert.equal(text(actual),source)
+        assert.deepEqual(actual.map(characters),expected.map(characters),theme)
+        const descriptorSource='echo hello 12>>errors.log'
+        const descriptor=characters((await highlightNoteCode(descriptorSource,'bash',theme))[0]).slice(11,15)
+        const operator=characters(actual[0])[12]
+        assert.equal(descriptor.map(item=>item.character).join(''),'12>>')
+        assert.ok(descriptor.every(item=>item.color===operator.color),'multi-digit descriptors retain redirect-operator coloring')
+    }
+})
 
 test('Shiki highlights common languages and aliases while preserving the exact code', async () => {
     for (const [lang, source] of [

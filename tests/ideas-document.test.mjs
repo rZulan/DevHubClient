@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { decodeShapes, encodeShapes, defaultTextStyle, normalizeCanvasItem } from '../src/features/workshop/shape-clipboard.ts'
+import * as workshopLimits from '../src/features/workshop/workshop-limits.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/use-ideas-document.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -11,7 +12,7 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/works
 const shape = { ...defaultTextStyle, id: 'one', x: 0, y: 0, width: 100, height: 100, appearance: 'fill', fillColor: '#ffffff', outlineColor: '#000000', outlineWidth: 2, outlineStyle: 'solid', cornerRadius: 0, text: 'hello', textAlign: 'center', verticalAlign: 'center' }
 
 function harness({ document = { revision: 0, items: [] }, draft, canWrite = true, loadError = false } = {}) {
-  let index = 0, dirty = false, value, cleanup, timerId = 0
+  let index = 0, dirty = false, value, cleanup, timerId = 0, now = Date.now()
   const slots = [], effects = [], timers = new Map(), storage = new Map(), saves = []
   const storageKey = 'devhub.ideas-draft:user:org:project'
   if (draft) storage.set(storageKey, JSON.stringify(draft))
@@ -28,19 +29,22 @@ function harness({ document = { revision: 0, items: [] }, draft, canWrite = true
   const events = { addEventListener() {}, removeEventListener() {} }
   vm.runInNewContext(source, { exports, require: (name) => {
     if (name === 'react') return react
+    if (name === './workshop-limits') return workshopLimits
+    if (name === './workshop-limits-api') return {useGetWorkshopLimitsQuery: () => ({data: undefined})}
+    if (name === './use-retry-countdown') return {useRetryCountdown: until => Math.max(0, Math.ceil((until - now) / 1000))}
     if (name === '@/app/hooks') return { useAppDispatch: () => dispatch }
     if (name === './shape-clipboard') return { decodeShapes, encodeShapes, normalizeCanvasItem }
     if (name === './ideas-api') return { ideasApi: { endpoints: { getIdeas: { initiate: (args) => ({ type: 'get', args }) }, saveIdeas: { initiate: (args) => ({ type: 'save', args }) } } } }
     throw Error(name)
   }, localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, val) => storage.set(key, val), removeItem: (key) => storage.delete(key) }, window: events, document: events,
-  setTimeout: (fn) => { timers.set(++timerId, fn); return timerId }, clearTimeout: (id) => timers.delete(id) })
+  Date: class extends Date {static now() {return now}}, setTimeout: (fn) => { timers.set(++timerId, fn); return timerId }, clearTimeout: (id) => timers.delete(id) })
   function render() { index = 0; dirty = false; value = exports.useIdeasDocument({ organizationId: 'org', projectId: 'project' }, 'user', canWrite) }
   render()
   cleanup = effects[0]()
   return {
     get value() { if (dirty) render(); return value }, saves, storage,
     async settle() { for (let i = 0; i < 8; i++) { await Promise.resolve(); if (dirty) render() } },
-    tick() { const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach((fn) => fn()) },
+    tick(advance = 3000) {now += advance; dirty = true; const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach((fn) => fn()) },
     unmount() { cleanup() },
   }
 }
@@ -51,6 +55,15 @@ test('loading never writes an empty canvas over saved content', async () => {
   await h.settle()
   assert.equal(h.value.items[0].text, 'hello')
   assert.equal(h.saves.length, 0)
+})
+
+test('canvas autosave respects Retry-After and keeps the newest local edit', async () => {
+  const h = harness(); await h.settle(); h.value.setItems([shape]); h.tick()
+  h.saves[0].reject({status: 429, data: {retryAfterSeconds: 60}}); await h.settle()
+  h.value.setItems([{...shape, text: 'latest during cooldown'}]); h.value.retry(); h.tick(1000); await h.settle()
+  assert.equal(h.saves.length, 1); assert.equal(h.storage.size, 1)
+  h.tick(60_000); await h.settle()
+  assert.equal(h.saves.length, 2); assert.equal(h.saves[1].items[0].text, 'latest during cooldown')
 })
 
 test('autosave serializes requests and saves edits made during an in-flight save', async () => {
@@ -86,7 +99,7 @@ test('retry resubmits a rejected new shape and clears the error after success', 
   assert.equal(h.value.status, 'error')
   assert.match(h.value.saveError, /server rejected/)
   assert.equal(h.storage.size, 1)
-  h.value.retry()
+  h.tick(); h.value.retry()
   assert.equal(h.value.status, 'saving')
   assert.equal(h.saves.length, 2)
   assert.equal(h.saves[1].items[0].kind, 'diamond')

@@ -1,0 +1,52 @@
+/* Use the same neutral scrollbar for workshop panels and menus rendered in portals. */
+.workshop-content { position: relative; }
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar),
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *,
+body:has(.workshop-shell) :is([data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="context-menu-content"], [data-slot="context-menu-sub-content"], [data-slot="popover-content"]),
+body:has(.workshop-shell) :is([data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="context-menu-content"], [data-slot="context-menu-sub-content"], [data-slot="popover-content"]) * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent;
+}
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar)::-webkit-scrollbar,
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *::-webkit-scrollbar,
+body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollbar {
+    width: 10px; height: 10px;
+}
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar)::-webkit-scrollbar-track,
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *::-webkit-scrollbar-track,
+body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollbar-track { background: transparent; }
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar)::-webkit-scrollbar-thumb,
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *::-webkit-scrollbar-thumb,
+body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollbar-thumb {
+    min-height: 40px; border: 3px solid transparent; border-radius: 999px;
+    background: color-mix(in oklab, var(--foreground) 24%, transparent); background-clip: padding-box;
+}
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar)::-webkit-scrollbar-thumb:hover,
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *::-webkit-scrollbar-thumb:hover,
+body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--foreground) 42%, transparent);
+}
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar)::-webkit-scrollbar-corner,
+:is(.workshop-shell, .workshop-content, .workshop-modal, .workshop-drawer, .workshop-scrollbar) *::-webkit-scrollbar-corner,
+body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollbar-corner { background: transparent; }
+/* Radix hides native viewport scrollbars by default; workshop option lists show our shared style. */
+.workshop-select-viewport[data-radix-select-viewport], body:has(.workshop-shell) [data-radix-select-viewport] { scrollbar-width: thin !important; }
+.workshop-select-viewport[data-radix-select-viewport]::-webkit-scrollbar, body:has(.workshop-shell) [data-radix-select-viewport]::-webkit-scrollbar { display: block !important; }
+
+.workshop-select-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; max-width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; background: var(--background); color: var(--foreground); font: inherit; text-align: left; cursor: pointer; }
+.workshop-select-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workshop-select-icon { display: inline-flex; flex-shrink: 0; opacity: .65; }
+.workshop-select-icon svg { width: 12px; height: 12px; }
+.workshop-select-trigger:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.workshop-select-trigger:disabled { opacity: .5; cursor: not-allowed; }
+.workshop-select-menu { z-index: 100; width: var(--radix-select-trigger-width); min-width: min(180px, calc(100vw - 24px)); max-width: min(340px, calc(100vw - 24px)); max-height: min(320px, var(--radix-select-content-available-height)); padding: 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 24px #0002; overflow: hidden; }
+.workshop-select-viewport { max-height: min(310px, calc(var(--radix-select-content-available-height) - 10px)); scrollbar-gutter: stable; }
+.workshop-select-option { position: relative; display: flex; align-items: center; min-height: 28px; padding: 6px 28px 6px 8px; border-radius: 4px; font-size: 12px; line-height: 1.4; outline: none; cursor: default; user-select: none; overflow-wrap: anywhere; }
+.workshop-select-option[data-highlighted] { background: var(--accent); color: var(--accent-foreground); }
+.workshop-select-option[data-disabled] { opacity: .4; pointer-events: none; }
+.workshop-select-check { position: absolute; right: 7px; display: inline-flex; }
+.workshop-select-check svg { width: 13px; height: 13px; }
+.task-edit-select:has(> [data-workshop-select]) > svg { display: none; }
+.note-code-header .note-code-theme { font: inherit; }
+/* This horizontal tab strip intentionally remains scrollbar-free. */
+.workshop-settings-sidebar nav { scrollbar-width: none; }

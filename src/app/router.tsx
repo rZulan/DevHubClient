@@ -16,6 +16,10 @@ export const router = createBrowserRouter([
         HydrateFallback: RouterFallback,
         children: [
             {
+                path: "b/:token",
+                lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
+            },
+            {
                 path: "report-bug/:token",
                 lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
             },
@@ -115,6 +119,10 @@ export const router = createBrowserRouter([
                                         lazy: async () => ({
                                             Component: (await import("@/pages/workshop/workshop-todo-page")).WorkshopTodoPage,
                                         }),
+                                    },
+                                    {
+                                        path: "calendar",
+                                        lazy: async () => ({Component: (await import("@/pages/workshop/workshop-calendar-page")).WorkshopCalendarPage}),
                                     },
                                     // Archived Playground links lead to the active Notes tool.
                                     {path: "ideation", loader: () => redirect("../notes")},

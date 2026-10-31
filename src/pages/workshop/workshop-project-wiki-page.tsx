@@ -1,20 +1,28 @@
-import {useEffect, useRef, useState, type FormEvent} from "react"
+import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from "react"
 import {Link, useLocation, useOutletContext, useSearchParams} from "react-router-dom"
-import {BookOpen, Check, Download, Eye, FileText, History, Home, Link2, LoaderCircle, Pencil, Plus, Search, Trash2} from "lucide-react"
+import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Plus, Search, Trash2} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Textarea} from "@/components/ui/textarea"
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {createClientId} from "@/lib/create-client-id"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {downloadFile} from "@/features/workshop/tool-documents"
-import {deleteWikiPage, saveWikiPage, wikiLimits, wikiPageHref, type WikiPage, type WikiRevision} from "@/features/workshop/wiki-document"
-import {useWikiDraft, wikiPageVersion} from "@/features/workshop/wiki-draft"
+import {deleteWikiPage, saveWikiPage, wikiAncestors, wikiCanAddSubpage, wikiParentOptions, wikiLimits, wikiPageHref, wikiPageVersion, type WikiPage, type WikiPageForm, type WikiRevision} from "@/features/workshop/wiki-document"
+import {WikiTableOfContents} from "@/features/workshop/wiki-table-of-contents"
+import type {WikiHeadingNavigation} from "@/features/workshop/wiki-active-heading"
 import {WikiMarkdown} from "@/features/workshop/wiki-markdown"
+import {WikiCopyLink} from "@/features/workshop/wiki-copy-link"
+import {WikiPageNavigation} from "@/features/workshop/wiki-page-navigation"
+import {WikiImageDialog} from "@/features/workshop/wiki-image-dialog"
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/wiki.css"
+
+const expandedSections: ReadonlySet<string> = new Set()
 
 export function WorkshopProjectWikiPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
@@ -31,61 +39,119 @@ function ProjectWiki() {
     const canWrite = hasWorkshopPermission(organization, userId, "Manage wiki")
     const editor = useToolDocument({organizationId: organization.id, projectId: project.id, tool: "wiki"}, userId, canWrite, isPersistedOrganization)
     const {document, status, canEdit} = editor
-    const {draft, update: updateDraft, storageError} = useWikiDraft(`devhub.wiki-draft:${userId}:${organization.id}:${project.id}`)
-    const [editing, setEditing] = useState(!!draft && canWrite), [preview, setPreview] = useState(false)
-    const [query, setQuery] = useState(""), [formError, setFormError] = useState(""), [copied, setCopied] = useState(false)
-    const [deleting, setDeleting] = useState<WikiPage | null>(null), [discarding, setDiscarding] = useState(false)
+    const [pageForm, setPageForm] = useState<WikiPageForm | null>(null)
+    const [editMode, setEditMode] = useState(false), [editing, setEditing] = useState(false), [preview, setPreview] = useState(false)
+    const canManage = canWrite && editMode
+    const [query, setQuery] = useState(""), [formError, setFormError] = useState("")
+    const [imageOpen, setImageOpen] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(true), sidebarId = useId()
+    const [hasToc, setHasToc] = useState(false), [tocWide, setTocWide] = useState(false)
+    const [tocPreference, setTocPreference] = useState<boolean | null>(null), tocId = useId()
+    const tocOpen = tocPreference ?? tocWide
+    const [deleting, setDeleting] = useState<WikiPage | null>(null)
     const [showHistory, setShowHistory] = useState(false), [historical, setHistorical] = useState<WikiRevision | null>(null)
-    const [params, setParams] = useSearchParams(), location = useLocation(), bodyInput = useRef<HTMLTextAreaElement>(null)
+    const [sectionState, setSectionState] = useState<{key: string; collapsed: ReadonlySet<string>}>({key: "", collapsed: expandedSections})
+    const [headingNavigation, setHeadingNavigation] = useState<WikiHeadingNavigation | null>(null)
+    const [params, setParams] = useSearchParams(), location = useLocation(), bodyInput = useRef<HTMLTextAreaElement>(null), article = useRef<HTMLElement>(null)
     const requestedSlug = params.get("page")
     const page = requestedSlug ? document.pages.find(item => item.slug === requestedSlug) : document.pages.find(item => item.id === document.homePageId)
-    const filtered = [...document.pages].filter(item => `${item.title}\n${item.body}`.toLowerCase().includes(query.trim().toLowerCase())).sort((a, b) => a.id === document.homePageId ? -1 : b.id === document.homePageId ? 1 : a.title.localeCompare(b.title))
-    const changedRemotely = !!draft && draft.baseVersion !== wikiPageVersion(document.pages.find(item => item.id === draft.id))
+    const contentKey = `${page?.id}:${historical?.id ?? page?.updatedAt}`
+    const collapsedSections = sectionState.key === contentKey ? sectionState.collapsed : expandedSections
+    const revealSection = useCallback((id: string) => {
+        const target = window.document.getElementById(id)
+        if (!target) return
+        setHeadingNavigation(current => ({contentKey, id, sequence: (current?.sequence ?? 0) + 1}))
+        const ancestors: string[] = []
+        let section = target?.closest(".wiki-section")
+        while (section) {
+            const heading = section.querySelector<HTMLElement>(":scope > .wiki-section-heading")
+            if (heading?.id) ancestors.push(heading.id)
+            section = section.parentElement?.closest(".wiki-section") ?? null
+        }
+        setSectionState(current => {
+            if (current.key !== contentKey || !ancestors.some(anchor => current.collapsed.has(anchor))) return current
+            const next = new Set(current.collapsed)
+            for (const anchor of ancestors) next.delete(anchor)
+            return {key: contentKey, collapsed: next}
+        })
+        requestAnimationFrame(() => window.document.getElementById(id)?.scrollIntoView({block: "start"}))
+    }, [contentKey])
+    const parents = pageForm ? wikiParentOptions(document.pages, pageForm.id) : []
+    const ancestors = page ? wikiAncestors(document.pages, page.id) : []
+    const changedRemotely = !!pageForm && pageForm.baseVersion !== wikiPageVersion(document.pages.find(item => item.id === pageForm.id))
+    const savedPage = pageForm ? document.pages.find(item => item.id === pageForm.id) : undefined
+    const hasUnsavedEdits = !!pageForm && (pageForm.title !== (savedPage?.title ?? "") || pageForm.body !== (savedPage?.body ?? "") || !!pageForm.message || (pageForm.parentId ?? null) !== (savedPage?.parentId ?? null))
     const statusText = status === "loading" ? "Loading wiki…" : status === "load-error" ? "Could not load wiki" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved changes" : status === "conflict" ? "Save conflict" : status === "error" ? "Save failed" : isPersistedOrganization ? "All changes saved" : "Saved in this browser"
     const author = (id: string) => organization.members.find(member => member.id === id)?.name ?? "Former member"
     const date = (value: string) => new Date(value).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"})
-    useEffect(() => {setHistorical(null); setShowHistory(false); setCopied(false)}, [requestedSlug])
+    useEffect(() => {
+        // Remove the retired per-page recovery data; saved wiki documents use a separate key.
+        try {localStorage.removeItem(`devhub.wiki-draft:${userId}:${organization.id}:${project.id}`)} catch { /* Editing does not require browser storage. */ }
+    }, [userId, organization.id, project.id])
+    useEffect(() => {
+        if (!hasUnsavedEdits) return
+        function leaving(event: BeforeUnloadEvent) {event.preventDefault()}
+        window.addEventListener("beforeunload", leaving)
+        return () => window.removeEventListener("beforeunload", leaving)
+    }, [hasUnsavedEdits])
+    useEffect(() => {setHistorical(null); setShowHistory(false); setEditing(false); setPageForm(null); setImageOpen(false)}, [requestedSlug])
+    useEffect(() => {if (!canManage) {setHistorical(null); setShowHistory(false)}}, [canManage])
+    useEffect(() => {
+        if (!canWrite) {setEditMode(false); setEditing(false); setPageForm(null); setDeleting(null); setImageOpen(false)}
+    }, [canWrite])
     useEffect(() => {
         if (location.hash && status === "saved") {
             let id: string
             try {id = decodeURIComponent(location.hash.slice(1))} catch {return}
-            window.document.getElementById(id)?.scrollIntoView({block: "start"})
+            revealSection(id)
         }
-    }, [location.hash, requestedSlug, status])
+    }, [location.hash, requestedSlug, status, revealSection])
+
+    function toggleSection(id: string) {
+        setSectionState(current => {
+            const next = new Set(current.key === contentKey ? current.collapsed : expandedSections)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return {key: contentKey, collapsed: next}
+        })
+    }
+    function setSectionsExpanded(expand: boolean) {
+        const ids = [...article.current?.querySelectorAll<HTMLElement>(".wiki-section-heading[id]") ?? []].map(heading => heading.id)
+        setSectionState({key: contentKey, collapsed: expand ? expandedSections : new Set(ids)})
+    }
 
     function navigatePage(slug: string) {
         setParams(current => {const next = new URLSearchParams(current); next.set("page", slug); return next})
     }
-    function startEditing(existing?: WikiPage, title?: string) {
+    function startEditing(existing?: WikiPage, title?: string, parentId: string | null = null) {
         if (!canEdit) return
-        if (draft && draft.id !== existing?.id) {setEditing(true); setFormError("Finish or discard your recovered draft before starting another page."); return}
-        updateDraft({id: existing?.id ?? createClientId(), title: existing?.title ?? title ?? "", body: existing?.body ?? "", message: "", baseVersion: wikiPageVersion(existing)})
+        if (!existing && parentId && !wikiCanAddSubpage(document.pages, parentId)) {setFormError("This page already has 2 subpages."); return}
+        setEditMode(true)
+        setPageForm({id: existing?.id ?? createClientId(), title: existing?.title ?? title ?? "", body: existing?.body ?? "", message: "", parentId: existing?.parentId ?? parentId, baseVersion: wikiPageVersion(existing)})
         setEditing(true); setPreview(false); setFormError("")
+    }
+    function finishEditing() {
+        setEditing(false); setPageForm(null); setEditMode(false); setPreview(false); setFormError(""); setDeleting(null); setImageOpen(false)
     }
     function savePage(event: FormEvent) {
         event.preventDefault()
-        if (!draft || !canEdit || changedRemotely) return
+        if (!pageForm || !canEdit || !canManage || changedRemotely) return
         try {
-            const next = saveWikiPage(document, draft, userId, createClientId(), new Date().toISOString())
-            editor.setDocument(next); navigatePage(next.pages.find(item => item.id === draft.id)!.slug)
-            updateDraft(null); setEditing(false); setFormError(""); setHistorical(null)
+            const next = saveWikiPage(document, pageForm, userId, createClientId(), new Date().toISOString())
+            editor.setDocument(next); navigatePage(next.pages.find(item => item.id === pageForm.id)!.slug)
+            setPageForm(null); finishEditing(); setHistorical(null)
         } catch (failure) {setFormError((failure as Error).message)}
     }
-    function insert(before: string, after = "") {
-        if (!draft || !bodyInput.current) return
+    function insert(before: string, after = "", replace = false) {
+        if (!pageForm || !bodyInput.current || !canEdit || !canManage) return
         const {selectionStart: start, selectionEnd: end} = bodyInput.current
-        const body = `${draft.body.slice(0, start)}${before}${draft.body.slice(start, end)}${after}${draft.body.slice(end)}`
+        const body = `${pageForm.body.slice(0, start)}${before}${replace ? "" : pageForm.body.slice(start, end)}${after}${pageForm.body.slice(end)}`
         if (body.length > wikiLimits.body) {setFormError("This page has reached its content limit. Shorten it before adding more formatting."); return}
-        updateDraft({...draft, body})
-        requestAnimationFrame(() => {bodyInput.current?.focus(); bodyInput.current?.setSelectionRange(start + before.length, end + before.length)})
-    }
-    async function copyLink() {
-        if (!page) return
-        try {await navigator.clipboard.writeText(`${window.location.origin}${location.pathname}${wikiPageHref(location.search, project.id, page.slug)}`); setCopied(true)}
-        catch {setFormError("The page link could not be copied. Copy the address from your browser.")}
+        setPageForm({...pageForm, body})
+        requestAnimationFrame(() => {bodyInput.current?.focus(); bodyInput.current?.setSelectionRange(start + before.length, (replace ? start : end) + before.length)})
     }
     function removePage() {
-        if (!deleting || !canEdit) return
+        if (!deleting || !canEdit || !canManage) return
         const next = deleteWikiPage(document, deleting.id)
         editor.setDocument(next); setDeleting(null)
         const home = next.pages.find(item => item.id === next.homePageId)
@@ -94,46 +160,72 @@ function ProjectWiki() {
     }
 
     return <div className="workshop-page wiki-page">
-        <header className="workshop-page-heading compact wiki-heading">
-            <div><div className="wiki-eyebrow"><BookOpen/>PROJECT KNOWLEDGE</div><h2>Project Wiki</h2><p>{project.name} <span aria-hidden="true">/</span> A shared home for your documentation.</p></div>
-            <div className="wiki-actions"><Button variant="outline" disabled={!document.pages.length} onClick={() => downloadFile(JSON.stringify(document, null, 2), `${project.name}-wiki.json`, "application/json")}><Download/>Backup</Button>{canWrite && <Button disabled={!canEdit || document.pages.length >= wikiLimits.pages || !!draft} onClick={() => startEditing(undefined, document.pages.length ? "" : "Home")}><Plus/>New page</Button>}</div>
-        </header>
-        <div className="wiki-status"><span role="status">{(status === "loading" || status === "saving") ? <LoaderCircle className="animate-spin"/> : status === "saved" ? <Check/> : null}{statusText}</span><span>{!canWrite ? "View only" : "Markdown supported"}</span></div>
-        {editor.error && <div className="wiki-notice" role="alert"><p>{editor.error}</p><div className="wiki-actions"><Button variant="outline" size="sm" onClick={() => downloadFile(JSON.stringify(document, null, 2), "wiki-recovery.json", "application/json")}>Download recovery copy</Button>{status === "conflict" ? <Button variant="outline" size="sm" onClick={editor.reload}>Discard pending saves & reload</Button> : <Button variant="outline" size="sm" onClick={editor.retry}>Retry</Button>}</div></div>}
-        {draft && canWrite && !editing && <div className="wiki-notice"><p>You have an unfinished page: <strong>{draft.title || "Untitled page"}</strong></p><div className="wiki-actions"><Button size="sm" onClick={() => setEditing(true)}>Resume draft</Button><Button variant="ghost" size="sm" onClick={() => setDiscarding(true)}>Discard draft</Button></div></div>}
+        {editor.error && <div className="wiki-notice" role="alert"><p>{editor.error.replaceAll("your draft", "your changes").replaceAll("A recovered draft conflicts", "Recovered pending saves conflict")}</p><div className="wiki-actions"><Button variant="outline" size="sm" onClick={() => downloadFile(JSON.stringify(document, null, 2), "wiki-recovery.json", "application/json")}>Download recovery copy</Button>{status === "conflict" ? <Button variant="outline" size="sm" onClick={editor.reload}>Discard pending saves & reload</Button> : <Button variant="outline" size="sm" onClick={editor.retry}>Retry</Button>}</div></div>}
         {formError && !editing && <p className="wiki-notice" role="alert">{formError}</p>}
-        {status === "loading" ? <div className="wiki-loading" role="status"><LoaderCircle className="animate-spin"/>Loading project pages…</div> : status !== "load-error" && <div className="wiki-workspace">
-            <aside className="wiki-sidebar" aria-label="Wiki pages">
-                <div className="wiki-sidebar-title"><strong>Pages</strong><span>{document.pages.length}</span></div>
+        {status === "loading" ? <div className="wiki-loading" role="status"><LoaderCircle className="animate-spin"/>Loading project pages…</div> : status !== "load-error" && <div className={`wiki-workspace${sidebarOpen ? "" : " wiki-sidebar-collapsed"}`}>
+            <aside id={sidebarId} className="wiki-sidebar" aria-label="Wiki pages" hidden={!sidebarOpen}>
+                <div className="wiki-sidebar-title"><BookOpen/><strong>{project.name} Wiki</strong></div>
                 <label className="wiki-search"><Search/><Input aria-label="Search wiki pages" placeholder="Find a page…" value={query} onChange={event => setQuery(event.target.value)}/></label>
-                <nav aria-label="Wiki page navigation">{filtered.map(item => <Link key={item.id} to={wikiPageHref(location.search, project.id, item.slug)} onClick={() => setEditing(false)} aria-current={page?.id === item.id ? "page" : undefined}>{item.id === document.homePageId ? <Home/> : <FileText/>}<span>{item.title}</span></Link>)}</nav>
-                {!filtered.length && <p className="wiki-sidebar-empty">{query ? "No pages match your search." : "Your pages will appear here."}</p>}
-                <div className="wiki-sidebar-tip"><BookOpen/><p>Keep guides, decisions, and project know-how in one place.</p></div>
+                {canManage && <Button className="wiki-new-page" variant="outline" size="sm" disabled={!canEdit || document.pages.length >= wikiLimits.pages || !!pageForm} onClick={() => startEditing(undefined, document.pages.length ? "" : "Home")}><Plus/>New page</Button>}
+                <WikiPageNavigation pages={document.pages} homePageId={document.homePageId} currentId={page?.id} projectId={project.id} query={query} canAdd={canManage && canEdit && !pageForm && document.pages.length < wikiLimits.pages} onAdd={parentId => startEditing(undefined, "", parentId)} onNavigate={() => {setEditing(false); setPageForm(null); setImageOpen(false)}}/>
             </aside>
             <section className="wiki-main">
-                {editing && draft && canWrite ? <form className="wiki-editor" onSubmit={savePage}>
-                    <div className="wiki-editor-heading"><span>{draft.baseVersion === null ? "CREATE A PAGE" : "EDIT PAGE"}</span><small>{storageError ? "Draft recovery unavailable" : "Draft saved in this browser"}</small></div>
-                    {storageError && <p className="wiki-notice" role="alert">Browser storage is unavailable. Download your draft before leaving.</p>}
-                    {changedRemotely && <p className="wiki-notice" role="alert">This page changed in another session or was deleted. Download your draft, then discard it and reopen the latest page before saving.</p>}
+                <div className="wiki-toolbar">
+                    <div className="wiki-toolbar-navigation"><Button variant="ghost" size="icon-sm" aria-label={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} title={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} aria-expanded={sidebarOpen} aria-controls={sidebarId} onClick={() => setSidebarOpen(value => !value)}>{sidebarOpen ? <PanelLeftClose/> : <PanelLeftOpen/>}</Button><div className="wiki-breadcrumb"><BookOpen/><span>Wiki</span><span aria-hidden="true">/</span><strong>{editing && pageForm && canManage ? pageForm.title || "New page" : page?.title || "Pages"}</strong></div></div>
+                    <div className="wiki-actions"><span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}{hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm" aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"} title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen} aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>{tocOpen ? <PanelRightClose/> : <PanelRightOpen/>}</Button>}</div>
+                </div>
+                <span className="sr-only" role="status">{statusText}</span>
+                <div className="wiki-main-content">
+                {editing && pageForm && canManage ? <form className="wiki-editor" onSubmit={savePage}>
+                    <div className="wiki-editor-heading"><span>{pageForm.baseVersion === null ? "CREATE A PAGE" : "EDIT PAGE"}</span></div>
+                    {changedRemotely && <p className="wiki-notice" role="alert">This page changed in another session or was deleted. Copy your changes, then cancel editing and reopen the latest page before saving.</p>}
                     {formError && <p className="wiki-notice" role="alert">{formError}</p>}
-                    <label htmlFor="wiki-title">Page title</label><Input id="wiki-title" autoFocus required maxLength={wikiLimits.title} readOnly={!canEdit} value={draft.title} placeholder="Give this page a title" onChange={event => updateDraft({...draft, title: event.target.value})}/>
+                    <label htmlFor="wiki-title">Page title</label><Input id="wiki-title" autoFocus required maxLength={wikiLimits.title} readOnly={!canEdit} value={pageForm.title} placeholder="Give this page a title" onChange={event => setPageForm({...pageForm, title: event.target.value})}/>
+                    <label htmlFor="wiki-parent">Parent page</label><WorkshopSelect id="wiki-parent" aria-label="Parent page" className="wiki-parent-select" value={pageForm.parentId ?? ""} disabled={!canEdit} onValueChange={parentId => setPageForm({...pageForm, parentId: parentId || null})}><option value="">Top level</option>{pageForm.parentId && !parents.some(parent => parent.id === pageForm.parentId) && <option value={pageForm.parentId} disabled>Parent unavailable — choose another</option>}{parents.map(parent => <option key={parent.id} value={parent.id} disabled={parent.disabled}>{parent.label}{parent.disabled ? " (2 subpages)" : ""}</option>)}</WorkshopSelect>
                     <div className="wiki-editor-tabs" role="group" aria-label="Wiki editor mode"><Button type="button" variant={!preview ? "secondary" : "ghost"} aria-pressed={!preview} onClick={() => setPreview(false)}><Pencil/>Write</Button><Button type="button" variant={preview ? "secondary" : "ghost"} aria-pressed={preview} onClick={() => setPreview(true)}><Eye/>Preview</Button></div>
-                    {preview ? <div className="wiki-preview" role="region" aria-label="Wiki page preview"><h2>{draft.title || "Untitled page"}</h2>{draft.body ? <WikiMarkdown body={draft.body} pages={document.pages} projectId={project.id}/> : <p>Your formatted page will appear here.</p>}</div> : <>
-                        <div className="wiki-formatting" role="group" aria-label="Markdown formatting"><button type="button" disabled={!canEdit} onClick={() => insert("## ")}>Heading</button><button type="button" disabled={!canEdit} onClick={() => insert("**", "**")}><strong>Bold</strong></button><button type="button" disabled={!canEdit} onClick={() => insert("*", "*")}><em>Italic</em></button><button type="button" disabled={!canEdit} onClick={() => insert("[", "](page-title)")}>Link</button><button type="button" disabled={!canEdit} onClick={() => insert("\n```\n", "\n```\n")}>Code</button></div>
-                        <label htmlFor="wiki-body" className="sr-only">Page content</label><Textarea id="wiki-body" ref={bodyInput} readOnly={!canEdit} value={draft.body} maxLength={wikiLimits.body} placeholder="Write your documentation in Markdown…" onChange={event => updateDraft({...draft, body: event.target.value})}/>
+                    {preview ? <div className="wiki-preview" role="region" aria-label="Wiki page preview"><h2>{pageForm.title || "Untitled page"}</h2>{pageForm.body ? <WikiMarkdown body={pageForm.body} pages={document.pages} projectId={project.id}/> : <p>Your formatted page will appear here.</p>}</div> : <>
+                        <div className="wiki-formatting" role="group" aria-label="Markdown formatting">
+                            <button type="button" aria-label="Heading" title="Heading" disabled={!canEdit} onClick={() => insert("## ")}><Heading aria-hidden="true"/></button>
+                            <button type="button" aria-label="Bold" title="Bold" disabled={!canEdit} onClick={() => insert("**", "**")}><Bold aria-hidden="true"/></button>
+                            <button type="button" aria-label="Italic" title="Italic" disabled={!canEdit} onClick={() => insert("*", "*")}><Italic aria-hidden="true"/></button>
+                            <button type="button" aria-label="Link" title="Link" disabled={!canEdit} onClick={() => insert("[", "](page-title)")}><Link2 aria-hidden="true"/></button>
+                            <button type="button" aria-label="Image" title="Image" disabled={!canEdit} onClick={() => setImageOpen(true)}><ImageIcon aria-hidden="true"/></button>
+                            <button type="button" aria-label="Code" title="Code block" disabled={!canEdit} onClick={() => insert("\n```\n", "\n```\n")}><Code aria-hidden="true"/></button>
+                        </div>
+                        <label htmlFor="wiki-body" className="sr-only">Page content</label><Textarea id="wiki-body" ref={bodyInput} readOnly={!canEdit} value={pageForm.body} maxLength={wikiLimits.body} placeholder="Write your documentation in Markdown…" onChange={event => setPageForm({...pageForm, body: event.target.value})}/>
                     </>}
-                    <details className="wiki-guide"><summary>Markdown help & page links</summary><p>Use <code># Heading</code>, <code>**bold**</code>, <code>- lists</code>, <code>- [ ] tasks</code>, and fenced code blocks. Link to another wiki page with <code>[Getting started](getting-started)</code>, or to a section with <code>[Setup](getting-started#setup)</code>. Page addresses stay the same when you rename a page.</p></details>
-                    <label htmlFor="wiki-message">Edit summary <span className="wiki-muted">(optional)</span></label><Input id="wiki-message" maxLength={500} readOnly={!canEdit} placeholder="What changed?" value={draft.message} onChange={event => updateDraft({...draft, message: event.target.value})}/>
-                    <div className="wiki-editor-footer"><small>The latest 20 previous versions are kept per page.</small><div className="wiki-actions"><Button type="button" variant="ghost" onClick={() => downloadFile(draft.body, `${draft.title || "wiki-draft"}.md`, "text/markdown")} aria-label="Download page draft"><Download/></Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Keep draft & close</Button><Button type="submit" disabled={!canEdit || changedRemotely || !draft.title.trim()}>Save page</Button></div></div>
-                </form> : !document.pages.length && !requestedSlug ? <div className="wiki-empty"><span className="wiki-empty-icon"><BookOpen/></span><span className="wiki-eyebrow">START WITH A SINGLE PAGE</span><h3>Give your project a home.</h3><p>{canWrite ? "From the first setup guide to the decisions behind your code, build a wiki your whole team can turn to." : "Your team's guides and documentation will appear here."}</p>{canWrite && <Button disabled={!canEdit || !!draft} onClick={() => startEditing(undefined, "Home")}><Plus/>Create the first page</Button>}<div className="wiki-empty-ideas"><span><FileText/>Getting started</span><span><BookOpen/>Team guides</span><span><History/>Decisions & context</span></div></div> : !page ? <div className="wiki-empty"><FileText/><h3>Page not found</h3><p>This page may have been deleted, or its link is incomplete.</p>{canWrite && <Button disabled={!canEdit || !!draft || document.pages.length >= wikiLimits.pages} onClick={() => startEditing(undefined, requestedSlug?.replaceAll("-", " "))}><Plus/>Create this page</Button>}</div> : <>
-                    <header className="wiki-article-header"><div className="wiki-breadcrumb"><BookOpen/>Wiki <span>/</span> {page.id === document.homePageId ? "Home" : "Documentation"}</div><div className="wiki-article-title"><h2>{page.title}</h2><div className="wiki-actions">{canWrite && <Button variant="outline" size="sm" disabled={!canEdit || !!draft} onClick={() => startEditing(page)}><Pencil/>Edit page</Button>}</div></div><p><span>{author(page.authorId)}</span> updated <time dateTime={page.updatedAt}>{date(page.updatedAt)}</time></p><div className="wiki-article-tools"><Button size="sm" variant={showHistory ? "secondary" : "ghost"} aria-pressed={showHistory} onClick={() => {setShowHistory(value => !value); setHistorical(null)}}><History/>History <span className="wiki-count">{page.history.length + 1}</span></Button><Button size="sm" variant="ghost" onClick={() => void copyLink()}>{copied ? <Check/> : <Link2/>}{copied ? "Copied" : "Copy link"}</Button><Button size="sm" variant="ghost" onClick={() => downloadFile(page.body, `${page.slug}.md`, "text/markdown")}><Download/>Markdown</Button>{canWrite && <><Button size="sm" variant="ghost" disabled={!canEdit || page.id === document.homePageId} onClick={() => editor.setDocument(current => ({...current, homePageId: page.id}))}><Home/>{page.id === document.homePageId ? "Home page" : "Set as home"}</Button><Button size="sm" variant="ghost" className="wiki-delete" disabled={!canEdit} onClick={() => setDeleting(page)} aria-label="Delete page"><Trash2/></Button></>}</div></header>
+                    <label htmlFor="wiki-message">Edit summary <span className="wiki-muted">(optional)</span></label><Input id="wiki-message" maxLength={500} readOnly={!canEdit} placeholder="What changed?" value={pageForm.message} onChange={event => setPageForm({...pageForm, message: event.target.value})}/>
+                    <div className="wiki-editor-footer"><small>The latest 20 previous versions are kept per page.</small><div className="wiki-actions"><Button type="button" variant="outline" onClick={() => {setEditing(false); setPageForm(null); setPreview(false); setFormError(""); setImageOpen(false)}}>Cancel</Button><Button type="submit" disabled={!canEdit || changedRemotely || !pageForm.title.trim()}>Save page</Button></div></div>
+                </form> : !document.pages.length && !requestedSlug ? <div className="wiki-empty"><span className="wiki-empty-icon"><BookOpen/></span><span className="wiki-eyebrow">START WITH A SINGLE PAGE</span><h3>Give your project a home.</h3><p>{canWrite ? "From the first setup guide to the decisions behind your code, build a wiki your whole team can turn to." : "Your team's guides and documentation will appear here."}</p>{canManage && <Button disabled={!canEdit || !!pageForm} onClick={() => startEditing(undefined, "Home")}><Plus/>Create the first page</Button>}<div className="wiki-empty-ideas"><span><FileText/>Getting started</span><span><BookOpen/>Team guides</span><span><History/>Decisions & context</span></div></div> : !page ? <div className="wiki-empty"><FileText/><h3>Page not found</h3><p>This page may have been deleted, or its link is incomplete.</p>{canManage && <Button disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages} onClick={() => startEditing(undefined, requestedSlug?.replaceAll("-", " "))}><Plus/>Create this page</Button>}</div> : <>
+                    <div className="wiki-reader"><div className="wiki-reader-document"><header className="wiki-article-header">
+                        {ancestors.length > 0 && <nav className="wiki-page-ancestry" aria-label="Parent pages">{ancestors.map(parent => <span key={parent.id}><Link to={wikiPageHref(location.search, project.id, parent.slug)}>{parent.title}</Link><span aria-hidden="true">/</span></span>)}</nav>}
+                        <div className="wiki-article-title">
+                            <div className="wiki-page-title-label"><h2>{page.title}</h2><WikiCopyLink key={page.id} href={`${location.pathname}${wikiPageHref(location.search, project.id, page.slug)}`} title={page.title}/></div>
+                            <div className="wiki-actions">
+                                {canManage && <><Button variant="outline" size="sm" disabled={!canEdit || !!pageForm} onClick={() => startEditing(page)}><Pencil/>Edit page</Button>
+                                    <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label="Page actions" title="Page actions"><Ellipsis/></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="min-w-44">
+                                            <DropdownMenuItem disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages || !wikiCanAddSubpage(document.pages, page.id)} title={!wikiCanAddSubpage(document.pages, page.id) ? "Maximum of 2 subpages reached" : undefined} onSelect={() => startEditing(undefined, "", page.id)}><Plus/>Add subpage</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => {setShowHistory(value => !value); setHistorical(null)}}><History/>{showHistory ? "Hide history" : "Page history"}<span className="wiki-count ml-auto">{page.history.length + 1}</span></DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => downloadFile(page.body, `${page.slug}.md`, "text/markdown")}><Download/>Download Markdown</DropdownMenuItem>
+                                            <DropdownMenuItem disabled={!canEdit || page.id === document.homePageId} onSelect={() => editor.setDocument(current => ({...current, homePageId: page.id}))}><Home/>{page.id === document.homePageId ? "Home page" : "Set as home"}</DropdownMenuItem>
+                                            <DropdownMenuSeparator/>
+                                            <DropdownMenuItem variant="destructive" disabled={!canEdit} onSelect={() => setDeleting(page)}><Trash2/>Delete page</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </>}
+                                {hasToc && <button type="button" className="wiki-section-toggle" aria-label={collapsedSections.size ? "Expand all wiki sections" : "Collapse all wiki sections"} title={collapsedSections.size ? "Expand all sections" : "Collapse all sections"} aria-expanded={!collapsedSections.size} onClick={() => setSectionsExpanded(!!collapsedSections.size)}><ChevronDown aria-hidden="true"/></button>}
+                            </div>
+                        </div>
+                    </header>
                     {showHistory && <section className="wiki-history" aria-label="Page revision history"><h3>Page history</h3><p>Current version and up to 20 previous versions. Select a version to read or restore it.</p><button type="button" className={!historical ? "selected" : ""} onClick={() => setHistorical(null)}><strong>Current version</strong><span>{page.message || "Update page"}</span><small>{date(page.updatedAt)} · {author(page.authorId)}</small></button>{page.history.map(revision => <button type="button" key={revision.id} className={historical?.id === revision.id ? "selected" : ""} onClick={() => setHistorical(revision)}><strong>{revision.title}</strong><span>{revision.message || "Update page"}</span><small>{date(revision.updatedAt)} · {author(revision.authorId)}</small></button>)}</section>}
-                    {historical && <div className="wiki-notice"><p>Viewing the version from {date(historical.updatedAt)}.</p>{canWrite && <Button size="sm" disabled={!canEdit || !!draft} onClick={() => {startEditing(page); updateDraft({id: page.id, title: historical.title, body: historical.body, message: `Restore version from ${date(historical.updatedAt)}`, baseVersion: wikiPageVersion(page)})}}>Restore this version</Button>}</div>}
-                    <article className="wiki-article" aria-label="Wiki page content">{historical && <h2>{historical.title}</h2>}{(historical ?? page).body ? <WikiMarkdown key={`${page.id}:${historical?.id ?? page.updatedAt}`} body={(historical ?? page).body} pages={document.pages} projectId={project.id}/> : <p className="wiki-muted">This page has no content yet.{canWrite ? " Edit the page to start writing." : ""}</p>}</article>
-                </>}
+                    {historical && <div className="wiki-notice"><p>Viewing the version from {date(historical.updatedAt)}.</p>{canManage && <Button size="sm" disabled={!canEdit || !!pageForm} onClick={() => {startEditing(page); setPageForm({id: page.id, title: historical.title, body: historical.body, message: `Restore version from ${date(historical.updatedAt)}`, parentId: page.parentId ?? null, baseVersion: wikiPageVersion(page)})}}>Restore this version</Button>}</div>}
+                    <article ref={article} className="wiki-article" aria-label="Wiki page content">{historical && <h2>{historical.title}</h2>}{(historical ?? page).body ? <WikiMarkdown key={`${page.id}:${historical?.id ?? page.updatedAt}`} body={(historical ?? page).body} pages={document.pages} projectId={project.id} pageSlug={page.slug} collapsedSections={collapsedSections} onToggleSection={toggleSection} onRevealSection={revealSection}/> : <p className="wiki-muted">This page has no content yet.{canWrite ? " Edit the page to start writing." : ""}</p>}</article>
+                </div><WikiTableOfContents article={article} contentKey={`${page.id}:${historical?.id ?? page.updatedAt}`} body={(historical ?? page).body} id={tocId} expanded={tocOpen} onAvailableChange={setHasToc} onWideChange={setTocWide} headingNavigation={headingNavigation} collapsedSections={collapsedSections} onToggleSection={toggleSection} onRevealSection={revealSection} onExpandAll={() => setSectionsExpanded(true)} onCollapseAll={() => setSectionsExpanded(false)}/></div></>}
+                </div>
             </section>
         </div>}
-        <Dialog open={!!deleting} onOpenChange={open => {if (!open) setDeleting(null)}}><DialogContent><DialogHeader><DialogTitle>Delete “{deleting?.title}”?</DialogTitle><DialogDescription>This removes the page and its revision history. Download a backup first if you need to keep a copy.{deleting?.id === document.homePageId && document.pages.length > 1 ? " Another page will become the home page." : ""}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="destructive" disabled={!canEdit} onClick={removePage}>Delete page</Button></DialogFooter></DialogContent></Dialog>
-        <Dialog open={discarding} onOpenChange={setDiscarding}><DialogContent><DialogHeader><DialogTitle>Discard this draft?</DialogTitle><DialogDescription>Your unsaved writing for “{draft?.title || "Untitled page"}” will be removed from this browser.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDiscarding(false)}>Keep draft</Button><Button variant="destructive" onClick={() => {updateDraft(null); setEditing(false); setDiscarding(false); setFormError("")}}>Discard draft</Button></DialogFooter></DialogContent></Dialog>
+        {imageOpen && editing && canManage && canEdit && <WikiImageDialog onInsert={markdown => insert(markdown, "", true)} onClose={() => setImageOpen(false)}/>}
+        <Dialog open={!!deleting} onOpenChange={open => {if (!open) setDeleting(null)}}><DialogContent><DialogHeader><DialogTitle>Delete “{deleting?.title}”?</DialogTitle><DialogDescription>This removes the page and its revision history. Download the page as Markdown first if you need to keep its content.{document.pages.some(item => item.parentId === deleting?.id) ? " Its subpages will move up one level where space is available, or to the top level. Their content and links will be kept." : ""}{deleting?.id === document.homePageId && document.pages.length > 1 ? " Another page will become the home page." : ""}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="destructive" disabled={!canEdit} onClick={removePage}>Delete page</Button></DialogFooter></DialogContent></Dialog>
     </div>
 }

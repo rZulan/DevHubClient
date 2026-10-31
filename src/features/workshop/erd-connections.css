@@ -1,0 +1,9 @@
+/* The mask cuts other relationships away continuously, including between dashes. */
+.erd-connections .erd-selection-cutout .erd-end-symbol path,
+.erd-connections .erd-selection-cutout .erd-end-symbol circle {
+    stroke: black;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.erd-connections .erd-selection-cutout .erd-end-open { fill: black; }

@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useRef, useState} from "react"
 import {AlertTriangle, FileUp, LoaderCircle} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -30,7 +31,7 @@ export function ErdImportDialog({canEdit, tableCount, dialect, onImport}: {canEd
         <DialogTrigger asChild><Button size="sm" variant="ghost" disabled={!canEdit}><FileUp/> Import</Button></DialogTrigger>
         <DialogContent className="sm:max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"><DialogHeader><DialogTitle>Import ERD</DialogTitle><DialogDescription>Choose a .sql schema or a .json ERD draft to replace this diagram.</DialogDescription></DialogHeader>
             <div className="erd-import-warning" role="alert"><AlertTriangle/><p><strong>This will override the current ERD.</strong> All current tables, columns and relationships{tableCount ? ` (${tableCount} tables)` : ""} will be replaced and saved to this project. Download your draft first if you want a separate backup. You can also undo the import in this session.</p></div>
-            <label className="erd-import-file">SQL database target<select aria-label="SQL import database" value={sqlDialect} disabled={busy} onChange={event => {generation.current++; setSqlDialect(event.target.value as ErdDialect); setResult(undefined); setFilename(""); setError("")}}>{erdDialects.map(value => <option key={value} value={value}>{erdDialectLabels[value]}</option>)}</select></label>
+            <label className="erd-import-file">SQL database target<WorkshopSelect aria-label="SQL import database" value={sqlDialect} disabled={busy} onValueChange={selectedValue => {generation.current++; setSqlDialect(selectedValue as ErdDialect); setResult(undefined); setFilename(""); setError("")}}>{erdDialects.map(value => <option key={value} value={value}>{erdDialectLabels[value]}</option>)}</WorkshopSelect></label>
             <label className="erd-import-file">SQL schema or JSON draft<input key={sqlDialect} type="file" accept=".sql,.json,application/json" disabled={busy || !canEdit} onChange={event => void selectFile(event.target.files?.[0])}/></label>
             {busy && <p className="erd-import-reading" role="status"><LoaderCircle className="animate-spin"/> Reading file…</p>}
             {error && <p className="tool-inline-error" role="alert">{error}</p>}

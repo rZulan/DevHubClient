@@ -1,5 +1,5 @@
 import {sdlcModels, type SdlcModel, type SdlcPhase} from "./sdlc-models.ts"
-import {waterfallConnection} from "./sdlc-waterfall-geometry.ts"
+import {waterfallConnection, waterfallFeedbackConnection} from "./sdlc-waterfall-geometry.ts"
 
 export type SdlcLink = {from: number; to: number; kind: "flow" | "feedback" | "validation" | "optional" | "cycle"; path: string; label?: string; labelX?: number; labelY?: number}
 
@@ -12,7 +12,7 @@ export function sdlcLinks(model: SdlcModel): SdlcLink[] {
     }
     if (model === "waterfall") return [
         ...positions.slice(1).map((position, index) => link(index, index + 1, "flow", waterfallConnection(positions[index], position))),
-        link(3, 2, "feedback", `M${positions[3].x - 20} ${positions[3].y}Q${positions[2].x - 110} ${positions[3].y} ${positions[2].x - 20} ${positions[2].y}`, "Fix & retest"),
+        link(3, 2, "feedback", waterfallFeedbackConnection(), "Fix & retest"),
     ]
     if (model === "v-model") return [
         ...positions.slice(1).map((_, index) => link(index, index + 1)),

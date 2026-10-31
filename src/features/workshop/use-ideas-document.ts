@@ -2,12 +2,19 @@ import {type SetStateAction, useEffect, useEffectEvent, useRef, useState} from "
 import {useAppDispatch} from "@/app/hooks"
 import {ideasApi, type IdeasKey} from "./ideas-api"
 import {type CanvasItem, decodeShapes, encodeShapes, normalizeCanvasItem} from "./shape-clipboard"
+import {canGrowCanvas, retrySeconds, saveFailureDetail, workshopDefaults} from "./workshop-limits"
+import {useGetWorkshopLimitsQuery} from "./workshop-limits-api"
+import {useRetryCountdown} from "./use-retry-countdown"
 
 type Status = "loading" | "saved" | "unsaved" | "saving" | "error" | "conflict" | "load-error"
 
 // The page is keyed by user, organization and project so each instance owns one save queue.
 export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolean) {
     const dispatch = useAppDispatch()
+    const {data: limits} = useGetWorkshopLimitsQuery(key.organizationId)
+    const [retryAt, setRetryAt] = useState(0)
+    const countdown = useRetryCountdown(retryAt)
+    const notBefore = useRef(0), savedObjects = useRef(0)
     const [items, renderItems] = useState<CanvasItem[]>([])
     const [status, renderStatus] = useState<Status>("loading")
     const [saveError, setSaveError] = useState<string>()
@@ -48,14 +55,24 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
         clearTimeout(timer.current)
         timer.current = undefined
         if (saving.current || !pending.current || !canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
+        if (Date.now() < notBefore.current) {
+            if (alive.current) timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+            return
+        }
         saving.current = true
         try {
             while (pending.current) {
+                if (Date.now() < notBefore.current) {
+                    setStatus("unsaved")
+                    if (alive.current) timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+                    break
+                }
                 const snapshot = current.current
                 const requestRevision = revision.current
                 const snapshotDirty = new Set(dirtyIds.current)
                 pending.current = false
                 setStatus("saving")
+                notBefore.current = Date.now() + Math.ceil(60_000 / (limits?.savesPerMinute ?? workshopDefaults.savesPerMinute)) + 100
                 const request = dispatch(ideasApi.endpoints.saveIdeas.initiate({
                     ...key,
                     revision: requestRevision,
@@ -64,6 +81,8 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
                 try {
                     const saved = await request.unwrap()
                     revision.current = Math.max(revision.current, saved.revision)
+                    savedObjects.current = snapshot.length
+                    if (alive.current) setRetryAt(0)
                     for (const id of snapshotDirty) {
                         if (sameShape(current.current.find(item => item.id === id), snapshot.find(item => item.id === id))) dirtyIds.current.delete(id)
                     }
@@ -78,6 +97,14 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
                     pending.current = true
                     backup()
                     if (alive.current) setSaveError(saveFailureMessage(error))
+                    const cooldown = retrySeconds(error)
+                    if (cooldown !== null) {
+                        notBefore.current = Date.now() + cooldown * 1000 + Math.floor(Math.random() * 300)
+                        if (alive.current) {
+                            setRetryAt(notBefore.current)
+                            timer.current = setTimeout(() => void flush(), notBefore.current - Date.now() + 50)
+                        }
+                    }
                     if ((error as { status?: number }).status === 409 && revision.current > requestRevision) {
                         setStatus("unsaved")
                         continue
@@ -105,6 +132,7 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
             if (!alive.current || generation !== loadGeneration.current) return
             revision.current = saved.revision
             current.current = saved.items.map(normalizeCanvasItem)
+            savedObjects.current = current.current.length
             dirtyIds.current.clear()
             pending.current = false
             let restored = false
@@ -142,6 +170,10 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
         if (!canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
         const next = typeof action === "function" ? action(current.current) : action
         if (next === current.current) return
+        if (!canGrowCanvas(current.current.length, next.length, savedObjects.current, limits?.canvasMaximumObjects)) {
+            setSaveError("Canvas limit reached. Edit or remove existing objects before adding more; your existing work is preserved.")
+            return
+        }
         markDirtyShapes(current.current, next, dirtyIds.current)
         current.current = next
         renderItems(next)
@@ -154,6 +186,7 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
     function applyRemote(saved: { revision: number; items: CanvasItem[] }) {
         if (saved.revision <= revision.current) return
         const remote = saved.items.map(normalizeCanvasItem)
+        savedObjects.current = remote.length
         revision.current = saved.revision
         if (!dirtyIds.current.size) current.current = remote
         else {
@@ -223,7 +256,7 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
         items,
         setItems,
         status,
-        saveError,
+        saveError: countdown > 0 ? `Saving resumes in ${countdown}s. Your draft is kept locally and remains editable.` : saveError,
         applyRemote,
         save: () => void flush(),
         retry: () => state.current === "load-error" ? void load() : void flush(),
@@ -233,7 +266,8 @@ export function useIdeasDocument(key: IdeasKey, userId: string, canWrite: boolea
 
 function saveFailureMessage(error: unknown) {
     const status = (error as { status?: number | string } | null)?.status
-    if (status === 400 || status === 422) return "The server rejected this canvas. It may not support one of the shapes yet. Your draft is kept locally; retry after the server is updated."
+    if (status === 400 || status === 422) return saveFailureDetail(error, "The server rejected this canvas. Your draft is kept locally; check its size and properties before retrying.")
+    if (status === 429) return "Saving is temporarily paused. Your draft is kept locally and saving will retry automatically."
     if (status === 401) return "Your session has expired. Your draft is kept locally; sign in again to save."
     if (status === 403 || status === 404) return "You no longer have access to save this canvas. Your draft is kept locally."
     if (status === 413) return "This canvas exceeds the server's size limit. Your draft is kept locally; reduce its size before retrying."

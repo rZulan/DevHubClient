@@ -14,11 +14,14 @@ import {useWorkshop} from "@/features/workshop/workshop-context"
 import {clearSelectedOrganizationId} from "@/features/workshop/workshop-storage"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {organizationProfileDraft, syncOrganizationProfileDraft} from "@/features/workshop/organization-profile-draft"
+import {WorkspaceAvatarEditor} from "@/features/workshop/workspace-avatar-editor"
+import {WorkspaceAvatar} from "@/features/workshop/workspace-avatar"
 import {
     useDeleteOrganizationMutation,
     useLeaveOrganizationMutation,
     useListOrganizationsQuery,
     useUpdateOrganizationMutation,
+    useSetOrganizationAvatarMutation,
 } from "@/services/api"
 
 export function GeneralSettingsPage() {
@@ -38,17 +41,16 @@ export function GeneralSettingsPage() {
     const [confirmation, setConfirmation] = useState("")
     const [leaveOpen, setLeaveOpen] = useState(false)
     const [updateOrganization, {isLoading: isSaving}] = useUpdateOrganizationMutation()
+    const [setOrganizationAvatar] = useSetOrganizationAvatarMutation()
     const [leaveOrganization, {isLoading: isLeaving}] = useLeaveOrganizationMutation()
     const [deleteOrganization, {isLoading: isDeleting}] = useDeleteOrganizationMutation()
 
     const canEdit = isPersistedOrganization && savedDescription !== undefined && hasWorkshopPermission(organization, currentUserId, "Manage organization")
     const currentMember = organization.members.find((member) => member.id === currentUserId)
-    const ownerCount = organization.members.filter((member) => member.isOwner).length
     const leadsTeam = organization.teams.some(team => team.leaderId === currentUserId)
-    const canLeave = isPersistedOrganization && !!currentMember && (currentMember.isOwner ? ownerCount > 1 : !leadsTeam)
+    const canLeave = isPersistedOrganization && !!currentMember && !currentMember.isOwner && !leadsTeam
     const canDelete = isPersistedOrganization && Boolean(currentMember?.isOwner)
     const isDirty = name.trim() !== profile.savedName || description.trim() !== profile.savedDescription
-    const initials = name.trim().split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase() || organization.initials
 
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -111,9 +113,10 @@ export function GeneralSettingsPage() {
                     <h3>Organization profile</h3>
                     {!canEdit && <p>{!isPersistedOrganization ? "Profile editing is available for organizations saved to your account." : savedDescription === undefined ? "Loading the saved profile…" : "You need the Manage organization permission to edit these details."}</p>}
                 </header>
+                <WorkspaceAvatarEditor key={organization.id} label="Organization icon" name={organization.name} avatarUrl={organization.avatarUrl} kind="organization" disabled={!canEdit || isSaving} onSave={avatarUrl => setOrganizationAvatar({organizationId: organization.id, avatarUrl}).unwrap()}/>
                 <form className="workshop-settings-form" onSubmit={save}>
                     <div className="workshop-settings-identity">
-                        <span className="workshop-org-mark" aria-hidden="true">{initials}</span>
+                        <WorkspaceAvatar className="workshop-org-mark" name={name} avatarUrl={organization.avatarUrl} kind="organization"/>
                         <Label>Organization name
                             <Input disabled={!canEdit || isSaving} maxLength={150} onChange={(event) => {
                                 setProfile(current => ({...current, name: event.target.value}));
@@ -157,9 +160,9 @@ export function GeneralSettingsPage() {
                     <h3><AlertTriangle/> Danger zone</h3>
                 </header>
                 <div className="workshop-settings-row">
-                    <div><strong>Leave organization</strong>{currentMember?.isOwner && ownerCount <= 1 ? <p className="mt-1 text-xs text-muted-foreground">Promote another owner in Members before leaving.</p> : leadsTeam && !currentMember?.isOwner ? <p className="mt-1 text-xs text-muted-foreground">Reassign your team leadership before leaving.</p> : null}</div>
+                    <div><strong>Leave organization</strong>{currentMember?.isOwner ? <p className="mt-1 text-xs text-muted-foreground">Transfer ownership in Members before leaving.</p> : leadsTeam ? <p className="mt-1 text-xs text-muted-foreground">Reassign your team leadership before leaving.</p> : null}</div>
                     <Button disabled={!canLeave || isLeaving}
-                            title={currentMember?.isOwner && ownerCount <= 1 ? "Promote another owner before leaving" : undefined}
+                            title={currentMember?.isOwner ? "Transfer ownership before leaving" : undefined}
                             onClick={() => setLeaveOpen(true)} type="button" variant="outline">{isLeaving ?
                         <LoaderCircle className="animate-spin"/> : <LogOut/>} Leave</Button>
                 </div>

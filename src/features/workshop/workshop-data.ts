@@ -304,6 +304,7 @@ export function createWorkshopOrganization(
         ownerUserId: organization.ownerUserId,
         name: organization.name,
         description: organization.description ?? "A new organization ready for teams and projects.",
+        avatarUrl: organization.avatarUrl,
         initials,
         roles: [
             ownerRole,

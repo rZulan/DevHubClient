@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useId, useState, type FormEvent, type ReactNode} from "react"
 import {ChevronDown} from "lucide-react"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
@@ -9,7 +10,7 @@ import {cardinalityForEnds, relationshipEnds, relationshipFieldIds, type ErdDocu
 
 function RelationshipSelect({label, value, onChange, children}: {label: string; value: string; onChange: (value: string) => void; children: ReactNode}) {
     const id = useId()
-    return <div className="task-edit-field"><Label htmlFor={id}>{label}</Label><div className="task-edit-select"><select id={id} value={value} onChange={event => onChange(event.target.value)}>{children}</select><ChevronDown aria-hidden="true"/></div></div>
+    return <div className="task-edit-field"><Label htmlFor={id}>{label}</Label><div className="task-edit-select"><WorkshopSelect id={id} value={value} onValueChange={selectedValue => onChange(selectedValue)}>{children}</WorkshopSelect><ChevronDown aria-hidden="true"/></div></div>
 }
 
 export function ErdRelationshipDialog({document, fromId, toId, initial, canEdit, onClose, onSave}: {

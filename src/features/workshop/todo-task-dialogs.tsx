@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useId, useRef, useState, type FormEvent} from "react"
 import {ChevronDown, ClipboardList, LoaderCircle} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -6,6 +7,8 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {TodoAssignees} from "./todo-assignees"
+import {TodoDateFields} from "./todo-dates"
+import {readTodoDates, todoDateError} from "./todo-schedule"
 import type {TodoTask, TodoColumn, TodoTaskDetails} from "./todo-api"
 import type {WorkshopMember} from "./workshop-types"
 
@@ -27,8 +30,10 @@ export function TodoTaskEditDialog({task, columns, members, disabled, onClose, o
         if (saving.current || disabled) return
         const form = new FormData(event.currentTarget), title = String(form.get("title") ?? "").trim()
         if (!title) {setError("Enter a task title."); return}
+        const dates = readTodoDates(form), invalid = todoDateError(dates.startDate, dates.targetDate)
+        if (invalid) {setError(invalid); return}
         saving.current = true; setPending(true); setError("")
-        try {await onSave({title, description: String(form.get("description") ?? "").trim(), status: String(form.get("status")), assigneeIds: assignees}); onClose()}
+        try {await onSave({title, description: String(form.get("description") ?? "").trim(), status: String(form.get("status")), assigneeIds: assignees, ...dates}); onClose()}
         catch (failure) {setError(todoTaskError(failure, "The task could not be saved. Please try again."))}
         finally {saving.current = false; setPending(false)}
     }
@@ -42,10 +47,11 @@ export function TodoTaskEditDialog({task, columns, members, disabled, onClose, o
                 <div className="task-edit-field"><Label htmlFor={`${formId}-title`}>Task title</Label><Input id={`${formId}-title`} name="title" defaultValue={task.title} autoFocus required maxLength={150} placeholder="What needs to happen?"/></div>
                 <div className="task-edit-field"><div className="task-edit-label"><Label htmlFor={`${formId}-description`}>Description</Label><span>Optional</span></div><Textarea id={`${formId}-description`} name="description" defaultValue={task.description} maxLength={2000} rows={4} placeholder="Add context, requirements, or useful links…"/></div>
                 <div className="task-edit-metadata">
-                    <div className="task-edit-field"><Label htmlFor={`${formId}-status`}>Column</Label><div className="task-edit-select"><select id={`${formId}-status`} name="status" defaultValue={task.status}>{columns.map(column => <option value={column.id} key={column.id}>{column.name}</option>)}</select><ChevronDown aria-hidden="true"/></div></div>
+                    <div className="task-edit-field"><Label htmlFor={`${formId}-status`}>Column</Label><div className="task-edit-select"><WorkshopSelect id={`${formId}-status`} name="status" defaultValue={task.status}>{columns.map(column => <option value={column.id} key={column.id}>{column.name}</option>)}</WorkshopSelect><ChevronDown aria-hidden="true"/></div></div>
                     <div className="task-edit-field"><div className="task-edit-label"><Label>Assignees</Label><span>Optional</span></div><div className="task-edit-assignees"><TodoAssignees ids={assignees} members={members} editable disabled={pending || !!disabled} taskTitle={task.title}
                         onAdd={id => setAssignees(current => [...new Set([...current, id])])} onRemove={id => setAssignees(current => current.filter(value => value !== id))}/></div></div>
                 </div>
+                <TodoDateFields startDate={task.startDate} targetDate={task.targetDate}/>
                 {error && <p role="alert" className="workshop-form-error">{error}</p>}
             </fieldset>
             <footer className="task-edit-footer"><Button variant="outline" type="button" disabled={pending} onClick={onClose}>Cancel</Button><Button type="submit" disabled={pending || disabled}>{pending && <LoaderCircle className="animate-spin"/>}{pending ? "Saving…" : "Save changes"}</Button></footer>

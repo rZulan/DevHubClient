@@ -1,20 +1,17 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useId, useRef, useState, type CSSProperties} from "react"
 import {useOutletContext} from "react-router-dom"
-import {ArrowRight, Check, ChevronLeft, ChevronRight, FileText, ListChecks, LocateFixed, Map, Maximize, Minus, PanelRight, Plus, Redo2, RotateCcw, Stars, Undo2} from "lucide-react"
+import {ArrowRight, Check, ChevronLeft, ChevronRight, ListChecks, LocateFixed, Map, Maximize, Minus, PanelRight, Plus, Redo2, RotateCcw, Stars, Undo2} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
-import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
-import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
+import {useCompactWorkshopContent} from "@/hooks/use-compact-workshop"
 import {ResponsiveWorkshopPanel} from "@/features/workshop/responsive-workshop-panel"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
-import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {iterativeReleasePhases, sdlcModelIds, sdlcModels, type SdlcModel} from "@/features/workshop/sdlc-models"
 import {advanceSdlc, advanceSdlcRelease, maxSdlcHistory, nextSdlcPhase, sdlcPhaseDone, setSdlcPhase, setSdlcReleasePhase, startSdlcCycle, startSdlcRelease, switchSdlcModel, updateSdlcNote, updateSdlcWork, type SdlcDocument, type SdlcPhaseWork} from "@/features/workshop/sdlc-document"
-import {sdlcCompletion, sdlcMarkdown, sdlcPhaseState, sdlcReadiness} from "@/features/workshop/sdlc-work"
+import {sdlcCompletion, sdlcPhaseState, sdlcReadiness} from "@/features/workshop/sdlc-work"
 import {SdlcArchiveNotice, SdlcCompletionDialog, SdlcOverview, SdlcPhaseWorkPanel} from "@/features/workshop/sdlc-work-panels"
-import {SdlcImportDialog} from "@/features/workshop/sdlc-import-dialog"
-import {downloadFile} from "@/features/workshop/tool-documents"
 import {roadmapSize} from "@/features/workshop/sdlc-camera"
 import {sdlcAdvanceLabel, sdlcLinks, sdlcQuality, sdlcRework} from "@/features/workshop/sdlc-flow"
 import {useSdlcCamera} from "@/features/workshop/use-sdlc-camera"
@@ -43,7 +40,7 @@ function SdlcRoadmap() {
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
     const [overview, setOverview] = useState(false), [inspectorOpen, setInspectorOpen] = useState(false), [notice, setNotice] = useState("")
     const [completion, setCompletion] = useState<{document: SdlcDocument; release: boolean; phase: typeof sdlcModels.waterfall.phases[number]; work?: SdlcPhaseWork} | null>(null)
-    const compact = useCompactWorkshop(), viewId = useId()
+    const compact = useCompactWorkshopContent(), viewId = useId()
     const inspectorId = useId()
     const inspectorBody = useRef<HTMLElement>(null)
     const isIterative = document.model === "iterative"
@@ -148,9 +145,10 @@ function SdlcRoadmap() {
     return <section className="project-tool-workspace sdlc-workspace" onKeyDown={event => {
         if ((event.ctrlKey || event.metaKey) && !(event.target as HTMLElement).closest("input, textarea, [contenteditable=true]") && ["z", "y"].includes(event.key.toLowerCase())) {event.preventDefault(); if (!event.repeat) historyAction(event.key.toLowerCase() === "y" || event.shiftKey)}
     }}>
-        <ToolDocumentHeader title="Development roadmap" projectName={project!.name} {...editor} canWrite={canWrite} persisted={isPersistedOrganization} onSave={() => void editor.save()} onRetry={editor.retry} onReload={editor.reload} tool="sdlc" document={document} exportItems={<DropdownMenuItem disabled={editor.status === "loading"} onSelect={() => downloadFile(sdlcMarkdown(document, project!.name, Object.fromEntries(organization.members.map(member => [member.id, member.nickname || member.name]))), "development-roadmap.md", "text/markdown;charset=utf-8")}><FileText/>Export roadmap report (Markdown)</DropdownMenuItem>}>
-            <SdlcImportDialog document={document} canEdit={canEdit} onImport={draft => {setDocument(draft); setSelectedPhase(null); setArchiveSelection(null); setNotice("Roadmap restored. Its saved models, notes, phase tracking, and history are available.")}}/>
-        </ToolDocumentHeader>
+        {editor.status === "loading" && <div className="sdlc-studio-notice" role="status">Loading roadmap…</div>}
+        {editor.error && <div className="tool-document-error" role="alert"><span>{editor.status === "conflict" ? "This roadmap changed in another session. Your changes have not been saved. Reloading will discard your draft." : editor.error}</span>
+            {editor.status === "conflict" ? <Button size="sm" variant="outline" onClick={editor.reload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={editor.retry}>Retry</Button>}
+        </div>}
         <div className="sdlc-studio-bar"><div className="sdlc-view-tabs" role="tablist" aria-label="Roadmap views" onKeyDown={event => {if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {event.preventDefault(); const next = event.key === "End" || event.key === "ArrowRight"; setOverview(next); (event.currentTarget.children[next ? 1 : 0] as HTMLButtonElement).focus()}}}><button type="button" role="tab" aria-selected={!overview} aria-controls={`${viewId}-map`} onClick={() => setOverview(false)}><Map/>Map</button><button type="button" role="tab" aria-selected={overview} aria-controls={`${viewId}-overview`} onClick={() => setOverview(true)}><ListChecks/>Overview</button></div><div className="sdlc-studio-actions"><button type="button" disabled={!canEdit || !editor.canUndo} title="Undo · Ctrl+Z" aria-label="Undo roadmap change" onClick={() => historyAction()}><Undo2/></button><button type="button" disabled={!canEdit || !editor.canRedo} title="Redo · Ctrl+Shift+Z" aria-label="Redo roadmap change" onClick={() => historyAction(true)}><Redo2/></button><i/><button type="button" onClick={showCurrent} title="Inspect and locate the current phase"><LocateFixed/><span>Current phase</span></button>{compact && <button type="button" aria-label="Open phase details" aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(true)}><PanelRight/><span>Details</span></button>}</div></div>
         {notice && <div className="sdlc-studio-notice" role="status"><span>{notice}</span><button type="button" onClick={() => setNotice("")}>Dismiss</button></div>}
         {archive && <SdlcArchiveNotice cycleName={cycleName} onReturn={() => viewCycle(document.cycle ?? 1)}/>}
@@ -158,18 +156,14 @@ function SdlcRoadmap() {
             <div className="sdlc-universe" data-model={document.model} style={{"--sdlc-model-color": isIterative ? `hsl(${tornadoHue(cycle)} 72% 65%)` : model.color} as CSSProperties}>
                 <div className="sdlc-sky"><SdlcStarfield camera={navigation.camera}/></div>
                 <div className="sdlc-canvas-toolbar">
-                    <div className="sdlc-model-control"><label>SDLC model<select aria-label="SDLC model" value={document.model} disabled={!canEdit} onChange={event => changeModel(event.target.value as SdlcModel)}>{sdlcModelIds.map(id => <option key={id} value={id}>{sdlcModels[id].title}</option>)}</select></label>
-                        <label>{releaseView ? "Release phase" : document.model === "agile" ? "Current activity" : "Current phase"}<select aria-label={releaseView ? "Current release phase" : `Current ${model.title} phase`} value={detailCurrent} disabled={!canEdit || readOnlyPhase} onChange={event => current(Number(event.target.value))}>{detailPhases.map((item, index) => <option key={item.id} value={index}>{item.title}{item.optional ? " (optional)" : ""}</option>)}</select></label>
-                        {model.cycle && <label>{model.cycle}<select aria-label={`View ${model.cycle.toLowerCase()}`} value={cycle} onChange={event => viewCycle(Number(event.target.value))}>
+                    <div className="sdlc-model-control"><label>SDLC model<WorkshopSelect aria-label="SDLC model" value={document.model} disabled={!canEdit} onValueChange={selectedValue => changeModel(selectedValue as SdlcModel)}>{sdlcModelIds.map(id => <option key={id} value={id}>{sdlcModels[id].title}</option>)}</WorkshopSelect></label>
+                        <label>{releaseView ? "Release phase" : document.model === "agile" ? "Current activity" : "Current phase"}<WorkshopSelect aria-label={releaseView ? "Current release phase" : `Current ${model.title} phase`} value={detailCurrent} disabled={!canEdit || readOnlyPhase} onValueChange={selectedValue => current(Number(selectedValue))}>{detailPhases.map((item, index) => <option key={item.id} value={index}>{item.title}{item.optional ? " (optional)" : ""}</option>)}</WorkshopSelect></label>
+                        {model.cycle && <label>{model.cycle}<WorkshopSelect aria-label={`View ${model.cycle.toLowerCase()}`} value={cycle} onValueChange={selectedValue => viewCycle(Number(selectedValue))}>
                             {document.history?.map(entry => <option key={entry.cycle} value={entry.cycle}>{entry.cycle} · completed</option>)}<option value={document.cycle ?? 1}>{document.cycle ?? 1} · {document.completed ? "completed" : "current"}</option>
-                        </select></label>}
+                        </WorkshopSelect></label>}
                     </div>
                     <span className="sdlc-map-label" title={model.summary}><span/>{releaseView ? activeRelease!.completed ? "Release complete" : `Release · ${iterativeReleasePhases[activeRelease!.currentPhase].title}` : active.completed ? `${cycleName} complete` : document.model === "agile" ? `Focus · ${phases[active.currentPhase].title}` : `Phase ${String(active.currentPhase + 1).padStart(2, "0")} / ${String(phases.length).padStart(2, "0")}`}</span>
                 </div>
-                <details className="sdlc-workflow-guide" key={document.model}><summary>How {model.title} flows · references</summary><p>{model.guidance}</p>
-                    <div className="sdlc-path-legend"><span><i/>Progression</span><span><i className="dashed"/>{document.model === "v-model" ? "Test-basis pairing" : document.model === "agile" ? "Feedback / optional release" : "Feedback / rework"}</span></div>
-                    <nav aria-label={`${model.title} workflow sources`}>{model.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</nav>
-                </details>
                 {activeRelease && <div className="sdlc-scope-tabs" role="group" aria-label="Iteration or release"><button type="button" aria-pressed={!releaseView} onClick={() => setSelectedPhase({model: document.model, index: active.currentPhase, release: false})}>Iteration work</button><button type="button" aria-pressed={releaseView} onClick={() => setSelectedPhase({model: document.model, index: activeRelease.currentPhase, release: true})}>Release path</button></div>}
                 {overview ? <div className="sdlc-overview-container" role="tabpanel" id={`${viewId}-overview`}><SdlcOverview title={`${model.title}${model.cycle ? ` · ${cycleName}` : ""}${releaseView ? " · Release path" : ""}`} phases={detailPhases} work={detailWork} notes={detailNotes} selected={selected} current={detailCurrent} completed={detailCompleted} isDone={detailDone} members={organization.members} archived={!!archive} onSelect={select}/></div>
                 : <div className="sdlc-scene-container" role="tabpanel" id={`${viewId}-map`}>{document.model === "iterative" ? <IterativeTornado ref={tornado} cycles={document.cycle ?? 1} phases={phases} currentPhase={document.currentPhase} completed={document.completed} work={document.work}

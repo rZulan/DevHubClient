@@ -8,26 +8,28 @@ import {useGetBugPortalQuery, useSaveBugCategoryMutation, useSaveBugPortalMutati
 
 export function BugPortalSettings({scope}: {scope: BugScope}) {
     const portal = useGetBugPortalQuery(scope), [save, mutation] = useSaveBugPortalMutation()
-    const [error, setError] = useState(""), [copied, setCopied] = useState(false), [rotating, setRotating] = useState(false)
+    const [error, setError] = useState(""), [copied, setCopied] = useState<"full" | "short" | null>(null), [rotating, setRotating] = useState(false), [showShort, setShowShort] = useState(false)
     const url = portal.data?.token ? `${window.location.origin}/report-bug/${portal.data.token}` : ""
+    const shortUrl = portal.data?.shortCode ? `${window.location.origin}/b/${portal.data.shortCode}` : ""
     async function update(enabled: boolean, rotate = false) {
         if (!portal.data) return
-        setError(""); setCopied(false)
+        setError(""); setCopied(null); setShowShort(false)
         try {await save({...scope, enabled, rotate, revision: portal.data.revision}).unwrap(); setRotating(false)}
         catch (failure) {setError(bugError(failure)); void portal.refetch()}
     }
-    async function copy() {
-        try {await navigator.clipboard.writeText(url); setCopied(true)} catch {setError("Copy the link from the field below.")}
+    async function copy(short = false) {
+        setError(""); setCopied(null); setShowShort(short)
+        try {await navigator.clipboard.writeText(short ? shortUrl : url); setCopied(short ? "short" : "full")} catch {setError("Copy the link from the field above.")}
     }
     return <section className="bug-portal" aria-label="Public reporting link">
         <div className="bug-portal-heading"><span className="bug-portal-icon"><Link2/></span><div><h3>Public reporting link</h3><p>Let anyone report a bug with their email. No DevHub account needed.</p></div><button type="button" role="switch" aria-label="Enable public reporting link" aria-checked={portal.data?.enabled ?? false} className="bug-portal-switch" disabled={!portal.data || mutation.isLoading || portal.isFetching} onClick={() => void update(!portal.data?.enabled)}><span/></button></div>
         {portal.isLoading ? <p className="bug-field-help" role="status">Loading public link…</p> : portal.error ? <div className="bug-error" role="alert">Could not load link settings. <Button variant="outline" size="sm" onClick={() => void portal.refetch()}>Retry</Button></div> : <>
             <div className="bug-portal-state"><span className={portal.data?.enabled ? "enabled" : ""}/>{portal.data?.enabled ? "Accepting public reports" : "Public submissions are disabled"}{mutation.isLoading && <LoaderCircle className="animate-spin"/>}</div>
-            {url && <div className="bug-portal-link"><Input aria-label="Public bug report URL" value={url} readOnly onFocus={event => event.currentTarget.select()}/><Button variant="outline" disabled={!portal.data?.enabled || mutation.isLoading} onClick={() => void copy()}>{copied ? <Check/> : <Copy/>}{copied ? "Copied" : "Copy"}</Button>{portal.data?.enabled && <a href={url} target="_blank" rel="noreferrer" aria-label="Open public report form" title="Open public report form"><ExternalLink/></a>}</div>}
+            {url && <div className="bug-portal-link"><Input aria-label="Public bug report URL" value={showShort && shortUrl ? shortUrl : url} readOnly onFocus={event => event.currentTarget.select()}/><Button variant="outline" disabled={!portal.data?.enabled || mutation.isLoading} onClick={() => void copy()}>{copied === "full" ? <Check/> : <Copy/>}{copied === "full" ? "Copied" : "Copy"}</Button><Button variant="outline" disabled={!portal.data?.enabled || !shortUrl || mutation.isLoading} onClick={() => void copy(true)}>{copied === "short" ? <Check/> : <Link2/>}{copied === "short" ? "Short link copied" : "Copy short link"}</Button>{portal.data?.enabled && <a href={showShort && shortUrl ? shortUrl : url} target="_blank" rel="noreferrer" aria-label="Open public report form" title="Open public report form"><ExternalLink/></a>}</div>}
             {url && <button className="bug-replace-link" type="button" disabled={mutation.isLoading} onClick={() => setRotating(true)}><RefreshCw/>Replace link</button>}
         </>}
         {error && <p className="bug-error" role="alert">{error}</p>}
-        <Dialog open={rotating} onOpenChange={setRotating}><DialogContent><DialogHeader><DialogTitle>Replace the public link?</DialogTitle><DialogDescription>The current URL will stop accepting reports. Share the new URL with your testers. Existing reports and attachments will stay in the inbox.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setRotating(false)}>Cancel</Button><Button disabled={mutation.isLoading} onClick={() => void update(portal.data?.enabled ?? false, true)}>Replace link</Button></DialogFooter></DialogContent></Dialog>
+        <Dialog open={rotating} onOpenChange={setRotating}><DialogContent><DialogHeader><DialogTitle>Replace the public link?</DialogTitle><DialogDescription>The current full and short URLs will stop accepting reports. Share the new URL with your testers. Existing reports and attachments will stay in the inbox.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setRotating(false)}>Cancel</Button><Button disabled={mutation.isLoading} onClick={() => void update(portal.data?.enabled ?? false, true)}>Replace link</Button></DialogFooter></DialogContent></Dialog>
     </section>
 }
 

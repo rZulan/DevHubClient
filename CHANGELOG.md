@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-30
+
+### Workshop limits
+- Pace and serialize autosaves, preserve drafts while throttled, display retry countdowns, and retry the newest edits after the server cooldown.
+- Show storage and canvas capacity warnings, prevent further growth of full canvases, and preserve editing/export of existing larger documents.
+- Explain daily invitation budgets, reduce selection update traffic, and retrieve all calendar TODOs through bounded pages.
+
+### Security
+- Update the development dependency lockfile and require Vite 8.3.5 or newer within the current major version.
+- Move theme initialization to a same-origin script so production can enforce CSP without allowing arbitrary inline JavaScript.
+- Verify workshop pages and syntax highlighting under the enforced production policy; document remaining development CLI advisories in the API security review.
+
+## 2026-10-29
+
+### Responsive workshop
+- Adapt editor panels and settings to the width left by the workshop sidebars, including narrow desktop windows.
+- Separate mobile page titles from organization names, enlarge touch controls, and keep project metrics and role cards readable on small screens.
+- Keep the active settings tab visible, restore focus after closing drawers, and clear drawer state when resizing back to desktop.
+- Support short landscape screens and safe areas while retaining workshop themes, canvas styling, and local document behavior.
+- Extend the isolated responsive preview to all workshop pages with populated notes, wiki pages, members, and calendar events.
+
+### Teams and organization chart
+- Finish Teams with a shared directory design, accurate unique people and leader totals, team search by people or name, My teams, sorting, and member and project rosters.
+- Add searchable role and team chart views, team filters, collapsible groups, member details, and an explicit place for people without a team or matching role.
+- Keep API team memberships as the source for team labels; place each person once under their highest role in the role view.
+- Preserve member selections when changing a leader, keep save controls busy through membership updates, and support partial-save retries without creating duplicate teams.
+- Confirm team deletion by name and explain the existing cascade to projects and their saved data.
+- Support narrow screens, dark mode, and workshop colors; remove Teams and Org chart construction markers.
+
 ## 2026-10-26
 
 ### Bug reports

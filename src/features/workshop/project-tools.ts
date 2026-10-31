@@ -1,14 +1,19 @@
 // Playground is archived; keep its canvas implementation and project data for later.
-export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "state-machine"] as const
+export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "state-machine", "calendar", "bug-reports", "project-wiki"] as const
 export type ProjectToolId = typeof projectToolIds[number]
 export type ToolPreferences = { order: ProjectToolId[]; hidden: ProjectToolId[] }
+export const projectNavigationCategories: readonly {id: string; title: string; tools: readonly ProjectToolId[]}[] = [
+    {id: "planning", title: "Tracking", tools: ["todo", "calendar", "bug-reports", "sdlc"]},
+    {id: "design", title: "Design", tools: ["erd", "ui-editor", "state-machine"]},
+    {id: "knowledge", title: "Resources", tools: ["project-wiki", "notes"]},
+]
 
-export function normalizeToolPreferences(value: unknown): ToolPreferences {
+export function normalizeToolPreferences(value: unknown, available: readonly ProjectToolId[] = projectToolIds): ToolPreferences {
     const data = value as Partial<ToolPreferences> | null
-    const isTool = (id: unknown): id is ProjectToolId => projectToolIds.includes(id as ProjectToolId)
+    const isTool = (id: unknown): id is ProjectToolId => available.includes(id as ProjectToolId)
     const order = Array.isArray(data?.order) ? [...new Set(data.order.filter(isTool))] : []
     return {
-        order: [...order, ...projectToolIds.filter(id => !order.includes(id))],
+        order: [...order, ...available.filter(id => !order.includes(id))],
         hidden: Array.isArray(data?.hidden) ? [...new Set(data.hidden.filter(isTool))] : [],
     }
 }

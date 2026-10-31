@@ -8,4 +8,15 @@
 .workshop-todo-board .workshop-task-list { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
 .workshop-todo-board .workshop-task-list > * { flex-shrink: 0; }
 .workshop-todo-board .workshop-task-list:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.workshop-todo-board .workshop-task:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 .workshop-todo-board .workshop-add-task { flex-shrink: 0; width: auto; align-self: stretch; margin: 0 .55rem .55rem; }
+.todo-date-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-width: 0; }
+.todo-date-fields > div { display: grid; gap: 7px; min-width: 0; }
+.todo-date-fields label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.todo-date-fields label > span { color: var(--muted-foreground); font-size: 10px; font-weight: 400; }
+.todo-date-fields input { width: 100%; min-width: 0; }
+.todo-schedule-fields { border: 0; padding: 0; display: grid; gap: 12px; }
+.todo-schedule-hint { color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+.workshop-task-dates { display: block; color: var(--muted-foreground); font-size: 11px; margin: 0 0 12px; }
+.workshop-task-dates[data-completed="true"] { text-decoration: line-through; }
+@media (max-width: 380px) { .todo-date-fields { grid-template-columns: minmax(0, 1fr); } }

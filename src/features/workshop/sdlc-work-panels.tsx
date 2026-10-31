@@ -1,3 +1,4 @@
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {Link} from "react-router-dom"
 import {ArrowUpRight, CalendarDays, Check, Circle, ExternalLink, Flag, LockKeyhole, UserRound} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -17,7 +18,7 @@ export function SdlcPhaseWorkPanel({phase, work, members, canEdit, archived, don
     return <>
         <fieldset className="sdlc-work-fields" disabled={!canEdit || archived} onFocusCapture={event => {if ((event.target as HTMLElement).matches("input:not([type=checkbox]), textarea")) begin()}} onBlur={event => {if ((event.target as HTMLElement).matches("input:not([type=checkbox]), textarea")) end()}}>
             <div className="sdlc-section-caption"><strong>Phase ownership</strong>{archived && <LockKeyhole/>}</div>
-            <label><span><UserRound/>Owner</span><select aria-label="Phase owner" value={work?.ownerId ?? ""} onChange={event => onChange({ownerId: event.target.value || undefined})}><option value="">Unassigned</option>{work?.ownerId && !members.some(m => m.id === work.ownerId) && <option value={work.ownerId}>Former or unavailable member</option>}{members.map(member => <option key={member.id} value={member.id}>{member.nickname || member.name}</option>)}</select></label>
+            <label><span><UserRound/>Owner</span><WorkshopSelect aria-label="Phase owner" value={work?.ownerId ?? ""} onValueChange={selectedValue => onChange({ownerId: selectedValue || undefined})}><option value="">Unassigned</option>{work?.ownerId && !members.some(m => m.id === work.ownerId) && <option value={work.ownerId}>Former or unavailable member</option>}{members.map(member => <option key={member.id} value={member.id}>{member.nickname || member.name}</option>)}</WorkshopSelect></label>
             <label><span><CalendarDays/>Target date{overdue && <em>Overdue</em>}</span><input aria-label="Phase target date" type="date" min="1900-01-01" max="9999-12-31" value={work?.targetDate ?? ""} onChange={event => onChange({targetDate: event.target.value || undefined})}/></label>
             <div className="sdlc-section-caption"><strong>Deliverables</strong><small>{readiness.done} / {readiness.items.length}</small></div>
             <div className="sdlc-deliverable-checklist">{readiness.items.map(item => <label key={item} className={work?.checked?.includes(item) ? "checked" : ""}><input type="checkbox" aria-label={`Deliverable: ${item}`} checked={work?.checked?.includes(item) ?? false} onChange={event => onChange({checked: event.target.checked ? [...work?.checked ?? [], item] : work?.checked?.filter(checked => checked !== item) ?? []})}/><span>{item}</span></label>)}</div>

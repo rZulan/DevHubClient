@@ -3,6 +3,17 @@ import {tableHeight, type ErdDocument} from "./tool-documents.ts"
 const tableWidth = 300, columnGap = 200, rowGap = 80, groupGap = 140
 type Space = {x: number; y: number; width: number; height: number}
 
+/** Table edits and completed drops reflow when enabled; canvas drag previews stay local. */
+export function applyErdAutoArrange(current: ErdDocument, next: ErdDocument, enabled: boolean): ErdDocument {
+    if (!enabled || next === current) return next
+    const sameTables = current.tables.length === next.tables.length && current.tables.every((table, index) => table === next.tables[index])
+    const sameRelationships = current.relationships.length === next.relationships.length && current.relationships.every((relation, index) => {
+        const other = next.relationships[index]
+        return relation.id === other.id && relation.fromTable === other.fromTable && relation.toTable === other.toTable
+    })
+    return sameTables && sameRelationships ? next : arrangeErd(next)
+}
+
 /** Arrange graph neighbors in adjacent columns so orthogonal links stay in the gutters. */
 export function arrangeErd(document: ErdDocument): ErdDocument {
     if (!document.tables.length) return document

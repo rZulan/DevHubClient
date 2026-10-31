@@ -12,6 +12,10 @@ export function getApiErrorMessage(error: unknown) {
     }
 
     const problem = error.data as ApiProblemDetails | undefined
+    if (error.status === 429) {
+        const seconds = (error.data as {retryAfterSeconds?: number} | undefined)?.retryAfterSeconds
+        return `${problem?.detail ?? "This action has reached its limit."}${seconds ? ` Try again in ${seconds}s.` : " Please wait before retrying."}`
+    }
 
     if (problem?.errors) {
         const validationMessage = Object.values(problem.errors).flat()[0]

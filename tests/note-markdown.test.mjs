@@ -19,7 +19,12 @@ const tokenComponentSource = ts.transpileModule(readFileSync(new URL('../src/fea
 }).outputText
 const tokenExports = {}
 vm.runInNewContext(tokenComponentSource, {exports: tokenExports, require})
-vm.runInNewContext(source, {exports, require: name => name === './shiki-highlighter.ts' ? shikiHighlighter : name === './note-code-highlight.tsx' ? tokenExports : name === './use-note-code-highlight.ts' ? codeHighlightHook : require(name)})
+const selectSource = ts.transpileModule(readFileSync(new URL('../src/features/workshop/workshop-select.tsx', import.meta.url), 'utf8'), {
+    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX},
+}).outputText
+const selectExports = {}
+vm.runInNewContext(selectSource, {exports: selectExports, require})
+vm.runInNewContext(source, {exports, require: name => name === './shiki-highlighter.ts' ? shikiHighlighter : name === './note-code-highlight.tsx' ? tokenExports : name === './use-note-code-highlight.ts' ? codeHighlightHook : name === '@/features/workshop/workshop-select' ? selectExports : require(name)})
 const render = (body, compact = false) => renderToStaticMarkup(createElement(exports.NoteMarkdown, {body, compact}))
 
 test('note bodies render headings, emphasis, lists, quotes and code as Markdown', () => {

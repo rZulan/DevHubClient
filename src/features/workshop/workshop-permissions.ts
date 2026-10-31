@@ -3,8 +3,10 @@ import type {WorkshopPermission} from "./workshop-types"
 export const permissionGroups: {title: string; permissions: WorkshopPermission[]}[] = [
     {title: "Administration", permissions: ["Administrator", "Manage organization", "Manage dashboard", "Manage roles", "Manage members", "Change nicknames"]},
     {title: "Invitations & teams", permissions: ["Create invites", "Manage invites", "Manage teams"]},
-    {title: "Projects & tasks", permissions: ["View all projects", "Manage projects", "Manage tasks"]},
-    {title: "Project tools", permissions: ["Edit ERD", "Edit UI designs", "Manage notes", "Manage wiki", "Manage bug reports", "Manage roadmap"]},
+    {title: "Projects", permissions: ["View all projects", "Manage projects"]},
+    {title: "Tracking", permissions: ["Manage tasks", "Manage bug reports", "Manage roadmap"]},
+    {title: "Design", permissions: ["Edit ERD", "Edit UI designs"]},
+    {title: "Resources", permissions: ["Manage notes", "Manage wiki"]},
     {title: "Legacy access", permissions: ["Edit ideation"]},
 ]
 export const availablePermissions = permissionGroups.flatMap(group => group.permissions)
@@ -21,7 +23,7 @@ export const permissionDescriptions: Record<WorkshopPermission, string> = {
     "Manage teams": "Create, rename, delete, and change team membership or leadership.",
     "View all projects": "See projects belonging to teams you have not joined. Editing still needs its own permission.",
     "Manage projects": "Create, edit, move, archive, and delete projects, and update their roadmaps.",
-    "Manage tasks": "Customize TODO boards and create, assign, move, edit, and delete their tasks.",
+    "Manage tasks": "Customize TODO boards, manage their tasks, and create, edit, and delete project calendar events.",
     "Edit ERD": "Edit database diagrams and apply SQL or imported drafts to accessible projects.",
     "Edit UI designs": "Edit screens, layers, components, and prototype interactions in accessible projects.",
     "Manage notes": "Create, edit, and delete notes in accessible projects.",

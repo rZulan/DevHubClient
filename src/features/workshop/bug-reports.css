@@ -20,8 +20,9 @@
 .bug-portal-state > span { height: 6px; width: 6px; border-radius: 50%; background: var(--muted-foreground); }
 .bug-portal-state > span.enabled { background: #22a06b; }
 .bug-portal-state svg { height: 12px; width: 12px; }
-.bug-portal-link { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-.bug-portal-link input { font-size: 11px; min-width: 0; font-family: "IBM Plex Mono", monospace; background: var(--background); }
+.bug-portal-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.bug-portal-link input { flex: 1 1 220px; font-size: 11px; min-width: 0; font-family: "IBM Plex Mono", monospace; background: var(--background); }
+.bug-portal-link button { flex-shrink: 0; }
 .bug-portal-link a { display: grid; place-items: center; padding: 8px; color: var(--muted-foreground); }
 .bug-portal-link a svg { height: 15px; width: 15px; }
 .bug-replace-link { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted-foreground); margin-top: 11px; cursor: pointer; }
@@ -36,8 +37,8 @@
 .bug-search { position: relative; flex: 1; min-width: 120px; }
 .bug-search > svg { position: absolute; height: 13px; width: 13px; left: 10px; top: 10px; color: var(--muted-foreground); pointer-events: none; }
 .bug-search input { padding-left: 30px; font-size: 12px; height: 34px; background: var(--card); }
-.bug-filter-bar select, .bug-submit-form select, .bug-triage select { border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--foreground); font-size: 12px; padding: 7px 25px 7px 10px; min-width: 0; max-width: 100%; }
-.bug-filter-bar select:focus-visible, .bug-submit-form select:focus-visible, .bug-triage select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.bug-filter-bar :is(select, [data-workshop-select]), .bug-submit-form :is(select, [data-workshop-select]), .bug-triage :is(select, [data-workshop-select]) { border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--foreground); font-size: 12px; padding: 7px 25px 7px 10px; min-width: 0; max-width: 100%; }
+.bug-filter-bar :is(select, [data-workshop-select]):focus-visible, .bug-submit-form :is(select, [data-workshop-select]):focus-visible, .bug-triage :is(select, [data-workshop-select]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .bug-inbox-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 .bug-inbox-layout.has-detail { grid-template-columns: minmax(280px, .9fr) minmax(340px, 1.1fr); }
 .bug-report-list { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); min-width: 0; }
@@ -96,7 +97,7 @@
 .bug-attachments button > span { text-align: left; overflow-wrap: anywhere; min-width: 0; }
 .bug-attachments small { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 10px; }
 .bug-triage label, .bug-submit-form label { display: flex; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 500; margin-block: 18px 7px; }
-.bug-triage select { width: 100%; background: var(--background); }
+.bug-triage :is(select, [data-workshop-select]) { width: 100%; background: var(--background); }
 .bug-triage textarea { min-height: 95px; font-size: 12px; background: var(--background); }
 .bug-triage > button { margin-top: 14px; }
 .bug-form-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -120,7 +121,7 @@
 .bug-submit-form { min-width: 0; }
 .bug-submit-form label > span { font-size: 10px; color: var(--muted-foreground); font-weight: 400; margin-left: auto; }
 .bug-submit-form input { font-size: 13px; min-height: 38px; }
-.bug-submit-form select { width: 100%; min-height: 38px; background: var(--background); }
+.bug-submit-form :is(select, [data-workshop-select]) { width: 100%; min-height: 38px; background: var(--background); }
 .bug-submit-form textarea { min-height: 115px; font-size: 13px; line-height: 1.75; padding: 12px; field-sizing: fixed; }
 .bug-submit-form #bug-steps { min-height: 100px; }
 .bug-dropzone { text-align: center; padding: 22px 16px; border: 1px dashed var(--border); border-radius: 9px; background: var(--background); }
@@ -174,7 +175,7 @@
     .bug-stat-grid > div > span { font-size: 10px; gap: 4px; flex-wrap: wrap; }
     .bug-filter-bar { flex-wrap: wrap; }
     .bug-search { flex-basis: calc(100% - 42px); }
-    .bug-filter-bar select { flex: 1; order: 2; width: calc(50% - 5px); }
+    .bug-filter-bar :is(select, [data-workshop-select]) { flex: 1; order: 2; width: calc(50% - 5px); }
     .bug-detail { padding: 16px; }
     .bug-team-form { padding: 18px; }
     .public-bug-page { padding-inline: 14px; }

@@ -9,9 +9,11 @@ import {ResponsiveWorkshopPanel} from "@/features/workshop/responsive-workshop-p
 import {useChatLauncherPosition} from "@/features/chat/use-chat-launcher-position"
 import {WorkshopIdeationPage} from "@/pages/workshop/workshop-ideation-page"
 import {store} from "@/app/store"
+import {projectNavigationCategories} from "@/features/workshop/project-tools"
+import {WorkshopCalendarPage} from "@/pages/workshop/workshop-calendar-page"
 import {ProjectToolsNavigation} from "@/features/workshop/project-tools-navigation"
 import {WorkshopNavigationGroup} from "@/features/workshop/workshop-navigation-group"
-import {organizationNavigation, projectResourcesNavigation} from "@/features/workshop/workshop-navigation"
+import {organizationNavigation} from "@/features/workshop/workshop-navigation"
 import {WorkshopErdPage} from "@/pages/workshop/workshop-erd-page"
 import {WorkshopUiEditorPage} from "@/pages/workshop/workshop-ui-editor-page"
 import {WorkshopSdlcPage} from "@/pages/workshop/workshop-sdlc-page"
@@ -81,7 +83,7 @@ export function Fixture() {
     const [navigationOpen, setNavigationOpen] = useState(false), [membersOpen, setMembersOpen] = useState(false)
     const launcher = useChatLauncherPosition("responsive-preview")
     useEffect(() => {setNavigationOpen(false); setMembersOpen(false)}, [location.pathname, compact])
-    const [expanded, setExpanded] = useState(true)
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({planning: true, design: true, knowledge: true})
     const [sidebarUser, setSidebarUser] = useState("current")
     const [theme, setTheme] = useState("light")
     useLayoutEffect(() => {
@@ -99,15 +101,15 @@ export function Fixture() {
             <label style={{display: "block", fontSize: 10, padding: 10}}>Sidebar preview user<select aria-label="Sidebar preview user" value={sidebarUser} onChange={event => setSidebarUser(event.target.value)} style={{display: "block", marginTop: 6, border: "1px solid var(--border)", padding: 5, width: "100%"}}><option value="current">Current user</option><option value="teammate">Teammate</option></select></label>
             <nav className="workshop-nav" aria-label="Workshop navigation">
             <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={location.pathname.slice(1)} underConstruction/>
-            <WorkshopNavigationGroup title="Project resources" items={projectResourcesNavigation} activePath={location.pathname.slice(1)}/>
-            <ProjectToolsNavigation key={sidebarUser} userId={sidebarUser} organizationId="tools-preview" expanded={expanded} onToggle={() => setExpanded(value => !value)}/>
+
+            {projectNavigationCategories.map(category => <ProjectToolsNavigation key={`${sidebarUser}:${category.id}`} userId={sidebarUser} organizationId="tools-preview" category={category} expanded={expanded[category.id]} onToggle={() => setExpanded(current => ({...current, [category.id]: !current[category.id]}))}/>)}
             </nav>
         </aside>
         </ResponsiveWorkshopPanel>
         <section className="workshop-main-column">
             <header className="workshop-topbar">
                 {compact && <button className="workshop-navigation-toggle" aria-label="Open workshop navigation" onClick={() => setNavigationOpen(true)}>Menu</button>}
-                <div><small>Preview workshop</small><h1>{location.pathname === "/erd" ? "ERD maker" : location.pathname === "/ui-editor" ? "UI/UX Editor" : location.pathname === "/sdlc" ? "SDLC Roadmap" : location.pathname === "/state-machine" ? "State Machine" : location.pathname === "/project-wiki" ? "Project Wiki" : location.pathname === "/bug-reports" ? "Bug Reports" : location.pathname === "/ideation" ? "Playground" : location.pathname === "/notes" ? "Notes" : "Dashboard"}</h1></div>
+                <div><small>Preview workshop</small><h1>{location.pathname === "/calendar" ? "Calendar" : location.pathname === "/erd" ? "ERD maker" : location.pathname === "/ui-editor" ? "UI/UX Editor" : location.pathname === "/sdlc" ? "SDLC Roadmap" : location.pathname === "/state-machine" ? "State Machine" : location.pathname === "/project-wiki" ? "Project Wiki" : location.pathname === "/bug-reports" ? "Bug Reports" : location.pathname === "/ideation" ? "Playground" : location.pathname === "/notes" ? "Notes" : "Dashboard"}</h1></div>
                 <div className="workshop-topbar-actions"><div className="workshop-project-select"><select aria-label="Current project"><option>Project tools preview</option></select></div><button className="workshop-icon-button" aria-label="Open members" onClick={() => setMembersOpen(true)}>⋯</button></div>
             </header>
             <main className={`workshop-content ${["/erd", "/ui-editor", "/sdlc", "/ideation"].includes(location.pathname) ? "workshop-content-canvas" : ""}`}><Outlet context={context}/></main>
@@ -117,5 +119,5 @@ export function Fixture() {
     </div>
 }
 const root = createRoot(document.getElementById("root")!)
-root.render(<Provider store={store}><MemoryRouter initialEntries={["/notes"]}><Routes><Route path="/" element={<Fixture/>}><Route path="dashboard" element={<DashboardFixture/>}/><Route path="project-wiki" element={<WorkshopProjectWikiPage/>}/><Route path="bug-reports" element={<WorkshopBugReportsPage/>}/><Route path="erd" element={<WorkshopErdPage/>}/><Route path="ui-editor" element={<WorkshopUiEditorPage/>}/><Route path="sdlc" element={<WorkshopSdlcPage/>}/><Route path="state-machine" element={<WorkshopStateMachinePage/>}/><Route path="notes" element={<WorkshopNotesPage/>}/><Route path="todo" element={<TodoFixture/>}/><Route path="ideation" element={<WorkshopIdeationPage/>}/><Route path="*" element={<p>Isolated preview</p>}/></Route></Routes></MemoryRouter></Provider>)
+root.render(<Provider store={store}><MemoryRouter initialEntries={["/notes"]}><Routes><Route path="/" element={<Fixture/>}><Route path="dashboard" element={<DashboardFixture/>}/><Route path="project-wiki" element={<WorkshopProjectWikiPage/>}/><Route path="bug-reports" element={<WorkshopBugReportsPage/>}/><Route path="erd" element={<WorkshopErdPage/>}/><Route path="ui-editor" element={<WorkshopUiEditorPage/>}/><Route path="sdlc" element={<WorkshopSdlcPage/>}/><Route path="state-machine" element={<WorkshopStateMachinePage/>}/><Route path="notes" element={<WorkshopNotesPage/>}/><Route path="todo" element={<TodoFixture/>}/><Route path="calendar" element={<WorkshopCalendarPage/>}/><Route path="ideation" element={<WorkshopIdeationPage/>}/><Route path="*" element={<p>Isolated preview</p>}/></Route></Routes></MemoryRouter></Provider>)
 if (import.meta.hot) import.meta.hot.dispose(() => root.unmount())

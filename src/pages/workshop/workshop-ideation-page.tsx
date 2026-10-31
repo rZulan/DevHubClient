@@ -25,6 +25,7 @@ import {axisAlignedBounds, combinedBounds, fitBounds, zoomAt} from "@/features/w
 import {resizeSelection} from "@/features/workshop/resize-selection"
 import {rotateSelection} from "@/features/workshop/rotate-selection"
 import {useIdeasDocument} from "@/features/workshop/use-ideas-document"
+import {WorkshopCanvasNotice} from "@/features/workshop/workshop-limit-notices"
 import {useIdeasCollaboration} from "@/features/workshop/use-ideas-collaboration"
 import {expandGroupedIds, groupShapes, ungroupShapes} from "@/features/workshop/shape-groups"
 import {CanvasCard, type TextSelection, type TextStyleCommand} from "@/features/workshop/ideas/canvas-card"
@@ -679,7 +680,8 @@ function IdeasCanvas() {
                     "load-error": "Could not load"
                 })[saveStatus]}</small>
             </div>
-            {(["error", "load-error", "conflict"].includes(saveStatus) || saveStatus === "saving" && saveError) &&
+            <div className="workshop-ideas-limit-notice" onPointerDown={event => event.stopPropagation()}><WorkshopCanvasNotice tool="ideas" document={items}/></div>
+            {(["error", "load-error", "conflict"].includes(saveStatus) || saveError) &&
                 <div className="workshop-ideas-save-notice" role="alert"
                      onPointerDown={(event) => event.stopPropagation()}>
                     <span>{saveStatus === "saving" ? "Retrying save… Your draft is kept locally." : saveStatus === "conflict" ? "Another session changed this canvas. Your draft is kept locally. Reloading replaces it with the saved version." : saveStatus === "load-error" ? "The canvas could not be loaded. Editing is disabled until it loads." : saveError}</span>

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./features/workshop/workshop-scrollbars.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -1473,49 +1474,6 @@
         overflow: hidden;
     }
 
-    .workshop-content,
-    .workshop-content *,
-    .workshop-member-list {
-        scrollbar-width: thin;
-        scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent;
-    }
-
-    .workshop-content::-webkit-scrollbar,
-    .workshop-content *::-webkit-scrollbar,
-    .workshop-member-list::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
-
-    .workshop-content::-webkit-scrollbar-track,
-    .workshop-content *::-webkit-scrollbar-track,
-    .workshop-member-list::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .workshop-content::-webkit-scrollbar-thumb,
-    .workshop-content *::-webkit-scrollbar-thumb,
-    .workshop-member-list::-webkit-scrollbar-thumb {
-        min-height: 2.5rem;
-        border: 3px solid transparent;
-        border-radius: 999px;
-        background: color-mix(in oklab, var(--foreground) 24%, transparent);
-        background-clip: padding-box;
-    }
-
-    .workshop-content::-webkit-scrollbar-thumb:hover,
-    .workshop-content *::-webkit-scrollbar-thumb:hover,
-    .workshop-member-list::-webkit-scrollbar-thumb:hover {
-        background: color-mix(in oklab, var(--foreground) 42%, transparent);
-        background-clip: padding-box;
-    }
-
-    .workshop-content::-webkit-scrollbar-corner,
-    .workshop-content *::-webkit-scrollbar-corner,
-    .workshop-member-list::-webkit-scrollbar-corner {
-        background: transparent;
-    }
-
     .workshop-members {
         position: relative;
         z-index: 20;
@@ -2217,7 +2175,7 @@
         height: .55rem;
     }
 
-    .workshop-team-modal select {
+    .workshop-team-modal :is(select, [data-workshop-select]) {
         width: 100%;
         border: 1px solid #2a3140;
         border-radius: .6rem;
@@ -2228,7 +2186,7 @@
         outline: none;
     }
 
-    .workshop-team-modal select:focus {
+    .workshop-team-modal :is(select, [data-workshop-select]):focus {
         border-color: #7c3aed;
         box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
     }
@@ -3047,7 +3005,7 @@
         font-weight: 450;
     }
 
-    .workshop-project-modal select {
+    .workshop-project-modal :is(select, [data-workshop-select]) {
         width: 100%;
         border: 1px solid #2a3140;
         border-radius: .6rem;
@@ -3058,7 +3016,7 @@
         outline: none;
     }
 
-    .workshop-project-modal select:focus {
+    .workshop-project-modal :is(select, [data-workshop-select]):focus {
         border-color: #7c3aed;
         box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
     }
@@ -4765,7 +4723,7 @@
         font-size: 13px;
     }
 
-    .workshop-property-field input, .workshop-property-field select {
+    .workshop-property-field input, .workshop-property-field :is(select, [data-workshop-select]) {
         width: 100%;
         min-width: 0;
         height: 2rem;
@@ -4776,7 +4734,7 @@
         color: var(--foreground);
     }
 
-    .workshop-property-field input:focus-visible, .workshop-property-field select:focus-visible {
+    .workshop-property-field input:focus-visible, .workshop-property-field :is(select, [data-workshop-select]):focus-visible {
         outline: 2px solid var(--ring);
         outline-offset: 2px;
     }
@@ -10228,7 +10186,7 @@
     gap: .55rem;
 }
 
-.chat-add-member select {
+.chat-add-member :is(select, [data-workshop-select]) {
     min-width: 0;
     flex: 1;
     border: 1px solid var(--border);
@@ -10473,7 +10431,11 @@
 .note-code-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; padding: 10px 22px; color: inherit; font-family: var(--workshop-font-code); font-size: 11px; }
 .note-code-labels { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 6px 24px; }
 .note-code-labels > span { min-width: 0; overflow-wrap: anywhere; }
-.note-code-theme { opacity: .7; }
+.note-code-theme { min-width: 0; max-width: min(240px, 100%); padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: inherit; font: inherit; opacity: .7; cursor: pointer; appearance: auto; }
+.note-code-theme:hover { background: #88888820; opacity: 1; }
+.note-code-theme:focus-visible { opacity: 1; outline: 2px solid currentColor; outline-offset: 2px; }
+.note-code-theme:disabled { cursor: wait; }
+.note-code-theme option { background: var(--code-paper, #212121); color: inherit; }
 .note-code-header button { flex-shrink: 0; padding: 2px 7px; border: 1px solid transparent; border-radius: 4px; color: inherit; opacity: .7; cursor: pointer; font-family: var(--workshop-font-ui); font-size: 11px; }
 .note-code-header button:hover { background: #88888820; opacity: 1; }
 .note-code-header button:focus-visible { outline: 2px solid #80cbc4; outline-offset: 2px; }
@@ -10488,8 +10450,8 @@
 .note-code-editor { margin-block: 12px; }
 .note-code-selectors { display: flex; flex-wrap: wrap; gap: 12px 24px; min-width: 0; width: 100%; }
 .note-code-selectors label { display: flex; flex-direction: column; gap: 5px; flex: 1 1 180px; min-width: 0; font-size: 11px; }
-.note-code-selectors select { width: 100%; min-width: 0; padding: 5px 8px; border: 1px solid #88888860; border-radius: 5px; background: var(--code-paper); color: inherit; font: inherit; font-size: 12px; }
-.note-code-selectors select:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.note-code-selectors :is(select, [data-workshop-select]) { width: 100%; min-width: 0; padding: 5px 8px; border: 1px solid #88888860; border-radius: 5px; background: var(--code-paper); color: inherit; font: inherit; font-size: 12px; }
+.note-code-selectors :is(select, [data-workshop-select]):focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .note-code-input { position: relative; min-width: 0; margin: 8px 12px; }
 .note-code-input pre, .notes-editor-paper .note-code-input textarea { padding: 10px; border: 0; border-radius: 4px; font-family: var(--workshop-font-code); font-size: 13px; font-weight: 400; line-height: 1.8; letter-spacing: normal; tab-size: 4; white-space: pre; overflow-wrap: normal; word-break: normal; }
 .note-code-input pre { position: absolute; inset: 0; margin: 0; overflow: hidden; pointer-events: none; }
@@ -11900,11 +11862,11 @@
     .tool-inspector > header small { color: var(--muted-foreground); font-size: 12px; text-transform: capitalize; }
     .tool-inspector fieldset { display: flex; flex-direction: column; gap: 10px; border: 0; min-width: 0; }
     .tool-inspector label { display: flex; flex-direction: column; gap: 6px; color: var(--muted-foreground); font-size: 13px; font-weight: 500; min-width: 0; }
-    .tool-inspector input:not([type="checkbox"]):not([type="range"]), .tool-inspector select, .tool-inspector textarea { width: 100%; min-width: 0; border: 1px solid var(--border); background: var(--secondary); color: var(--foreground); padding: 7px 8px; border-radius: 6px; font: inherit; font-size: 14px; }
+    .tool-inspector input:not([type="checkbox"]):not([type="range"]), .tool-inspector :is(select, [data-workshop-select]), .tool-inspector textarea { width: 100%; min-width: 0; border: 1px solid var(--border); background: var(--secondary); color: var(--foreground); padding: 7px 8px; border-radius: 6px; font: inherit; font-size: 14px; }
     .tool-inspector input[type="color"] { height: 32px; padding: 3px !important; cursor: pointer; }
     .tool-inspector textarea { resize: vertical; line-height: 1.7; }
     .tool-inspector input[type="range"] { accent-color: var(--primary); }
-    .tool-inspector input:disabled, .tool-inspector select:disabled, .tool-inspector textarea:disabled, .tool-inspector fieldset:disabled { opacity: .65; }
+    .tool-inspector input:disabled, .tool-inspector :is(select, [data-workshop-select]):disabled, .tool-inspector textarea:disabled, .tool-inspector fieldset:disabled { opacity: .65; }
     .tool-property-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .tool-section-heading { display: flex; align-items: center; justify-content: space-between; font-size: 14px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
     .tool-section-heading svg { width: 13px; height: 13px; }
@@ -11962,7 +11924,7 @@
     .sdlc-canvas-toolbar { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 28px 12px; }
     .sdlc-model-control { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; min-width: 0; }
     .sdlc-model-control label { display: flex; flex-direction: column; gap: 7px; color: var(--muted-foreground); font-size: 12px; }
-    .sdlc-model-control select { background: var(--secondary); border: 1px solid var(--border); border-radius: 7px; padding: 8px 28px 8px 10px; color: var(--foreground); font-size: 13px; max-width: 100%; }
+    .sdlc-model-control :is(select, [data-workshop-select]) { background: var(--secondary); border: 1px solid var(--border); border-radius: 7px; padding: 8px 28px 8px 10px; color: var(--foreground); font-size: 13px; max-width: 100%; }
     .sdlc-map-label { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sdlc-map-label > span { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 10px color-mix(in oklab, var(--primary) 40%, transparent); }
     .sdlc-viewport { position: relative; flex: 1; min-height: 260px; overflow: hidden; cursor: grab; touch-action: none; user-select: none; overscroll-behavior: none; }
@@ -11980,8 +11942,6 @@
     .sdlc-model-art { stroke: var(--sdlc-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     .sdlc-illustration-contour { opacity: .42; }
     .sdlc-illustration-detail { opacity: .5; stroke-width: 1.2; }
-    .sdlc-art-waterfall .sdlc-illustration-contour { opacity: .58; stroke-width: 2.6; }
-    .sdlc-art-waterfall .sdlc-illustration-detail { stroke-width: 1.6; }
     .sdlc-phase-star { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; cursor: pointer; width: 60px; height: 60px; color: var(--muted-foreground); border-radius: 50%; }
     .sdlc-star-core { --sdlc-glow-low: .5; --sdlc-glow-high: .85; --sdlc-glow-radius: 8px; position: relative; display: grid; place-items: center; width: 48px; height: 48px; color: var(--sdlc-ink); transition: transform .2s; }
     .sdlc-star-core svg { width: 100%; height: 100%; overflow: visible; animation: sdlc-star-glow 2.4s ease-in-out infinite alternate; }
@@ -12042,7 +12002,7 @@
     .sdlc-phase-list > button > span { display: grid; place-items: center; width: 22px; height: 22px; color: var(--muted-foreground); border: 1px solid var(--border); border-radius: 50%; font-size: 13px; }
     .sdlc-phase-list svg { width: 12px; height: 12px; color: var(--primary); }
     .sdlc-phase-list i { margin-left: auto; background: var(--primary); width: 5px; height: 5px; border-radius: 50%; }
-    .project-tools-settings:focus-visible, .project-tool-option button:focus-visible, .project-tool-option input:focus-visible, .tool-inspector input:focus-visible, .tool-inspector textarea:focus-visible, .tool-inspector select:focus-visible, .sdlc-phase-star:focus-visible, .sdlc-model-control select:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+    .project-tools-settings:focus-visible, .project-tool-option button:focus-visible, .project-tool-option input:focus-visible, .tool-inspector input:focus-visible, .tool-inspector textarea:focus-visible, .tool-inspector :is(select, [data-workshop-select]):focus-visible, .sdlc-phase-star:focus-visible, .sdlc-model-control :is(select, [data-workshop-select]):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
     @media (max-width: 1200px) {
         .tool-layer-panel { width: 145px; }
         .tool-inspector { width: 240px; padding: 12px; }
@@ -12078,7 +12038,7 @@
     .erd-end-preview .erd-end-symbol path, .erd-end-preview .erd-end-symbol circle { stroke-width: 1.3; }
     .erd-end-preview > svg > path { fill: none; stroke: var(--primary); stroke-width: 1.4; }
     .erd-relationship-entry .tool-property-grid { margin-top: 10px; }
-    .erd-relationship-entry .tool-property-grid select { font-size: 14px; padding-inline: 4px; }
+    .erd-relationship-entry .tool-property-grid :is(select, [data-workshop-select]) { font-size: 14px; padding-inline: 4px; }
     .erd-import-warning { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #d99c3855; border-radius: 8px; background: #d99c3810; }
     .erd-import-warning > svg { flex-shrink: 0; width: 18px; height: 18px; color: #d99c38; }
     .erd-import-warning p { font-size: 13px; line-height: 1.7; }
@@ -12124,18 +12084,18 @@
 .task-edit-field [data-slot="label"] { font-size: 13px; line-height: 1.2; color: var(--foreground); }
 .task-edit-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .task-edit-label > span { font-size: 13px; color: var(--muted-foreground); }
-.task-edit-field input, .task-edit-field textarea, .task-edit-select select {
+.task-edit-field input, .task-edit-field textarea, .task-edit-select :is(select, [data-workshop-select]) {
     width: 100%; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground);
     padding: 10px 12px; font-size: 14px; line-height: 1.5; outline: none; box-shadow: none;
 }
-.task-edit-field input, .task-edit-select select { height: 42px; }
+.task-edit-field input, .task-edit-select :is(select, [data-workshop-select]) { height: 42px; }
 .task-edit-field textarea { min-height: 112px; resize: vertical; }
-.task-edit-field input:focus, .task-edit-field textarea:focus, .task-edit-select select:focus {
+.task-edit-field input:focus, .task-edit-field textarea:focus, .task-edit-select :is(select, [data-workshop-select]):focus {
     border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 15%, transparent);
 }
 .task-edit-metadata { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .task-edit-select { position: relative; }
-.task-edit-select select { appearance: none; padding-right: 36px; cursor: pointer; }
+.task-edit-select :is(select, [data-workshop-select]) { appearance: none; padding-right: 36px; cursor: pointer; }
 .task-edit-select > svg { position: absolute; right: 12px; top: 13px; width: 16px; height: 16px; color: var(--muted-foreground); pointer-events: none; }
 .task-edit-assignees { display: flex; align-items: center; min-height: 42px; }
 .task-edit-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); background: color-mix(in oklab, var(--muted) 35%, transparent); padding: 18px 28px; }
@@ -12162,7 +12122,7 @@
 .erd-panel-rail-label { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: var(--muted-foreground); }
 .erd-connection-side { display: grid; gap: 18px; }
 .erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label { display: flex; flex-direction: column; gap: 9px; min-width: 0; font-size: 13px; color: var(--foreground); }
-.erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label > select { width: 100%; height: 42px; padding: 10px 12px; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground); font-size: 14px; }
+.erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label > :is(select, [data-workshop-select]) { width: 100%; height: 42px; padding: 10px 12px; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground); font-size: 14px; }
 .tool-connect-handle { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border: 3px solid var(--popover); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 65%, var(--border)); cursor: crosshair; touch-action: none; z-index: 4; opacity: .6; }
 .tool-connect-handle.left { left: -8px; }
 .tool-connect-handle.right { right: -8px; }
@@ -12185,7 +12145,7 @@
 .erd-connections[data-connection-dragging="true"] .erd-endpoint-drag { cursor: grabbing; }
 .erd-endpoint-grip { fill: transparent; stroke: var(--erd-connector); stroke-width: 1.5px; stroke-dasharray: 3 2; pointer-events: none; }
 .erd-database-target { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
-.erd-database-target select, .erd-import-file select { min-width: 120px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); color: var(--foreground); }
+.erd-database-target :is(select, [data-workshop-select]), .erd-import-file :is(select, [data-workshop-select]) { min-width: 120px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); color: var(--foreground); }
 .erd-schema-issues { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; overflow-wrap: anywhere; }
 .erd-schema-issues summary { cursor: pointer; color: var(--foreground); }
 .erd-schema-issues ul { padding-left: 16px; margin: 8px 0 0; color: var(--muted-foreground); }
@@ -12321,7 +12281,7 @@
     .sdlc-model-control { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 12px; width: 100%; }
     .sdlc-model-control > label:nth-child(3) { grid-column: 1 / -1; max-width: 180px; }
     .sdlc-model-control label { min-width: 0; flex: 1; font-size: 13px; }
-    .sdlc-model-control select { max-width: 100%; min-height: 40px; font-size: 14px; padding-right: 12px; }
+    .sdlc-model-control :is(select, [data-workshop-select]) { max-width: 100%; min-height: 40px; font-size: 14px; padding-right: 12px; }
     .sdlc-canvas-footer { padding: 8px 20px 20px; gap: 12px; }
     .sdlc-progress-card { flex: 1 1 130px; padding: 12px; }
     .sdlc-navigation { max-width: 170px; }
@@ -12407,13 +12367,13 @@
     .workshop-shape-menu { top: 64px; bottom: 74px; left: 12px; width: calc(100% - 24px); max-height: none; }
     .workshop-canvas-meta > span, .workshop-canvas-meta > i { display: none; }
     .workshop-canvas-minimap { display: none; }
-    .workshop-modal input, .workshop-modal select, .workshop-modal textarea,
-    .workshop-page input, .workshop-page select, .workshop-page textarea, .sdlc-phase-inspector textarea,
+    .workshop-modal input, .workshop-modal :is(select, [data-workshop-select]), .workshop-modal textarea,
+    .workshop-page input, .workshop-page :is(select, [data-workshop-select]), .workshop-page textarea, .sdlc-phase-inspector textarea,
     .chat-modal input, .chat-modal textarea,
-    .workshop-task-edit-dialog input, .workshop-task-edit-dialog select, .workshop-task-edit-dialog textarea,
-    .workshop-drawer .tool-inspector input:not([type="checkbox"]):not([type="range"]), .workshop-drawer .tool-inspector select, .workshop-drawer .tool-inspector textarea,
-    .workshop-shape-properties input:not([type="checkbox"]):not([type="range"]), .workshop-shape-properties select, .workshop-shape-properties textarea,
-    .workshop-settings input, .workshop-settings select, .workshop-settings textarea { font-size: 16px; }
+    .workshop-task-edit-dialog input, .workshop-task-edit-dialog :is(select, [data-workshop-select]), .workshop-task-edit-dialog textarea,
+    .workshop-drawer .tool-inspector input:not([type="checkbox"]):not([type="range"]), .workshop-drawer .tool-inspector :is(select, [data-workshop-select]), .workshop-drawer .tool-inspector textarea,
+    .workshop-shape-properties input:not([type="checkbox"]):not([type="range"]), .workshop-shape-properties :is(select, [data-workshop-select]), .workshop-shape-properties textarea,
+    .workshop-settings input, .workshop-settings :is(select, [data-workshop-select]), .workshop-settings textarea { font-size: 16px; }
     .chat-modal { height: calc(100dvh - 16px); }
     .workshop-messages-button { bottom: max(16px, env(safe-area-inset-bottom)); right: max(16px, env(safe-area-inset-right)); }
 }

@@ -1,12 +1,48 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {arrangeErd} from '../src/features/workshop/erd-layout.ts'
+import {applyErdAutoArrange, arrangeErd} from '../src/features/workshop/erd-layout.ts'
 import {routeErdRelationship} from '../src/features/workshop/erd-connection.ts'
 import {tableHeight} from '../src/features/workshop/tool-documents.ts'
 
 const table = (id, count = 2) => ({id, name: id, x: -300, y: -100, fields: Array.from({length:count}, (_, index) => ({id:`field-${index}`, name:`column_${index}`, type:'UUID', length:'', primary:index===0, nullable:false, unique:false, defaultValue:''}))})
 const relation = (fromTable, toTable, id = `${fromTable}-${toTable}`) => ({id, fromTable, toTable, fromField:'field-0', toField:'field-1', cardinality:'1:N', leftEnd:'one', rightEnd:'many', onDelete:'RESTRICT'})
 const positions = document => Object.fromEntries(document.tables.map(({id,x,y}) => [id,{x,y}]))
+
+test('auto arrange off preserves manual positions when the schema changes', () => {
+    const current = {tables:[table('users')],relationships:[]}
+    const next = {...current,tables:[...current.tables,{...table('orders'),x:700,y:240}]}
+    assert.equal(applyErdAutoArrange(current,next,false),next)
+    assert.deepEqual(positions(next),{users:{x:-300,y:-100},orders:{x:700,y:240}})
+})
+
+test('auto arrange on reflows added tables, relationships and changed table heights', () => {
+    const current = {tables:[table('users'),table('orders')],relationships:[]}
+    const related = {...current,relationships:[relation('users','orders')]}
+    assert.deepEqual(applyErdAutoArrange(current,related,true),arrangeErd(related))
+    const larger = {...current,tables:[table('users',12),current.tables[1]]}
+    const arranged = applyErdAutoArrange(current,larger,true)
+    assert.deepEqual(arranged,arrangeErd(larger))
+    noOverlap(arranged)
+    const added = {...current,tables:[...current.tables,table('products')]}
+    noOverlap(applyErdAutoArrange(current,added,true))
+})
+
+test('auto arrange reflows completed drops and table edits, while off preserves those positions', () => {
+    const current = {tables:[table('users'),table('orders')],relationships:[relation('users','orders')]}
+    const moved = {...current,tables:current.tables.map((value,index)=>({...value,x:index*650,y:120}))}
+    assert.deepEqual(applyErdAutoArrange(current,moved,true),arrangeErd(moved))
+    assert.equal(applyErdAutoArrange(current,moved,false),moved)
+    const edited = {...current,tables:[{...current.tables[0],fields:current.tables[0].fields.map(field=>({...field,name:'renamed_column'}))},current.tables[1]]}
+    assert.deepEqual(applyErdAutoArrange(current,edited,true),arrangeErd(edited))
+    assert.equal(applyErdAutoArrange(current,edited,false),edited)
+})
+
+test('auto arrange retains direct relationship pins and ignores unchanged documents', () => {
+    const current = {tables:[table('users'),table('orders')],relationships:[relation('users','orders')]}
+    const pinned = {...current,relationships:[{...current.relationships[0],fromAnchor:{edge:'bottom',offset:.5}}]}
+    assert.equal(applyErdAutoArrange(current,pinned,true),pinned)
+    assert.equal(applyErdAutoArrange(current,current,true),current)
+})
 function noOverlap(document) {
     for (const [i, a] of document.tables.entries()) for (const b of document.tables.slice(i+1)) {
         assert.ok(a.x+300<=b.x || b.x+300<=a.x || a.y+tableHeight(a)<=b.y || b.y+tableHeight(b)<=a.y, `${a.id} overlaps ${b.id}`)

@@ -1,13 +1,13 @@
 import {useId, useState, type CSSProperties, type ReactNode} from "react"
 import {ChevronLeft, ChevronRight} from "lucide-react"
-import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
+import {useCompactWorkshopContent} from "@/hooks/use-compact-workshop"
 import {ResponsiveWorkshopPanel} from "./responsive-workshop-panel"
 
 export function ErdPanel({side, title, detail, heading, collapsed, onToggle, children, className = "", style}: {
     side: "left" | "right"; title: string; detail?: ReactNode; heading?: ReactNode; collapsed: boolean; onToggle: () => void; children: ReactNode; className?: string; style?: CSSProperties
 }) {
     const contentId = useId()
-    const compact = useCompactWorkshop()
+    const compact = useCompactWorkshopContent()
     const [open, setOpen] = useState(false)
     const isCollapsed = !compact && collapsed
     const toggle = compact ? () => setOpen(false) : onToggle
@@ -20,9 +20,8 @@ export function ErdPanel({side, title, detail, heading, collapsed, onToggle, chi
         {isCollapsed && <span className="erd-panel-rail-label" aria-hidden="true">{title}</span>}
         <div className="erd-panel-content" id={contentId} hidden={isCollapsed}>{children}</div>
     </aside>
-    if (!compact) return panel
     return <>
-        <button type="button" className={`tool-panel-launcher tool-panel-launcher-${side}`} aria-label={`Open ${title} panel`} aria-expanded={open} onClick={() => setOpen(true)}>{title}<Chevron/></button>
-        <ResponsiveWorkshopPanel compact open={open} onOpenChange={setOpen} title={title} side={side}>{panel}</ResponsiveWorkshopPanel>
+        {compact && <button type="button" className={`tool-panel-launcher tool-panel-launcher-${side}`} aria-label={`Open ${title} panel`} aria-expanded={open} onClick={() => setOpen(true)}>{title}<Chevron/></button>}
+        <ResponsiveWorkshopPanel compact={compact} open={open} onOpenChange={setOpen} title={title} side={side}>{panel}</ResponsiveWorkshopPanel>
     </>
 }

@@ -1,6 +1,6 @@
 import {useRef, useState} from "react"
 import {useOutletContext} from "react-router-dom"
-import {ArrowRight, Check, ChevronRight, FileImage, FileUp, ImageDown, PencilRuler, Play, Plus, Redo2, Sparkles, Undo2} from "lucide-react"
+import {ArrowRight, Check, FileImage, ImageDown, PencilRuler, Play, Plus, Sparkles} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
@@ -13,7 +13,7 @@ import {designTools, type DesignTool} from "@/features/workshop/design-tools"
 import {DesignLayersPanel, DesignInspector} from "@/features/workshop/design-panels"
 import {DesignPlayer} from "@/features/workshop/design-player"
 import {designPng, designSvg} from "@/features/workshop/design-export"
-import {copyDesignLayers, designComponent, designStarter, layerUnavailable, layoutDesignFrames, moveDesignLayers, newDesignLayer, pasteDesignLayers, removeDesignLayers, reorderDesignLayer, validDesignDocument, type ComponentPreset, type DesignDocument, type DesignKind, type DesignLayer} from "@/features/workshop/design-document"
+import {copyDesignLayers, designComponent, designStarter, layerUnavailable, layoutDesignFrames, moveDesignLayers, newDesignLayer, pasteDesignLayers, removeDesignLayers, reorderDesignLayer, type ComponentPreset, type DesignDocument, type DesignKind, type DesignLayer} from "@/features/workshop/design-document"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/design-editor.css"
 
@@ -28,7 +28,7 @@ function UiEditor() {
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current", canWrite = hasWorkshopPermission(organization, userId, "Edit UI designs")
     const editor = useToolDocument({organizationId: organization.id, projectId: project!.id, tool: "ui-editor"}, userId, canWrite, isPersistedOrganization)
     const {document, setDocument, canEdit} = editor
-    const workspace = useRef<HTMLElement>(null), fileInput = useRef<HTMLInputElement>(null), imageInput = useRef<HTMLInputElement>(null), imageTarget = useRef<string | undefined>(undefined), pasteCount = useRef({text: "", count: 0})
+    const workspace = useRef<HTMLElement>(null), imageInput = useRef<HTMLInputElement>(null), imageTarget = useRef<string | undefined>(undefined), pasteCount = useRef({text: "", count: 0})
     const latest = useRef({document, canEdit}); latest.current = {document, canEdit}
     const [selectedIds, setSelectedIds] = useState<string[]>([]), [tool, setTool] = useState<DesignTool>("select"), [mode, setMode] = useState<"design" | "prototype">("design")
     const [present, setPresent] = useState(false), [fitKey, setFitKey] = useState(0), [error, setError] = useState(""), [exporting, setExporting] = useState(false)
@@ -102,19 +102,6 @@ function UiEditor() {
         else if ((key === "[" || key === "]") && primary) apply(reorderDesignLayer(document, primary.id, key === "]" ? 1 : -1))
         else if (key.startsWith("arrow")) {const amount = shift ? 10 : 1; apply(moveDesignLayers(document, selected.map(l => ({id: l.id, x: Math.max(-1e6, Math.min(1e6, l.x + (key === "arrowright" ? amount : key === "arrowleft" ? -amount : 0))), y: Math.max(-1e6, Math.min(1e6, l.y + (key === "arrowdown" ? amount : key === "arrowup" ? -amount : 0)))}))))}
     }
-    async function importDraft(file?: File) {
-        if (!file || !canEdit) return
-        try {
-            if (file.size > 15 * 1024 * 1024) throw new Error("Choose a design JSON file smaller than 15 MB.")
-            const draft = JSON.parse(await file.text())
-            if (!validDesignDocument(draft)) throw new Error("This file is not a valid UI/UX design draft.")
-            if (!draft.layers.length) throw new Error("This draft does not contain any layers.")
-            const current = latest.current.document, offset = current.layers.length ? Math.max(...current.layers.map(l => l.x + l.width)) + 100 - Math.min(...draft.layers.map(l => l.x)) : 0
-            if (!paste(JSON.stringify({type: "devhub-design", layers: draft.layers, startFrameId: draft.startFrameId}), offset, true)) throw new Error("The design could not be added. Check the document size and 5,000 layer limit.")
-            setFitKey(v => v + 1)
-        } catch (failure) {setError(failure instanceof Error ? failure.message : "Could not import this design.")}
-        finally {if (fileInput.current) fileInput.current.value = ""}
-    }
     async function exportPng() {setExporting(true); setError(""); try {await designPng(document, primary?.kind === "frame" ? primary.id : undefined)} catch (failure) {setError(failure instanceof Error ? failure.message : "Could not export PNG.")} finally {setExporting(false)}}
     function chooseImage(id?: string) {imageTarget.current = id; imageInput.current?.click()}
     async function placeImage(file?: File) {
@@ -145,8 +132,6 @@ function UiEditor() {
             <DropdownMenuItem disabled={!document.layers.length} onSelect={() => downloadFile(designSvg(document, primary?.kind === "frame" ? primary.id : undefined), "interface-design.svg", "image/svg+xml")}><FileImage/>Export {primary?.kind === "frame" ? "screen" : "canvas"} as SVG</DropdownMenuItem>
             <DropdownMenuItem disabled={!document.layers.length} onSelect={() => void exportPng()}><ImageDown/>Export {primary?.kind === "frame" ? "screen" : "canvas"} as PNG</DropdownMenuItem>
         </>}><Button size="sm" className="ui-present-button" disabled={!screens.length} onClick={() => setPresent(true)}><Play/>Present</Button></ToolDocumentHeader>
-        <div className="ui-editor-commandbar"><div><span className="ui-studio-icon"><PencilRuler/></span><span>Workspace</span><ChevronRight/><strong>{mode === "design" ? "Design" : "Prototype"}</strong></div><div><span className="ui-screen-count">{screens.length} {screens.length === 1 ? "screen" : "screens"}</span><i/><button type="button" aria-label="Undo" title="Undo · Ctrl+Z" disabled={!canEdit || !editor.canUndo} onClick={editor.undo}><Undo2/></button><button type="button" aria-label="Redo" title="Redo · Ctrl+Shift+Z" disabled={!canEdit || !editor.canRedo} onClick={editor.redo}><Redo2/></button><i/><button type="button" title="Import a design draft; adds screens to this canvas" disabled={!canAdd} onClick={() => fileInput.current?.click()}><FileUp/><span>Import</span></button></div></div>
-        <input type="file" ref={fileInput} hidden accept=".json,application/json" aria-label="Import design draft" onChange={e => void importDraft(e.target.files?.[0])}/>
         <input type="file" ref={imageInput} hidden accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Place design image" onChange={e => void placeImage(e.target.files?.[0])}/>
         {error && <div className="tool-document-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         <div className="tool-editor-body ui-editor-body">

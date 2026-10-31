@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "react"
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {
     ArrowLeft,
     Crown,
@@ -686,11 +687,11 @@ function ConversationSettings({
                 </div>
                 {conversation.kind === "group" && isAdmin && available.length > 0 && (
                     <div className="chat-add-member">
-                        <select aria-label="Member to add" onChange={(event) => setMemberToAdd(event.target.value)}
+                        <WorkshopSelect aria-label="Member to add" onValueChange={setMemberToAdd}
                                 value={memberToAdd}>
                             {available.map((member) => <option key={member.id}
                                                                value={member.id}>{member.name}</option>)}
-                        </select>
+                        </WorkshopSelect>
                         <Button disabled={adding || !memberToAdd} onClick={() => void addMember({
                             organizationId,
                             conversationId: conversation.id,

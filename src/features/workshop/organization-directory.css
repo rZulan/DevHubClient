@@ -1,0 +1,202 @@
+.organization-directory { max-width: 1500px; margin-inline: auto; padding: 32px clamp(20px, 3vw, 48px) 48px; color: var(--foreground); }
+.directory-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
+.directory-heading h2 { font-family: var(--workshop-font-heading); font-size: clamp(25px, 2.5vw, 32px); font-weight: 750; letter-spacing: -.045em; line-height: 1.25; }
+.directory-heading-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.directory-heading-actions > [data-slot="button"] { min-height: 38px; padding-inline: 15px; }
+.directory-text-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; white-space: nowrap; }
+.directory-text-link:hover { color: var(--foreground); }
+.directory-text-link svg { width: 14px; height: 14px; }
+.directory-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-bottom: 28px; padding-block: 20px; }
+.directory-summary > div { padding-inline: 24px; border-right: 1px solid var(--border); }
+.directory-summary > div:last-child { border: 0; }
+.directory-summary dt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground); }
+.directory-summary dt svg { width: 14px; height: 14px; }
+.directory-summary dd { margin-top: 10px; font-family: var(--workshop-font-heading); font-size: 28px; font-weight: 650; letter-spacing: -.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.directory-toolbar, .directory-chart-controls { display: flex; align-items: center; gap: 12px; }
+.directory-segment { display: inline-flex; padding: 4px; gap: 3px; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in srgb, var(--muted) 65%, transparent); flex-shrink: 0; }
+.directory-chart-grouping { padding: 0; border: 0; background: transparent; }
+.directory-segment button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 29px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; }
+.directory-segment button:hover { color: var(--foreground); }
+.directory-segment button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px #0000000d, 0 0 0 1px var(--border); }
+.directory-segment button > span { padding: 0 5px; border-radius: 4px; background: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.directory-segment svg { width: 14px; height: 14px; }
+.directory-search { position: relative; flex: 1; min-width: 120px; max-width: 340px; margin-left: auto; }
+.directory-search > svg { position: absolute; width: 15px; height: 15px; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none; }
+.directory-search [data-slot="input"] { height: 38px; padding: 8px 34px; font-size: 12px; box-shadow: none; border-color: var(--border); background: var(--card); color: var(--foreground); }
+.directory-search > button { position: absolute; right: 4px; top: 4px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 5px; cursor: pointer; color: var(--muted-foreground); }
+.directory-search > button:hover { background: var(--muted); color: var(--foreground); }
+.directory-search > button svg { width: 14px; height: 14px; }
+.directory-toolbar > [data-slot="select-trigger"], .directory-chart-controls > [data-slot="select-trigger"] { height: 38px; max-width: 200px; font-size: 12px; background: var(--card); }
+.directory-section-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 26px 0 14px; }
+.directory-section-caption h3 { font-size: 13px; font-weight: 600; }
+.directory-section-caption > span { font-size: 11px; color: var(--muted-foreground); }
+.directory-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr)); gap: 18px; }
+.directory-team-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+.directory-team-card:hover { border-color: color-mix(in srgb, var(--directory-color) 45%, var(--border)); box-shadow: 0 5px 18px #00000005; }
+.directory-team-card > header { display: flex; align-items: center; gap: 7px; padding: 20px 20px 0; }
+.directory-team-symbol { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid color-mix(in srgb, var(--directory-color) 23%, transparent); border-radius: 11px; background: color-mix(in srgb, var(--directory-color) 10%, transparent); color: color-mix(in srgb, var(--directory-color) 65%, var(--foreground)); }
+.directory-team-symbol svg { width: 20px; height: 20px; }
+.directory-count { margin-left: auto; font-size: 11px; color: var(--muted-foreground); padding: 3px 8px; border: 1px solid var(--border); border-radius: 20px; }
+.directory-team-card > header > button { color: var(--muted-foreground); }
+.directory-team-intro { padding: 18px 20px 22px; flex: 1; }
+.directory-team-intro h3 { font-family: var(--workshop-font-heading); font-size: 17px; line-height: 1.4; font-weight: 700; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.directory-team-intro h3 button { text-align: left; cursor: pointer; }
+.directory-team-intro h3 button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.directory-team-intro p { margin-top: 7px; min-height: 40px; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.directory-team-owner { display: flex; align-items: center; gap: 10px; margin: 0 20px; padding: 14px 0; border-top: 1px solid var(--border); }
+.directory-team-owner > div { min-width: 0; }
+.directory-team-owner small { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted-foreground); }
+.directory-team-owner small svg { width: 11px; height: 11px; }
+.directory-team-owner strong { display: block; margin-top: 2px; font-size: 12px; font-weight: 550; overflow-wrap: anywhere; }
+.directory-avatar { flex-shrink: 0; border: 1px solid var(--border); }
+.directory-avatar [data-slot="avatar-fallback"] { background: var(--secondary); color: var(--secondary-foreground); font-size: 11px; font-weight: 550; }
+.directory-avatar[data-size="sm"] [data-slot="avatar-fallback"] { font-size: 9px; }
+.directory-team-projects { display: flex; gap: 6px; align-items: center; padding: 0 20px 18px; font-size: 11px; color: var(--muted-foreground); }
+.directory-team-projects > svg { width: 13px; height: 13px; flex-shrink: 0; }
+.directory-team-projects > span { white-space: nowrap; }
+.directory-team-projects > small { min-width: 0; margin-left: auto; max-width: 58%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.directory-team-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 58px; padding: 12px 20px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 32%, var(--card)); }
+.directory-team-card > footer .directory-text-link { color: var(--foreground); font-size: 11px; }
+.directory-create-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 310px; padding: 24px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted-foreground); cursor: pointer; text-align: center; }
+.directory-create-card:hover { background: color-mix(in srgb, var(--muted) 40%, transparent); border-color: var(--muted-foreground); }
+.directory-create-card > span, .directory-empty > span { display: grid; place-items: center; width: 44px; height: 44px; background: var(--muted); border-radius: 50%; margin-bottom: 18px; }
+.directory-create-card > span svg, .directory-empty > span svg { width: 20px; height: 20px; }
+.directory-create-card > strong { font-size: 13px; font-weight: 600; color: var(--foreground); }
+.directory-create-card > small { font-size: 11px; line-height: 1.7; max-width: 190px; margin-top: 7px; }
+.directory-create-card > b { display: flex; align-items: center; gap: 7px; margin-top: 22px; font-size: 11px; font-weight: 550; color: var(--foreground); }
+.directory-create-card > b svg { width: 13px; height: 13px; }
+.directory-empty { display: flex; flex-direction: column; align-items: center; padding: 64px 24px; text-align: center; }
+.directory-empty h3 { font-size: 17px; font-weight: 600; letter-spacing: -.025em; }
+.directory-empty p { max-width: 360px; margin-top: 8px; font-size: 13px; line-height: 1.7; color: var(--muted-foreground); }
+.directory-empty > button { margin-top: 20px; }
+.directory-error, .directory-loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 18px; margin-block: 12px; font-size: 13px; color: var(--muted-foreground); }
+.directory-error { border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+.directory-loading { min-height: 200px; }
+.directory-loading svg { width: 18px; }
+.directory-chart-controls { margin-bottom: 20px; }
+.directory-chart { min-width: 0; }
+.directory-chart-meta { display: flex; align-items: center; gap: 14px; min-height: 32px; font-size: 11px; color: var(--muted-foreground); }
+.directory-chart-meta > span:first-child { display: flex; align-items: center; gap: 7px; font-weight: 550; color: var(--foreground); }
+.directory-chart-meta svg { width: 14px; height: 14px; }
+.directory-chart-meta > span:nth-child(2) { margin-left: auto; }
+.directory-chart-meta > button { font-size: 11px; min-height: 30px; }
+.directory-chart-root { position: relative; display: flex; align-items: center; gap: 14px; width: fit-content; max-width: 100%; margin: 20px 0 24px; padding: 18px 24px 18px 18px; border: 1px solid var(--border); border-radius: 11px; background: var(--card); box-shadow: 0 3px 8px #00000004; }
+.directory-chart-root > span { display: grid; place-items: center; background: var(--primary); color: var(--primary-foreground); width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.directory-chart-root > span svg { width: 22px; height: 22px; }
+.directory-chart-root > div { min-width: 0; }
+.directory-chart-root small { font-size: 10px; color: var(--muted-foreground); }
+.directory-chart-root h3 { font-family: var(--workshop-font-heading); font-size: 16px; font-weight: 700; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.directory-chart-root p { display: flex; align-items: center; gap: 7px; font-size: 10px; color: var(--muted-foreground); margin-top: 5px; }
+.directory-chart-root p i { width: 3px; height: 3px; border-radius: 50%; background: var(--muted-foreground); }
+.directory-chart-root::after { content: ""; position: absolute; top: 100%; left: 39px; height: 25px; width: 1px; background: var(--border); }
+.directory-chart-branches { position: relative; display: grid; gap: 24px; margin-left: 39px; padding-left: 26px; border-left: 1px solid var(--border); }
+.directory-chart-branch { position: relative; min-width: 0; }
+.directory-chart-branch::before { content: ""; position: absolute; left: -27px; top: 24px; width: 27px; height: 1px; background: var(--border); }
+.directory-branch-heading { display: flex; align-items: center; width: 100%; gap: 10px; text-align: left; padding: 7px 0 12px; cursor: pointer; border-radius: 6px; }
+.directory-branch-symbol { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid color-mix(in srgb, var(--directory-color) 30%, var(--border)); border-radius: 9px; background: color-mix(in srgb, var(--directory-color) 9%, var(--card)); color: color-mix(in srgb, var(--directory-color) 60%, var(--foreground)); font-family: var(--workshop-font-code); font-size: 11px; flex-shrink: 0; }
+.directory-branch-symbol svg { width: 17px; height: 17px; }
+.directory-branch-heading > span:nth-child(2) { min-width: 0; }
+.directory-branch-heading small { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted-foreground); }
+.directory-branch-heading h4 { font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
+.directory-branch-count { margin-left: auto; font-size: 10px; color: var(--muted-foreground); white-space: nowrap; }
+.directory-branch-heading > svg { width: 14px; height: 14px; color: var(--muted-foreground); margin-right: 4px; }
+.directory-branch-heading > svg.is-collapsed { transform: rotate(-90deg); }
+.directory-branch-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.directory-person { display: flex; position: relative; align-items: flex-start; min-width: 0; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 9px; background: var(--card); text-align: left; cursor: pointer; }
+.directory-person:hover { border-color: var(--muted-foreground); }
+.directory-person-copy { display: flex; flex-direction: column; min-width: 0; flex: 1; padding-right: 10px; }
+.directory-person-copy > strong { font-size: 12px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.directory-person-copy > small { font-size: 10px; color: var(--muted-foreground); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
+.directory-person-copy > span { display: flex; gap: 4px; align-items: center; font-size: 10px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 10px; overflow-wrap: anywhere; }
+.directory-person-copy > span svg { width: 12px; height: 12px; flex-shrink: 0; }
+.directory-person-arrow { position: absolute; top: 16px; right: 12px; width: 12px; height: 12px; color: var(--muted-foreground); }
+.directory-modal[data-slot="dialog-content"] { width: min(560px, calc(100% - 32px)); max-width: 560px; max-height: calc(100dvh - 40px); overflow-y: auto; padding: 28px; border: 1px solid var(--border); background: var(--popover); color: var(--popover-foreground); gap: 24px; }
+.directory-modal [data-slot="dialog-title"] { font-size: 20px; line-height: 1.4; overflow-wrap: anywhere; }
+.directory-modal [data-slot="dialog-description"] { font-size: 12px; line-height: 1.7; color: var(--muted-foreground); }
+.directory-modal section > h3, .directory-picker-heading h3 { font-size: 12px; font-weight: 650; margin-bottom: 10px; }
+.directory-modal section > h3 > span { margin-left: 5px; color: var(--muted-foreground); font-weight: 400; }
+.directory-profile > .directory-avatar { width: 56px; height: 56px; }
+.directory-profile > .directory-avatar [data-slot="avatar-fallback"] { font-size: 18px; }
+.directory-profile > [data-slot="dialog-header"] { margin-top: -12px; }
+.directory-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.directory-tags > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--muted); }
+.directory-tags i { width: 6px; height: 6px; border-radius: 50%; background: var(--directory-color); }
+.directory-profile-teams { display: grid; gap: 8px; }
+.directory-profile-teams > div { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; }
+.directory-profile-teams svg { width: 14px; height: 14px; color: var(--muted-foreground); }
+.directory-profile-teams strong { font-weight: 550; overflow-wrap: anywhere; }
+.directory-profile-teams small { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; white-space: nowrap; }
+.directory-profile section p, .directory-profile-status, .directory-roster-projects > p { font-size: 12px; color: var(--muted-foreground); }
+.directory-roster-people { display: grid; gap: 8px; max-height: 340px; overflow-y: auto; }
+.directory-roster-projects { display: grid; gap: 8px; }
+.directory-roster-projects > a { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+.directory-roster-projects > a:hover { background: var(--muted); }
+.directory-roster-projects > a svg { width: 14px; height: 14px; flex-shrink: 0; }
+.directory-roster-projects strong { font-weight: 550; overflow-wrap: anywhere; }
+.directory-roster-projects small { margin-left: auto; font-size: 10px; color: var(--muted-foreground); }
+.directory-team-editor form { display: grid; gap: 20px; }
+.directory-team-editor[data-slot="dialog-content"] { display: flex; flex-direction: column; overflow: hidden; }
+.directory-team-editor form { min-height: 0; overflow-y: auto; padding: 3px; }
+.directory-team-editor .directory-modal-actions { position: sticky; bottom: 0; z-index: 1; background: var(--popover); padding-bottom: 3px; }
+.directory-editor-fields { display: grid; gap: 18px; min-width: 0; }
+.directory-editor-fields > label, .directory-delete-confirm > label { display: flex; flex-direction: column; align-items: stretch; gap: 8px; font-size: 12px; line-height: 1.5; }
+.directory-editor-fields [data-slot="input"], .directory-editor-fields [data-slot="textarea"], .directory-delete-confirm input { font-size: 13px; }
+.directory-editor-fields > label > [data-slot="select-trigger"] { min-height: 38px; font-size: 13px; }
+.directory-picker-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: -10px; }
+.directory-picker-heading h3 { margin-bottom: 0; }
+.directory-picker-heading > span { font-size: 10px; color: var(--muted-foreground); }
+.directory-editor-fields > .directory-search { width: 100%; max-width: none; }
+.directory-member-picker { display: grid; gap: 2px; max-height: 210px; overflow-y: auto; margin-top: -10px; border: 1px solid var(--border); border-radius: 8px; padding: 5px; }
+.directory-member-picker > label { display: flex; align-items: center; gap: 10px; padding: 9px 8px; cursor: pointer; border-radius: 5px; }
+.directory-member-picker > label:hover { background: var(--muted); }
+.directory-member-picker > label > span:last-of-type { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.directory-member-picker strong { font-size: 12px; font-weight: 550; overflow-wrap: anywhere; }
+.directory-member-picker small { font-size: 10px; color: var(--muted-foreground); }
+.directory-member-picker > label > svg { width: 13px; height: 13px; color: var(--muted-foreground); }
+.directory-member-picker > p { font-size: 12px; color: var(--muted-foreground); text-align: center; padding: 20px; }
+.directory-modal-actions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); padding-top: 18px; }
+.directory-modal-actions > button { font-size: 12px; min-height: 36px; }
+.directory-modal-actions > .directory-delete-button { color: var(--destructive); margin-right: auto; }
+.directory-form-error { font-size: 12px; line-height: 1.7; color: var(--destructive); }
+.directory-delete-confirm { display: grid; gap: 22px; }
+.organization-directory :is(button, a):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+@media (max-width: 1050px) {
+    .directory-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+    .directory-heading-actions { width: 100%; justify-content: space-between; }
+    .directory-summary > div { padding-inline: 18px; }
+}
+@media (max-width: 640px) {
+    .organization-directory { padding: 24px 16px; }
+    .directory-heading { margin-bottom: 24px; }
+    .directory-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; }
+    .directory-summary > div { padding: 18px; }
+    .directory-summary > div:nth-child(2) { border-right: 0; }
+    .directory-summary > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+    .directory-summary dd { font-size: 25px; }
+    .directory-summary dt { font-size: 11px; }
+    .directory-toolbar, .directory-chart-controls { flex-wrap: wrap; gap: 10px; }
+    .directory-segment { min-height: 42px; }
+    .directory-toolbar > .directory-search, .directory-chart-controls > .directory-search { order: 3; flex-basis: 100%; max-width: none; }
+    .directory-toolbar > [data-slot="select-trigger"], .directory-chart-controls > [data-slot="select-trigger"] { margin-left: auto; max-width: 48%; min-height: 42px; }
+    .directory-search [data-slot="input"] { min-height: 42px; font-size: 14px; }
+    .directory-search > button { top: 6px; }
+    .directory-team-grid { gap: 14px; }
+    .directory-create-card { min-height: 220px; }
+    .directory-chart-meta { gap: 8px; flex-wrap: wrap; }
+    .directory-chart-meta > span:nth-child(2) { margin-left: auto; }
+    .directory-chart-meta > button { margin-left: auto; }
+    .directory-chart-root { padding: 14px; }
+    .directory-chart-root::after { left: 35px; height: 25px; }
+    .directory-chart-branches { margin-left: 35px; padding-left: 14px; gap: 20px; }
+    .directory-chart-branch::before { left: -15px; width: 15px; }
+    .directory-branch-count { font-size: 9px; }
+    .directory-branch-heading { gap: 8px; }
+    .directory-branch-heading h4 { font-size: 12px; }
+    .directory-branch-symbol { width: 30px; height: 34px; }
+    .directory-person { padding: 13px; gap: 8px; }
+    .directory-modal[data-slot="dialog-content"] { padding: 24px 18px; max-height: calc(100dvh - 24px); }
+    .directory-modal-actions > button { min-height: 42px; }
+    .directory-modal-actions > .directory-delete-button { flex-basis: 100%; justify-content: flex-start; }
+    .directory-picker-heading { flex-wrap: wrap; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .directory-team-card { transition: none; } }

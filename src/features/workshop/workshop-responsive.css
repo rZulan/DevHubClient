@@ -1,0 +1,219 @@
+/* Use the available workspace width, including when desktop sidebars are open. */
+.workshop-shell .workshop-main-column {
+    container: workshop-main / inline-size;
+}
+
+.workshop-shell .workshop-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.workshop-topbar .workshop-topbar-title {
+    min-width: 0;
+}
+
+.workshop-topbar .workshop-topbar-title > small {
+    display: block;
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workshop-topbar .workshop-topbar-title > h1 {
+    display: flex;
+    max-width: 100%;
+    line-height: 1.5;
+}
+
+.workshop-topbar-title h1 > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workshop-topbar .workshop-topbar-actions {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.workshop-shell .workshop-content {
+    min-width: 0;
+    overscroll-behavior: contain;
+    scroll-padding-block: 20px;
+}
+
+/* Leave room for the on-demand panel buttons at laptop and tablet widths. */
+.workshop-shell .tool-editor-body:has(.tool-panel-launcher) {
+    position: relative;
+    padding-top: 48px;
+}
+
+.workshop-drawer[data-slot="dialog-content"] {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.workshop-drawer > [data-slot="dialog-close"] {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+}
+
+.workshop-drawer :is(.tool-layer-panel, .tool-inspector, .sdlc-inspector-panel) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.workshop-drawer .ui-layers-panel.erd-side-panel,
+.workshop-drawer .ui-inspector-panel.erd-side-panel {
+    width: 100%;
+}
+
+.workshop-drawer .sdlc-inspector-panel {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    border: 0;
+}
+
+@container workshop-main (max-width: 1100px) {
+    .workshop-topbar .workshop-project-select {
+        width: clamp(140px, 24cqw, 240px);
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+        padding: 0;
+    }
+    .workshop-topbar .workshop-project-select > span { display: none; }
+    .workshop-shell .project-tool-header { flex-wrap: wrap; gap: 12px; }
+    .workshop-shell .project-tool-header-actions { flex-wrap: wrap; min-width: 0; }
+    .workshop-shell .project-tool-header > div:first-child { min-width: 0; }
+    .workshop-shell .project-tool-header small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .workshop-shell .sdlc-workspace .sdlc-layout { flex-direction: row; overflow: hidden; }
+    .workshop-shell .sdlc-workspace .sdlc-universe { flex: 1; height: auto; min-height: 0; }
+    .workshop-shell .workshop-settings { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .workshop-shell .workshop-settings-sidebar { position: static; }
+    .workshop-shell .workshop-settings-sidebar > header { display: none; }
+    .workshop-shell .workshop-settings-sidebar nav {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+    }
+    .workshop-shell .workshop-settings-link { flex: none; min-height: 42px; }
+    .workshop-shell .directory-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+    .workshop-shell .directory-heading-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+}
+
+@container workshop-main (max-width: 700px) {
+    .workshop-shell .workshop-page:not(.wiki-page) { padding: 24px 16px; }
+    .workshop-shell .workshop-page-heading { flex-wrap: wrap; gap: 16px; }
+    .workshop-shell .workshop-project-grid { grid-template-columns: minmax(0, 1fr); }
+    .workshop-shell .workshop-project-detail-layout { grid-template-columns: minmax(0, 1fr); }
+    .workshop-shell .workshop-project-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .workshop-shell .workshop-project-metric-grid > article { min-width: 0; flex-wrap: wrap; padding: 16px; }
+    .workshop-shell .workshop-project-detail-title { min-width: 0; }
+    .workshop-shell .workshop-project-detail-title > div { min-width: 0; }
+    .workshop-shell .workshop-project-detail-title h2 { overflow-wrap: anywhere; }
+    .workshop-shell .workshop-settings { padding: 16px; }
+    .workshop-shell .workshop-settings-heading.with-actions { align-items: stretch; flex-direction: column; }
+    .workshop-shell .workshop-settings-row { align-items: stretch; flex-direction: column; }
+    .workshop-shell .workshop-role-list > article { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; padding: 16px; }
+    .workshop-shell .workshop-role-copy { grid-column: 2 / -1; min-width: 0; }
+    .workshop-shell .workshop-role-copy header { display: grid; grid-template-columns: 8px minmax(0, 1fr); gap: 8px; }
+    .workshop-shell .workshop-role-copy header > div { min-width: 0; }
+    .workshop-shell .workshop-role-copy header b { grid-column: 2; justify-self: start; }
+    .workshop-shell .workshop-role-members { grid-column: 2; grid-row: 2; }
+    .workshop-shell .workshop-role-order-actions { grid-column: 3; grid-row: 2; }
+    .workshop-shell .workshop-permission-tags > span { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    .workshop-shell .workshop-permission-tags svg { flex-shrink: 0; }
+    .workshop-shell .directory-toolbar, .workshop-shell .directory-chart-controls { flex-wrap: wrap; }
+    .workshop-shell .directory-toolbar > .directory-search,
+    .workshop-shell .directory-chart-controls > .directory-search { order: 3; flex-basis: 100%; max-width: none; }
+}
+
+@media (max-width: 1100px) {
+    .workshop-shell .workshop-topbar { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; }
+    .workshop-topbar .workshop-navigation-toggle { width: 44px; height: 44px; }
+    .workshop-topbar .workshop-topbar-actions > button { flex: none; width: 40px; height: 40px; }
+}
+
+@media (max-width: 640px) {
+    .workshop-shell .workshop-topbar {
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 8px 12px;
+        padding: calc(10px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 10px max(12px, env(safe-area-inset-left, 0px));
+    }
+    .workshop-topbar .workshop-topbar-title h1 { margin: 0; font-size: 16px; }
+    .workshop-topbar .workshop-topbar-actions { grid-column: 1 / -1; width: 100%; gap: 4px; }
+    .workshop-topbar .workshop-project-select { width: 0; flex: 1; margin-right: 4px; }
+    .workshop-topbar .workshop-project-select [data-slot="select-trigger"] { min-height: 44px; }
+    .workshop-topbar .workshop-topbar-actions > button { width: 44px; height: 44px; }
+    .workshop-shell .tool-panel-launcher { min-height: 40px; }
+    .workshop-shell .project-tool-header-actions > button { min-height: 40px; }
+    .workshop-shell .workshop-settings-link { min-height: 44px; }
+    .workshop-shell .workshop-board { scroll-padding-inline: 0; }
+    .workshop-shell .workshop-board-column { min-width: 0; }
+    .workshop-shell .ui-editor-workspace .project-tool-header-actions > button { font-size: 12px; padding-inline: 10px; }
+    .workshop-shell .ui-editor-workspace .project-tool-header small { font-size: 11px; }
+    .workshop-shell .ui-editor-workspace .project-tool-header strong { font-size: 14px; }
+    .workshop-shell .ui-design-empty { inset: 0 0 70px; overflow-y: auto; justify-content: safe center; pointer-events: auto; padding: 28px 12px; }
+    .workshop-shell .ui-design-empty > * { flex-shrink: 0; }
+    .workshop-shell .workshop-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    .workshop-shell .workshop-content textarea,
+    .workshop-drawer input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    .workshop-drawer textarea { font-size: 16px; }
+    .calendar-event-dialog[data-slot="dialog-content"] input:not([type="checkbox"]),
+    .calendar-event-dialog[data-slot="dialog-content"] textarea,
+    .calendar-event-dialog[data-slot="dialog-content"] [data-workshop-select] { min-width: 0; font-size: 16px; }
+    .workshop-shell .workshop-content { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .workshop-modal, .workshop-task-edit-dialog { scroll-padding-block: 20px; }
+}
+
+@media (max-height: 500px) and (max-width: 1100px) {
+    .workshop-shell .workshop-topbar { grid-template-columns: 40px minmax(0, 1fr) auto; padding-block: 4px; gap: 8px; min-height: 52px; }
+    .workshop-topbar .workshop-topbar-title > small { display: none; }
+    .workshop-topbar .workshop-topbar-actions { grid-column: auto; width: auto; }
+    .workshop-topbar .workshop-project-select { flex: none; width: clamp(110px, 22vw, 180px); }
+    .workshop-topbar .workshop-topbar-actions > button { width: 40px; height: 40px; }
+    .workshop-shell .project-tool-header { padding: 6px 12px; gap: 8px; }
+    .workshop-shell .project-tool-header > div:first-child { width: auto; }
+    .workshop-shell .project-tool-header-actions { flex: 0 1 auto; margin-left: auto; }
+    .workshop-shell .project-tool-header-actions .tool-save-status { display: none; }
+    .workshop-shell .ui-empty-art, .workshop-shell .ui-empty-hint, .workshop-shell .ui-empty-eyebrow { display: none; }
+    .workshop-shell .ui-design-empty { inset: 0 0 58px; overflow-y: auto; justify-content: safe center; pointer-events: auto; padding: 24px 12px; }
+    .workshop-shell .ui-design-empty > * { flex-shrink: 0; }
+    .workshop-shell .ui-design-empty h2 { font-size: 24px; }
+    .workshop-shell .ui-design-empty > p { margin-block: 8px 12px; }
+}
+
+@media (pointer: coarse) {
+    .workshop-shell :is(.calendar-view-switch, .calendar-month-controls, .directory-segment) > button { min-height: 44px; }
+    .workshop-shell .calendar-month-controls > button { min-width: 40px; }
+    .workshop-shell :is(.ui-design-toolbar, .workshop-canvas-toolbar) > button { min-width: 40px; min-height: 40px; }
+    .workshop-shell .ui-design-toolbar { max-width: calc(100% - 16px); overflow-x: auto; }
+    .workshop-shell .ui-design-toolbar > button { flex-shrink: 0; }
+}
+
+@media (min-width: 520px) and (max-width: 1100px) and (max-height: 500px) {
+    .workshop-shell .ui-editor-workspace .project-tool-header { padding: 6px 12px; }
+    .workshop-shell .ui-editor-workspace .project-tool-header small { display: none; }
+    .workshop-shell .ui-design-empty {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-content: safe center;
+        align-items: center;
+        gap: 24px;
+        padding: 12px 24px;
+        text-align: left;
+    }
+    .workshop-shell .ui-design-empty > p { display: none; }
+    .workshop-shell .ui-design-empty h2 { grid-column: 1; font-size: 22px; }
+    .workshop-shell .ui-empty-actions { grid-column: 2; grid-row: 1; gap: 8px; }
+}
+/* Quota notices share the workshop palette and remain readable on narrow screens. */
+.workshop-limit-notice { flex: 0 0 auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--muted); color: var(--foreground); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.workshop-ideas-limit-notice { position: absolute; top: 66px; left: 16px; right: 16px; z-index: 20; pointer-events: none; }
+.workshop-ideas-limit-notice:empty { display: none; }
+@media (max-width: 600px) { .workshop-ideas-limit-notice { top: 76px; left: 8px; right: 8px; } }

@@ -1,14 +1,3 @@
-.sdlc-workflow-guide { position: relative; flex-shrink: 0; margin: 0 28px 8px; max-width: 740px; font-size: 11px; color: var(--muted-foreground); }
-.sdlc-workflow-guide summary { width: fit-content; cursor: pointer; padding: 5px 0; }
-.sdlc-workflow-guide summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.sdlc-workflow-guide p { line-height: 1.7; margin: 8px 0; }
-.sdlc-workflow-guide nav { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 4px 0 8px; }
-.sdlc-workflow-guide a { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }
-.sdlc-universe:has(.sdlc-workflow-guide[open]) { overflow-y: auto; }
-.sdlc-path-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding-top: 4px; }
-.sdlc-path-legend span { display: flex; align-items: center; gap: 6px; }
-.sdlc-path-legend i { width: 18px; border-top: 1px solid currentColor; }
-.sdlc-path-legend i.dashed { border-top-style: dashed; }
 .sdlc-roadmap-links path.sdlc-link-validation { stroke-dasharray: 5 8; stroke-width: 1; opacity: .25; marker-end: none; }
 .sdlc-roadmap-links path.sdlc-link-validation.selected { opacity: .95; stroke-width: 1.8; }
 .sdlc-roadmap-links path.sdlc-link-feedback, .sdlc-roadmap-links path.sdlc-link-cycle { stroke-dasharray: 3 8; opacity: .35; }
@@ -22,10 +11,3 @@
 .sdlc-phase-star.optional .sdlc-star-core::after { content: ""; position: absolute; inset: -4px; border: 1px dashed var(--sdlc-ink); border-radius: 50%; opacity: .5; }
 .sdlc-phase-star em { max-width: 175px; }
 .sdlc-phase-inspector > button { white-space: normal; height: auto; min-height: 34px; }
-@media (max-width: 800px) {
-    .sdlc-workflow-guide { margin: 0 20px 8px; }
-}
-@media (max-width: 950px) {
-    .sdlc-universe:has(.sdlc-workflow-guide[open]) { height: auto; min-height: max(560px, 75svh); }
-    .sdlc-universe:has(.sdlc-workflow-guide[open]) > .sdlc-viewport { flex: none; height: max(320px, 40svh); }
-}

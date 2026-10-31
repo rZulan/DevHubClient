@@ -1,10 +1,11 @@
-import {useEffect, useMemo, useRef, useState, type PointerEvent} from "react"
+import {useEffect, useId, useMemo, useRef, useState, type PointerEvent} from "react"
 import {ErdEndSymbol} from "./erd-relationship-symbols"
 import {createErdRouteCache, erdAnchorPort, erdAttachmentAt, erdPortAngles, routeErdPorts} from "./erd-connection"
 import {relationshipEndCounts, relationshipEnds, type ErdAnchor, type ErdDocument, type ErdEdge} from "./tool-documents"
 import {combinedBounds, type Bounds} from "./canvas-view"
 import {intersectsViewport} from "./canvas-visibility"
 import type {NodePosition} from "./tool-canvas"
+import "./erd-connections.css"
 
 export type ErdReattachment = {tableId: string; anchor: ErdAnchor}
 type End = "from" | "to"
@@ -16,6 +17,7 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
     positions?: NodePosition[]; viewport?: Bounds
 }) {
     const svg = useRef<SVGSVGElement>(null), drag = useRef<Drag | null>(null)
+    const selectionMask = useId()
     const [preview, setPreview] = useState<Preview>()
     const [dragging, setDragging] = useState(false)
     const routeCache = useRef<ReturnType<typeof createErdRouteCache> | null>(null)
@@ -87,13 +89,25 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
         return {relation, from, to, route}
     })
     const bounds = combinedBounds(connections.map(connection => connection.route.bounds))
+    const selectedConnection = connections.find(connection => connection.relation.id === selectedId)
     return <svg ref={svg} className="erd-connections" data-connection-dragging={dragging} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)}
         viewBox={`${bounds.x} ${bounds.y} ${Math.max(1, bounds.width)} ${Math.max(1, bounds.height)}`} style={{left: bounds.x, top: bounds.y}} aria-label="Table relationships">
+        {selectedConnection && <defs><mask id={selectionMask} maskUnits="userSpaceOnUse" x={bounds.x} y={bounds.y} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)} style={{maskType: "luminance"}} aria-hidden="true">
+            <rect x={bounds.x} y={bounds.y} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)} fill="white"/>
+            <path d={selectedConnection.route.path} fill="none" stroke="black" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+            {(["from", "to"] as const).map(end => {
+                const port = selectedConnection.route[end === "from" ? "source" : "target"]
+                const ends = relationshipEnds(selectedConnection.relation)
+                return <g key={end} className="erd-selection-cutout" transform={`translate(${port.x} ${port.y}) rotate(${erdPortAngles[port.edge]})`}>
+                    <ErdEndSymbol end={end === "from" ? ends.leftEnd : ends.rightEnd}/>
+                </g>
+            })}
+        </mask></defs>}
         {connections.filter(connection => connection.relation.id === selectedId || intersectsViewport(connection.route.bounds, viewport)).sort((a, b) => Number(a.relation.id === selectedId) - Number(b.relation.id === selectedId)).map(({relation, from, to, route}) => {
             const ends = relationshipEnds(relation)
             const name = `${from.name} to ${to.name}`
             const selected = selectedId === relation.id
-            return <g key={relation.id} className={`erd-relationship ${selected ? "selected" : ""} ${preview?.id === relation.id ? "reattaching" : ""}`}
+            return <g key={relation.id} className={`erd-relationship ${selected ? "selected" : ""} ${preview?.id === relation.id ? "reattaching" : ""}`} mask={!selected && selectedConnection ? `url(#${selectionMask})` : undefined}
                 role="group" aria-label={`Relationship ${name}, ${relationshipEndCounts[ends.leftEnd]} to ${relationshipEndCounts[ends.rightEnd]}`}
                 onPointerDown={event => event.stopPropagation()} onClick={() => onSelect?.(relation.id)}
                 onKeyDown={event => {if ((event.target as Element).classList.contains("erd-relationship-hit") && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); event.stopPropagation(); onSelect?.(relation.id)}}}>

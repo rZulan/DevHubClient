@@ -4,6 +4,7 @@ import {Link, useNavigate, useSearchParams} from "react-router-dom"
 
 import {ThemeToggle} from "@/components/theme-toggle"
 import {BrandMark} from "@/components/brand-mark"
+import {WorkspaceAvatar} from "@/features/workshop/workspace-avatar"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {OrganizationSetupDialog} from "@/features/workshop/organization-setup-dialog"
@@ -83,7 +84,7 @@ export function WorkshopPage() {
                         {organizations.length > 4 && <Input className="workshop-entry-search" aria-label="Search organizations" placeholder="Find an organization…" value={search} onChange={event => setSearch(event.target.value)}/>}
                         {organizations.length > 0 ? <div className="workshop-entry-organizations" aria-label="Your organizations">
                             {visibleOrganizations.map((organization, index) => <button className="workshop-entry-organization" data-recent={organization.id === lastOpenedId} key={organization.id} type="button" onClick={() => openOrganization(organization.id)}>
-                                <span className="workshop-entry-avatar" data-tone={index % 4}>{organization.initials}</span>
+                                <WorkspaceAvatar className="workshop-entry-avatar" tone={index % 4} name={organization.name} avatarUrl={organization.avatarUrl} kind="organization"/>
                                 <span className="workshop-entry-org-copy"><span><strong>{organization.name}</strong>{organization.id === lastOpenedId && <small>Last opened</small>}</span>
                                     <span className="workshop-entry-org-meta"><span><Users/>{memberCount(organization)} {memberCount(organization) === 1 ? "member" : "members"}</span><span><Network/>{teamCount(organization)} {teamCount(organization) === 1 ? "team" : "teams"}</span></span>
                                 </span><span className="workshop-entry-open"><ArrowRight/></span>

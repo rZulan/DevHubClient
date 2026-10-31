@@ -9,13 +9,14 @@ import {getApiErrorMessage} from "@/features/auth/api-error"
 import {useListOrganizationInvitesQuery, useRevokeOrganizationInviteMutation} from "@/services/api"
 import type {ActiveOrganizationInvite} from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
+import {useGetWorkshopLimitsQuery} from "@/features/workshop/workshop-limits-api"
 
 const dateLabel = (value: string) => new Date(value).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"})
 export function InvitesSettingsPage() {
     const {organization, isPersistedOrganization, openInviteDialog} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id)
     const canCreate = isPersistedOrganization && hasWorkshopPermission(organization, userId, "Create invites")
-    const canManage = hasWorkshopPermission(organization, userId, "Manage invites")
+    const {data: limits} = useGetWorkshopLimitsQuery(organization.id, {skip: !isPersistedOrganization})
     const query = useListOrganizationInvitesQuery(organization.id, {skip: !canCreate, refetchOnMountOrArgChange: true})
     const [revoke, {isLoading: revoking}] = useRevokeOrganizationInviteMutation()
     const [confirming, setConfirming] = useState<ActiveOrganizationInvite | null>(null), [error, setError] = useState("")
@@ -26,7 +27,8 @@ export function InvitesSettingsPage() {
         catch (failure) {setError(getApiErrorMessage(failure))}
     }
     return <div className="workshop-settings-page">
-        <header className="workshop-settings-heading with-actions"><div><h2>Invitations</h2><p>{canManage ? "Review and revoke active invitation links for this organization." : "Review and revoke the active invitation links you created."}</p></div><Button disabled={!canCreate} onClick={openInviteDialog}><Link2/>Create invite</Button></header>
+        <header className="workshop-settings-heading with-actions"><div><h2>Invitations</h2></div><Button disabled={!canCreate} onClick={openInviteDialog}><Link2/>Create invite</Button></header>
+        {canCreate && <p className="text-sm text-muted-foreground">Up to {limits?.invitesPerUserPerDay ?? 20} new links per person and {limits?.invitesPerWorkshopPerDay ?? 50} per workshop each day. Daily limits reset at midnight UTC; revoking a link does not reset usage.</p>}
         {!canCreate ? <section className="workshop-settings-card"><p className="text-sm text-muted-foreground">{isPersistedOrganization ? "You need Create invites or Manage invites permission to access invitation links." : "Invitation management is available for organizations saved to your account."}</p></section>
             : <section className="workshop-settings-card"><header className="flex items-center justify-between gap-3"><h3>Active links ({invites.length})</h3><Button variant="ghost" size="sm" disabled={query.isFetching} onClick={() => void query.refetch()}><RefreshCw/>Refresh</Button></header>
                 {query.isFetching && <p role="status" className="text-sm text-muted-foreground">Updating invitations…</p>}

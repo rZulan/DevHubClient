@@ -9,6 +9,8 @@ export type TodoTask = {
     status: string;
     assigneeId: string | null;
     assigneeIds: string[]
+    startDate?: string | null;
+    targetDate?: string | null;
 }
 export type TodoColumn = { id: string; name: string }
 export const defaultTodoColumns: TodoColumn[] = [{id: "pending", name: "Pending"}, {
@@ -21,19 +23,25 @@ export type Todo = {
     name: string;
     description: string;
     targetDate: string | null;
+    startDate?: string | null;
     createdAtUtc: string;
     tasks: TodoTask[];
     columns: TodoColumn[];
     boardRevision: number
 }
 type Scope = { organizationId: string; projectId: string }
-export type TodoTaskDetails = {title: string; description: string; status: string; assigneeIds: string[]}
+export type TodoDates = {startDate: string | null; targetDate: string | null}
+export type TodoTaskDetails = {title: string; description: string; status: string; assigneeIds: string[]} & TodoDates
 const path = ({organizationId, projectId}: Scope) => `/organizations/${organizationId}/projects/${projectId}/todos`
 export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndpoints({
     endpoints: (builder) => ({
+        updateTodoDates: builder.mutation<Todo, Scope & TodoDates & {todoId: string; boardRevision: number}>({
+            query: ({todoId, startDate, targetDate, boardRevision, ...scope}) => ({url: `${path(scope)}/${todoId}/dates`, method: "PATCH", body: {startDate, targetDate, boardRevision}}),
+            invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
+        }),
         updateTodoTask: builder.mutation<TodoTask, Scope & TodoTaskDetails & {todoId: string; taskId: string; boardRevision: number}>({
-            query: ({todoId, taskId, title, description, status, assigneeIds, boardRevision, ...scope}) => ({
-                url: `${path(scope)}/${todoId}/tasks/${taskId}`, method: "PUT", body: {title, description, status, assigneeIds, boardRevision}
+            query: ({todoId, taskId, title, description, status, assigneeIds, boardRevision, startDate, targetDate, ...scope}) => ({
+                url: `${path(scope)}/${todoId}/tasks/${taskId}`, method: "PUT", body: {title, description, status, assigneeIds, boardRevision, startDate, targetDate}
             }),
             invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
@@ -56,18 +64,27 @@ export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndp
             providesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
         listTodos: builder.query<Todo[], Scope>({
-            query: path,
+            async queryFn(scope, _api, _options, baseQuery) {
+                const items: Todo[] = []
+                for (let page = 0; ; page++) {
+                    const result = await baseQuery(`${path(scope)}/pages?page=${page}&pageSize=50`)
+                    if (result.error) return {error: result.error}
+                    const batch = result.data as {items: Todo[]; hasMore: boolean}
+                    items.push(...batch.items)
+                    if (!batch.hasMore) return {data: items}
+                }
+            },
             providesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
-        createTodo: builder.mutation<Todo, Scope & { name: string; description: string; targetDate: string | null }>({
-            query: ({name, description, targetDate, ...scope}) => ({
+        createTodo: builder.mutation<Todo, Scope & TodoDates & { name: string; description: string }>({
+            query: ({name, description, targetDate, startDate, ...scope}) => ({
                 url: path(scope),
                 method: "POST",
-                body: {name, description, targetDate}
+                body: {name, description, targetDate, startDate}
             }),
             invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
-        createTodoTask: builder.mutation<TodoTask, Scope & {
+        createTodoTask: builder.mutation<TodoTask, Scope & TodoDates & {
             todoId: string;
             title: string;
             description: string;
@@ -80,11 +97,13 @@ export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndp
                         description,
                         status,
                         assigneeIds,
+                        startDate,
+                        targetDate,
                         ...scope
                     }) => ({
                 url: `${path(scope)}/${todoId}/tasks`,
                 method: "POST",
-                body: {title, description, status, assigneeIds}
+                body: {title, description, status, assigneeIds, startDate, targetDate}
             }),
             invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
@@ -130,6 +149,7 @@ export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndp
     }),
 })
 export const {
+    useUpdateTodoDatesMutation,
     useUpdateTodoTaskMutation,
     useDeleteTodoTaskMutation,
     useTodoPagesInfiniteQuery,

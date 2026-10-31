@@ -1,7 +1,8 @@
-import {Children, isValidElement, useId, useState, type ComponentProps, type ReactNode} from "react"
-import Markdown, {type Components} from "react-markdown"
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
+import {Children, isValidElement, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode} from "react"
+import Markdown, {type Components, type Options} from "react-markdown"
 import remarkGfm from "remark-gfm"
-import {noteCodeTheme, noteCodeThemeFromMeta} from "./shiki-highlighter.ts"
+import {loadNoteCodeOptions, noteCodeTheme, noteCodeThemeFromMeta} from "./shiki-highlighter.ts"
 import {NoteCodeTokens} from "./note-code-highlight.tsx"
 import {useNoteCodeHighlight} from "./use-note-code-highlight.ts"
 
@@ -16,17 +17,31 @@ function NoteCodeBlock({children, compact = false}: {children: ReactNode; compac
     const language = isValidElement<ComponentProps<"code">>(children)
         ? /(?:^|\s)language-([^\s]+)/.exec(children.props.className ?? "")?.[1] : undefined
     const source = codeText(children)
-    const theme = isValidElement<{node?: {data?: {meta?: unknown}}}>(children) ? noteCodeThemeFromMeta(children.props.node?.data?.meta) : noteCodeTheme.id
+    const authoredTheme = isValidElement<{node?: {data?: {meta?: unknown}}}>(children) ? noteCodeThemeFromMeta(children.props.node?.data?.meta) : noteCodeTheme.id
+    const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
+    const [themes, setThemes] = useState<Awaited<ReturnType<typeof loadNoteCodeOptions>>["themes"] | null>(null)
+    const [themeLoadError, setThemeLoadError] = useState(false)
+    const theme = selectedTheme ?? authoredTheme
     const [copyStatus, setCopyStatus] = useState("Copy")
     const {tokens, palette} = useNoteCodeHighlight(source, language, theme)
+    useEffect(() => {
+        if (compact) return
+        let current = true
+        void loadNoteCodeOptions().then(options => {if (current) setThemes(options.themes)}, () => {if (current) setThemeLoadError(true)})
+        return () => {current = false}
+    }, [compact])
     async function copy() {
         try {await navigator.clipboard.writeText(source); setCopyStatus("Copied")}
         catch {setCopyStatus("Copy unavailable")}
     }
-    return <div className="note-code-block" data-theme={palette.id} style={{background: palette.background, color: palette.foreground, colorScheme: palette.type}}>
-        <div className="note-code-header"><div className="note-code-labels"><span>{language ?? "Plain text"}</span>{!compact && <span className="note-code-theme">{palette.label}</span>}</div>
+    return <div className="note-code-block" data-theme={palette.id} style={{background: palette.background, color: palette.foreground, colorScheme: palette.type, "--code-paper": palette.background} as CSSProperties}>
+        <div className="note-code-header"><div className="note-code-labels"><span>{language ?? "Plain text"}</span>{!compact && <WorkshopSelect className="note-code-theme" aria-label="Code block theme" title="Change code block theme" value={theme} disabled={!themes} onValueChange={selectedValue => setSelectedTheme(selectedValue)}>
+            {!themes?.some(item => item.id === theme) && <option value={theme}>{palette.label}</option>}
+            {themes?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </WorkshopSelect>}</div>
             {!compact && <button type="button" aria-label="Copy code" onClick={() => void copy()} onBlur={() => setCopyStatus("Copy")}><span aria-live="polite">{copyStatus}</span></button>}
         </div>
+        {themeLoadError && <p className="note-code-load-error" role="status">Code themes could not load. Reload to try again.</p>}
         <pre tabIndex={compact ? undefined : 0} aria-label={`${language ?? "Plain text"} code block`}><code className={language ? `language-${language}` : undefined} data-highlighter={tokens ? "shiki" : undefined}>
             <NoteCodeTokens tokens={tokens} source={source}/>
         </code></pre>
@@ -54,12 +69,12 @@ const compactComponents: Components = {
     pre: ({children}) => <NoteCodeBlock compact>{children}</NoteCodeBlock>,
 }
 
-export function NoteMarkdown({body, compact = false, components: customComponents}: {body: string; compact?: boolean; components?: Components}) {
+export function NoteMarkdown({body, compact = false, components: customComponents, rehypePlugins}: {body: string; compact?: boolean; components?: Components; rehypePlugins?: Options["rehypePlugins"]}) {
     const prefix = `note-${useId().replaceAll(":", "")}-`
     const heading: Components["h2"] = ({node: _node, id, ...props}) => <h2 {...props} id={id === "footnote-label" ? `${prefix}footnote-label` : id}/>
     const link: Components["a"] = ({node: _node, ...props}) => <MarkdownLink {...props} aria-describedby={props["aria-describedby"] === "footnote-label" ? `${prefix}footnote-label` : props["aria-describedby"]}/>
     return <div className={`note-markdown${compact ? " note-markdown-compact" : ""}`}>
-        <Markdown remarkPlugins={[remarkGfm]} remarkRehypeOptions={{clobberPrefix: prefix}} skipHtml components={{...components, a: link, ...(compact ? compactComponents : {}), h2: heading, ...customComponents}}>{body}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins} remarkRehypeOptions={{clobberPrefix: prefix}} skipHtml components={{...components, a: link, ...(compact ? compactComponents : {}), h2: heading, ...customComponents}}>{body}</Markdown>
     </div>
 }
 

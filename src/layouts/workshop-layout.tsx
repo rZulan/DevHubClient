@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from "react"
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
 import {
     ArrowLeft,
     Building2,
@@ -20,9 +20,12 @@ import {Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams,} f
 
 import {useAppSelector} from "@/app/hooks"
 import {ChatDialog} from "@/features/chat/chat-dialog"
+import {WorkshopNotifications} from "@/features/workshop/workshop-notifications"
+import {WorkshopStorageNotice} from "@/features/workshop/workshop-limit-notices"
 import {ThemeToggle} from "@/components/theme-toggle"
 import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
 import {UserAvatar} from "@/components/user-avatar"
+import {WorkspaceAvatar} from "@/features/workshop/workspace-avatar"
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
@@ -49,6 +52,7 @@ import {
 import {useOrganizationColorScheme} from "@/features/workshop/appearance/use-organization-color-scheme"
 import {OrganizationSetupDialog} from "@/features/workshop/organization-setup-dialog"
 import {useCreateOrJoinOrganization} from "@/features/workshop/use-create-or-join-organization"
+import {extractInviteToken} from "@/features/workshop/organization-invite-code"
 import {useWorkshop} from "@/features/workshop/workshop-context"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {mapApiProject} from "@/features/workshop/workshop-data"
@@ -72,9 +76,10 @@ import type {
 import {cn} from "@/lib/utils"
 import {ProjectToolsNavigation} from "@/features/workshop/project-tools-navigation"
 import {WorkshopNavigationGroup} from "@/features/workshop/workshop-navigation-group"
-import {organizationNavigation, projectResourcesNavigation} from "@/features/workshop/workshop-navigation"
-import {projectToolIds} from "@/features/workshop/project-tools"
-import {useCompactWorkshop} from "@/hooks/use-compact-workshop"
+import {organizationNavigation} from "@/features/workshop/workshop-navigation"
+import {projectNavigationCategories} from "@/features/workshop/project-tools"
+import {useCompactWorkshop, WorkshopContentWidthContext} from "@/hooks/use-compact-workshop"
+import "@/features/workshop/workshop-responsive.css"
 import {ResponsiveWorkshopPanel} from "@/features/workshop/responsive-workshop-panel"
 import {
     useCreateOrganizationInviteMutation,
@@ -109,6 +114,7 @@ const pageTitles: Record<string, string> = {
     "project-wiki": "Project Wiki",
     "bug-reports": "Bug Reports",
     todo: "TODOs",
+    calendar: "Calendar",
     notes: "Notes",
     erd: "ERD maker",
     "ui-editor": "UI/UX Editor",
@@ -120,7 +126,7 @@ const pageTitles: Record<string, string> = {
     "org-chart": "Organization chart",
     settings: "Organization settings",
 }
-const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "state-machine", "projects", "project-detail", "teams", "org-chart", "project-wiki", "bug-reports"])
+const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "state-machine", "projects", "project-detail", "project-wiki", "bug-reports"])
 
 export function WorkshopLayout() {
     const {organizationId} = useParams()
@@ -136,19 +142,22 @@ export function WorkshopLayout() {
     }
 
     const [membersOpen, setMembersOpen] = useState(true)
+    const mainColumn = useRef<HTMLElement>(null)
+    const [contentWidth, setContentWidth] = useState<number | null>(null)
     const compact = useCompactWorkshop()
     const compactMembers = useCompactWorkshop(1400)
     const [navigationOpen, setNavigationOpen] = useState(false)
     const [compactMembersOpen, setCompactMembersOpen] = useState(false)
     useEffect(() => {setNavigationOpen(false); setCompactMembersOpen(false)}, [location.pathname, compact, compactMembers])
-    const [projectToolsOpen, setProjectToolsOpen] = useState(true)
+    const [projectGroupsOpen, setProjectGroupsOpen] = useState<Record<string, boolean>>({planning: true, design: true, knowledge: true})
     const [projectsOpen, setProjectsOpen] = useState(true)
     const [memberQuery, setMemberQuery] = useState("")
     const [inviteOpen, setInviteOpen] = useState(false)
     const [inviteLink, setInviteLink] = useState("")
     const [inviteExpiresAt, setInviteExpiresAt] = useState("")
     const [inviteError, setInviteError] = useState("")
-    const [copied, setCopied] = useState(false)
+    const [copied, setCopied] = useState<"code" | "link" | null>(null)
+    const inviteCode = extractInviteToken(inviteLink) ?? ""
     const {isSigningOut, signOut} = useSignOut()
     const [createOrganizationInvite, {isLoading: isCreatingInvite}] = useCreateOrganizationInviteMutation()
     const baseOrganization = organizationId ? organizationById(organizationId) : undefined
@@ -227,6 +236,7 @@ export function WorkshopLayout() {
                     id: team.id,
                     name: team.name,
                     description: team.description ?? "",
+                    avatarUrl: team.avatarUrl,
                     color: teamColors[index % teamColors.length],
                     leaderId: team.leaderUserId,
                     memberIds: team.memberIds ?? [team.leaderUserId],
@@ -239,7 +249,7 @@ export function WorkshopLayout() {
         }
     }, [apiMembers, apiProjects, apiRoles, apiTeams, baseOrganization, presenceByUserId])
     const [projectId, setProjectId] = useState(() =>
-        (location.pathname.endsWith("/project-wiki") ? new URLSearchParams(location.search).get("project") : null) ?? (organizationId ? getSelectedProjectId(user?.id, organizationId) : null),
+        new URLSearchParams(location.search).get("project") ?? (organizationId ? getSelectedProjectId(user?.id, organizationId) : null),
     )
 
     const visibleProjects = useMemo(() => {
@@ -265,7 +275,7 @@ export function WorkshopLayout() {
     const project = selectedProject ?? (shouldUseFirstProject ? visibleProjects[0] : undefined)
 
     useEffect(() => {
-        const linkedProject = location.pathname.endsWith("/project-wiki") ? new URLSearchParams(location.search).get("project") : null
+        const linkedProject = new URLSearchParams(location.search).get("project")
         if (linkedProject && linkedProject !== projectId && visibleProjects.some(candidate => candidate.id === linkedProject)) setProjectId(linkedProject)
     }, [location.pathname, location.search, projectId, visibleProjects])
 
@@ -298,12 +308,22 @@ export function WorkshopLayout() {
             : location.pathname.split("/").at(-1) ?? "dashboard"
 
     useEffect(() => {
-        if (projectToolIds.some(path => path === activePath)) setProjectToolsOpen(true)
+        const category = projectNavigationCategories.find(group => group.tools.some(path => path === activePath))
+        if (category) setProjectGroupsOpen(current => ({...current, [category.id]: true}))
         if (activePath === "projects" || activePath === "project-detail") setProjectsOpen(true)
     }, [activePath])
 
     const accessDenied = membershipError && "status" in membershipError &&
         (membershipError.status === 403 || membershipError.status === 404)
+    useLayoutEffect(() => {
+        const column = mainColumn.current
+        if (!column) return
+        const measure = () => setContentWidth(column.clientWidth)
+        measure()
+        const observer = new ResizeObserver(measure)
+        observer.observe(column)
+        return () => observer.disconnect()
+    }, [organization?.id, areOrganizationsLoading, areMembersLoading, accessDenied])
     if (isPersistedOrganization && accessDenied) return <Navigate replace to="/workshop?choose=1"/>
 
     if (isPersistedOrganization && (areOrganizationsLoading || areMembersLoading)) {
@@ -317,7 +337,12 @@ export function WorkshopLayout() {
     function selectProject(nextProjectId: string) {
         setProjectId(nextProjectId)
         setSelectedProjectId(user?.id, activeOrganizationId, nextProjectId)
-        if (location.pathname.endsWith("/project-wiki")) navigate(location.pathname, {replace: true})
+        const params = new URLSearchParams(location.search)
+        if (params.has("project") || location.pathname.endsWith("/project-wiki")) {
+            params.set("project", nextProjectId)
+            for (const key of ["page", "report", "todo", "todoProject", "task"]) params.delete(key)
+            navigate({pathname: location.pathname, search: params.toString()}, {replace: true})
+        }
     }
 
     const canInvite = isPersistedOrganization &&
@@ -328,7 +353,7 @@ export function WorkshopLayout() {
         setInviteLink("")
         setInviteExpiresAt("")
         setInviteError("")
-        setCopied(false)
+        setCopied(null)
 
         try {
             const invite = await createOrganizationInvite(activeOrganizationId).unwrap()
@@ -339,12 +364,12 @@ export function WorkshopLayout() {
         }
     }
 
-    async function copyInviteLink() {
+    async function copyInvite(kind: "code" | "link") {
         try {
-            await navigator.clipboard.writeText(inviteLink)
-            setCopied(true)
+            await navigator.clipboard.writeText(kind === "code" ? inviteCode : inviteLink)
+            setCopied(kind)
         } catch {
-            setInviteError("Copying was blocked by your browser. Select and copy the link manually.")
+            setInviteError("Copying was blocked by your browser. Select and copy the code manually.")
         }
     }
 
@@ -366,7 +391,7 @@ export function WorkshopLayout() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button className="workshop-org-switcher h-auto" type="button" variant="ghost">
-                                <span className="workshop-org-mark">{organization.initials}</span>
+                                <WorkspaceAvatar className="workshop-org-mark" name={organization.name} avatarUrl={organization.avatarUrl} kind="organization"/>
                                 <span><strong>{organization.name}</strong><small>Switch organization</small></span>
                                 <ChevronDown/>
                             </Button>
@@ -374,7 +399,7 @@ export function WorkshopLayout() {
                         <DropdownMenuContent align="start" className="workshop-org-menu">
                             {organizations.map((candidate) => (
                                 <DropdownMenuItem key={candidate.id} onSelect={() => openOrganization(candidate.id)}>
-                                    <span className="workshop-org-mark">{candidate.initials}</span>
+                                    <WorkspaceAvatar className="workshop-org-mark" name={candidate.name} avatarUrl={candidate.avatarUrl} kind="organization"/>
                                     <span>{candidate.name}</span>
                                     {candidate.id === activeOrganizationId && <Check className="ml-auto"/>}
                                 </DropdownMenuItem>
@@ -397,10 +422,9 @@ export function WorkshopLayout() {
 
                 <nav aria-label="Workshop navigation" className="workshop-nav">
                     <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={activePath} underConstruction/>
-                    <WorkshopNavigationGroup title="Project resources" items={projectResourcesNavigation} activePath={activePath}/>
-                    <ProjectToolsNavigation key={`${user?.id}:${activeOrganizationId}`} userId={user?.id ?? "current"}
-                                            organizationId={activeOrganizationId} expanded={projectToolsOpen}
-                                            onToggle={() => setProjectToolsOpen(open => !open)}/>
+                    {projectNavigationCategories.map(category => <ProjectToolsNavigation key={`${user?.id}:${activeOrganizationId}:${category.id}`} userId={user?.id ?? "current"}
+                        organizationId={activeOrganizationId} category={category} expanded={projectGroupsOpen[category.id] ?? true}
+                        onToggle={() => setProjectGroupsOpen(current => ({...current, [category.id]: !current[category.id]}))}/>)}
                     <div className={cn("workshop-nav-group workshop-projects-group", projectsOpen && "open")}>
                         <button
                             aria-expanded={projectsOpen}
@@ -513,12 +537,12 @@ export function WorkshopLayout() {
             </aside>
             </ResponsiveWorkshopPanel>
 
-            <section className="workshop-main-column">
+            <section ref={mainColumn} className="workshop-main-column">
                 <header className="workshop-topbar">
                     {compact && <Button variant="outline" size="icon" className="workshop-navigation-toggle" aria-label="Open workshop navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu aria-hidden="true"/></Button>}
-                    <div>
-                        <small>{organization.name}</small>
-                        <h1 className="workshop-construction-label">{pageTitles[activePath] ?? "Workshop"}{constructionPages.has(activePath) && <UnderConstructionIndicator/>}</h1>
+                    <div className="workshop-topbar-title">
+                        <small title={organization.name}>{organization.name}</small>
+                        <h1 className="workshop-construction-label" title={pageTitles[activePath] ?? "Workshop"}><span>{pageTitles[activePath] ?? "Workshop"}</span>{constructionPages.has(activePath) && <UnderConstructionIndicator/>}</h1>
                     </div>
                     <div className="workshop-topbar-actions">
                         <div className="workshop-project-select">
@@ -546,6 +570,7 @@ export function WorkshopLayout() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <WorkshopNotifications key={`${user?.id}:${activeOrganizationId}`} organizationId={activeOrganizationId} userId={user?.id ?? "current"} enabled={isPersistedOrganization && !!user?.id}/>
                         <ThemeToggle/>
                         {(compactMembers || !membersOpen) && (
                             <Button aria-label="Open members" className="workshop-icon-button"
@@ -556,8 +581,11 @@ export function WorkshopLayout() {
                     </div>
                 </header>
 
+                <WorkshopStorageNotice organizationId={activeOrganizationId} persisted={isPersistedOrganization}/>
                 <main className={cn("workshop-content", ["erd", "ui-editor", "sdlc"].includes(activePath) && "workshop-content-canvas")}>
-                    <Outlet key={activeOrganizationId} context={outletContext}/>
+                    <WorkshopContentWidthContext value={contentWidth}>
+                        <Outlet key={activeOrganizationId} context={outletContext}/>
+                    </WorkshopContentWidthContext>
                 </main>
             </section>
 
@@ -616,7 +644,7 @@ export function WorkshopLayout() {
                     <span className="workshop-modal-icon"><Link2/></span>
                     <DialogHeader>
                         <DialogTitle>Invite members</DialogTitle>
-                        <DialogDescription>Anyone with this link can join {organization.name}. It expires after 7
+                        <DialogDescription>Anyone with this code or its invite link can join {organization.name}. It expires after 7
                             days.</DialogDescription>
                     </DialogHeader>
                     <div className="workshop-invite-content">
@@ -625,12 +653,13 @@ export function WorkshopLayout() {
                                 link…</div>
                         ) : inviteLink ? (
                             <>
-                                <Label>Invite link</Label>
+                                <Label>Invite code</Label>
                                 <div className="workshop-invite-copy-row">
-                                    <Input aria-label="Invite link" readOnly value={inviteLink}/>
-                                    <Button onClick={copyInviteLink} type="button">{copied ? <Check/> :
-                                        <Link2/>}{copied ? "Copied" : "Copy link"}</Button>
+                                    <Input aria-label="Invite code" readOnly value={inviteCode}/>
+                                    <Button onClick={() => void copyInvite("code")} type="button">{copied === "code" ? <Check/> :
+                                        <Link2/>}{copied === "code" ? "Copied" : "Copy code"}</Button>
                                 </div>
+                                <Button variant="ghost" size="sm" onClick={() => void copyInvite("link")} type="button">{copied === "link" ? <Check/> : <Link2/>}{copied === "link" ? "Link copied" : "Copy invite link"}</Button>
                                 {inviteExpiresAt && <p>Expires {new Date(inviteExpiresAt).toLocaleString()}.</p>}
                             </>
                         ) : null}

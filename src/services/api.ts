@@ -67,7 +67,7 @@ const baseQueryWithReauthentication: BaseQueryFn<
     unknown,
     FetchBaseQueryError
 > = async (args, apiContext, extraOptions) => {
-    let result = await rawBaseQuery(args, apiContext, extraOptions)
+    let result = annotateRateLimit(await rawBaseQuery(args, apiContext, extraOptions))
 
     if (result.error?.status !== 401 || isAuthenticationRequest(args)) {
         return result
@@ -100,7 +100,7 @@ const baseQueryWithReauthentication: BaseQueryFn<
     const refreshedSession = await refreshRequest
 
     if (refreshedSession) {
-        result = await rawBaseQuery(args, apiContext, extraOptions)
+        result = annotateRateLimit(await rawBaseQuery(args, apiContext, extraOptions))
     }
 
     return result
@@ -109,6 +109,15 @@ const baseQueryWithReauthentication: BaseQueryFn<
 function isAuthenticationRequest(args: string | FetchArgs) {
     const url = typeof args === "string" ? args : args.url
     return url.startsWith("/auth/")
+}
+
+function annotateRateLimit(result: Awaited<ReturnType<typeof rawBaseQuery>>) {
+    if (result.error?.status === 429) {
+        const header = result.meta?.response?.headers.get("Retry-After")
+        const seconds = header ? Number(header) || Math.ceil((Date.parse(header) - Date.now()) / 1000) : 60
+        result.error.data = {...(typeof result.error.data === "object" && result.error.data !== null ? result.error.data : {}), retryAfterSeconds: Number.isFinite(seconds) ? Math.max(1, seconds) : 60}
+    }
+    return result
 }
 
 export const api = createApi({
@@ -210,6 +219,10 @@ export const api = createApi({
                 method: "PUT",
                 body: organization,
             }),
+            invalidatesTags: ["Organizations"],
+        }),
+        setOrganizationAvatar: builder.mutation<ApiOrganization, {organizationId: string; avatarUrl: string | null}>({
+            query: ({organizationId, avatarUrl}) => ({url: `/organizations/${organizationId}/avatar`, method: "PUT", body: {avatarUrl}}),
             invalidatesTags: ["Organizations"],
         }),
         createOrganizationInvite: builder.mutation<ApiOrganizationInvite, string>({
@@ -329,9 +342,9 @@ export const api = createApi({
                 {type: "Projects", id: organizationId},
             ],
         }),
-        promoteOrganizationOwner: builder.mutation<void, { organizationId: string; userId: string }>({
+        transferOrganizationOwnership: builder.mutation<void, { organizationId: string; userId: string }>({
             query: ({organizationId, userId}) => ({
-                url: `/organizations/${organizationId}/owners/${userId}`,
+                url: `/organizations/${organizationId}/ownership/${userId}`,
                 method: "PUT",
             }),
             invalidatesTags: (_result, _error, {organizationId}) => [
@@ -448,6 +461,10 @@ export const api = createApi({
             invalidatesTags: (_result, _error, {organizationId}) => [
                 {type: "Teams", id: organizationId},
             ],
+        }),
+        setTeamAvatar: builder.mutation<ApiTeam, {organizationId: string; teamId: string; avatarUrl: string | null}>({
+            query: ({organizationId, teamId, avatarUrl}) => ({url: `/organizations/${organizationId}/teams/${teamId}/avatar`, method: "PUT", body: {avatarUrl}}),
+            invalidatesTags: (_data, _error, {organizationId}) => [{type: "Teams", id: organizationId}],
         }),
         deleteTeam: builder.mutation<void, { organizationId: string; teamId: string }>({
             query: ({organizationId, teamId}) => ({
@@ -648,6 +665,7 @@ export const {
     useListOrganizationsQuery,
     useCreateOrganizationMutation,
     useUpdateOrganizationMutation,
+    useSetOrganizationAvatarMutation,
     useCreateOrganizationInviteMutation,
     useListOrganizationInvitesQuery,
     useRevokeOrganizationInviteMutation,
@@ -661,7 +679,7 @@ export const {
     useDeleteOrganizationRoleMutation,
     useMoveOrganizationRoleMutation,
     useAssignOrganizationRoleMutation,
-    usePromoteOrganizationOwnerMutation,
+    useTransferOrganizationOwnershipMutation,
     useLeaveOrganizationMutation,
     useDeleteOrganizationMutation,
     useGetOrganizationAppearanceQuery,
@@ -672,6 +690,7 @@ export const {
     useListTeamsQuery,
     useCreateTeamMutation,
     useUpdateTeamMutation,
+    useSetTeamAvatarMutation,
     useDeleteTeamMutation,
     useAddTeamMemberMutation,
     useRemoveTeamMemberMutation,

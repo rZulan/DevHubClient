@@ -13,15 +13,22 @@ const tools: Record<ProjectToolId, {label: string; underConstruction?: boolean}>
     "ui-editor": {label: "UI/UX Editor", underConstruction: true},
     sdlc: {label: "SDLC Roadmap", underConstruction: true},
     "state-machine": {label: "State Machine", underConstruction: true},
+    calendar: {label: "Calendar"},
+    "bug-reports": {label: "Bug Reports", underConstruction: true},
+    "project-wiki": {label: "Project Wiki", underConstruction: true},
 }
 
-export function ProjectToolsNavigation({userId, organizationId, expanded, onToggle}: {
-    userId: string; organizationId: string; expanded: boolean; onToggle: () => void
+export function ProjectToolsNavigation({userId, organizationId, expanded, onToggle, category}: {
+    userId: string; organizationId: string; expanded: boolean; onToggle: () => void;
+    category?: {id: string; title: string; tools: readonly ProjectToolId[]}
 }) {
-    const storageKey = `devhub.project-tools:${userId}:${organizationId}`
+    const legacyKey = `devhub.project-tools:${userId}:${organizationId}`
+    const storageKey = category ? `${legacyKey}:${category.id}` : legacyKey
+    const title = category?.title ?? "Project tools"
+    const defaults = () => normalizeToolPreferences(null, category?.tools)
     const [preferences, setPreferences] = useState<ToolPreferences>(() => {
-        try { return normalizeToolPreferences(JSON.parse(localStorage.getItem(storageKey) ?? "null")) }
-        catch { return normalizeToolPreferences(null) }
+        try { return normalizeToolPreferences(JSON.parse(localStorage.getItem(storageKey) ?? localStorage.getItem(legacyKey) ?? "null"), category?.tools) }
+        catch { return defaults() }
     })
     const [menuOpen, setMenuOpen] = useState(false)
     const [storageError, setStorageError] = useState(false)
@@ -82,16 +89,16 @@ export function ProjectToolsNavigation({userId, organizationId, expanded, onTogg
                 onContextMenu={event => {event.preventDefault(); setMenuOpen(true)}}>
         <div className="project-tools-heading">
             <button aria-expanded={expanded} className="workshop-nav-group-trigger" onClick={onToggle} type="button">
-                <span>Project tools</span><ChevronRight className="workshop-nav-chevron"/>
+                <span>{title}</span><ChevronRight className="workshop-nav-chevron"/>
             </button>
             <Popover.Root open={menuOpen} onOpenChange={changeMenuOpen}>
                 <Popover.Trigger asChild>
-                    <button className="project-tools-settings" aria-label="Project tools settings" title="Show, hide and arrange tools" type="button"><Settings2/></button>
+                    <button className="project-tools-settings" aria-label={`${title} settings`} title="Show, hide and arrange pages" type="button"><Settings2/></button>
                 </Popover.Trigger>
-                <Popover.Portal><Popover.Content aria-label="Project tools settings" side="right" align="start" sideOffset={10} className="project-tools-menu z-50 rounded-lg border bg-popover text-popover-foreground shadow-xl"
+                <Popover.Portal><Popover.Content aria-label={`${title} settings`} side="right" align="start" sideOffset={10} className="project-tools-menu z-50 rounded-lg border bg-popover text-popover-foreground shadow-xl"
                     onEscapeKeyDown={event => {if (gesture.current || keyboardDrag) {event.preventDefault(); cancelDrag(); setAnnouncement("Arrangement cancelled.")}}}>
-                    <strong>Project tools</strong><p>Choose your tools. Drag handles to arrange them.</p>
-                    <p className="sr-only" id={helpId}>Press Space to pick up a tool, use arrow keys to move it, then Space to drop. Escape cancels.</p>
+                    <strong>{title}</strong><p>Choose your pages. Drag handles to arrange them.</p>
+                    <p className="sr-only" id={helpId}>Press Space to pick up a page, use arrow keys to move it, then Space to drop. Escape cancels.</p>
                     <div className="project-tools-sort-list" ref={list} onPointerMove={drag} onPointerUp={drop} onPointerCancel={cancelDrag} onLostPointerCapture={cancelDrag}>
                     {displayed.order.map((id, index) => {
                         const {label} = tools[id]
@@ -114,7 +121,7 @@ export function ProjectToolsNavigation({userId, organizationId, expanded, onTogg
                     {pointerDrag && <div className="project-tool-drag-preview" aria-hidden="true" style={{top: pointerDrag.y - 20}}><GripVertical/><span>{tools[pointerDrag.id].label}</span></div>}
                     </div>
                     <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
-                    <button className="project-tools-reset" type="button" onClick={() => update(normalizeToolPreferences(null))}>Restore default order and visibility</button>
+                    <button className="project-tools-reset" type="button" onClick={() => update(defaults())}>Restore default order and visibility</button>
                     {storageError && <p role="alert">Settings apply for this session. Browser storage is unavailable.</p>}
                 </Popover.Content></Popover.Portal>
             </Popover.Root>
@@ -124,7 +131,7 @@ export function ProjectToolsNavigation({userId, organizationId, expanded, onTogg
                 const {label} = tools[id]
                 return <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")} key={id} to={id}><span className="workshop-construction-label">{label}{tools[id].underConstruction && <UnderConstructionIndicator/>}</span></NavLink>
             })}
-            {preferences.hidden.length === preferences.order.length && <button className="project-tools-reset" type="button" onClick={() => setMenuOpen(true)}>Choose tools…</button>}
+            {preferences.hidden.length === preferences.order.length && <button className="project-tools-reset" type="button" onClick={() => setMenuOpen(true)}>Choose pages…</button>}
         </div>
     </div>
 }

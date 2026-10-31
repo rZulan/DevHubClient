@@ -22,6 +22,9 @@ import {TodoBoardSettings} from "@/features/workshop/todo-board-settings"
 import {TodoBoardProgress} from "@/features/workshop/todo-board-progress"
 import {TodoTaskCard} from "@/features/workshop/todo-task-card"
 import {TodoTaskEditDialog, TodoTaskDeleteDialog} from "@/features/workshop/todo-task-dialogs"
+import {TodoDatesDialog} from "@/features/workshop/todo-dates-dialog"
+import {TodoDateFields} from "@/features/workshop/todo-dates"
+import {readTodoDates, todoDateError, todoDateLabel} from "@/features/workshop/todo-schedule"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {
     defaultTodoColumns,
@@ -29,6 +32,8 @@ import {
     type Todo,
     type TodoTask,
     type TodoTaskDetails,
+    type TodoDates,
+    useUpdateTodoDatesMutation,
     useUpdateTodoTaskMutation,
     useDeleteTodoTaskMutation,
     useAssignTodoTaskMutation,
@@ -68,7 +73,7 @@ function TodoTargetDate({todo, prefix = ""}: { todo: Todo; prefix?: string }) {
 
     return <span className="workshop-todo-date" data-status={status} title={description}>
     <CalendarDays aria-hidden="true"/>
-        {todo.targetDate ? `${prefix}${formatDate(todo.targetDate)}` : "No target date"}
+        {todo.targetDate ? todo.startDate ? todoDateLabel(todo) : `${prefix}${formatDate(todo.targetDate)}` : "No target date"}
         {description && <span className="sr-only"> — {description}</span>}
   </span>
 }
@@ -119,6 +124,14 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
     const detail = useGetTodoQuery({...scope, todoId: selectedId ?? ""}, {skip: !selectedId})
     const todos = [...new Map(list.currentData?.pages.flatMap(page => page.items).map(todo => [todo.id, todo])).values()]
     const selected = detail.currentData
+    const linkedTask = params.get("task")
+    const linkedTaskExists = selected?.tasks.some(task => task.id === linkedTask) ?? false
+    useEffect(() => {
+        if (!linkedTask || !linkedTaskExists) return
+        const card = document.getElementById(`todo-task-${linkedTask}`)
+        card?.scrollIntoView({block: "center", inline: "center"})
+        card?.focus({preventScroll: true})
+    }, [linkedTask, linkedTaskExists])
     const columns = selected?.columns ?? defaultTodoColumns
     const {isFetching, isError, refetch} = selectedId ? detail : list
     const loadMoreRef = useRef<HTMLDivElement>(null)
@@ -142,6 +155,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
     const [assignTask, {isLoading: assigningTask}] = useAssignTodoTaskMutation()
     const [updateTask, {isLoading: updatingTask}] = useUpdateTodoTaskMutation()
     const [deleteTask, {isLoading: deletingTask}] = useDeleteTodoTaskMutation()
+    const [updateDates, {isLoading: updatingDates}] = useUpdateTodoDatesMutation()
+    const [dating, setDating] = useState<Todo | null>(null)
     const [editing, setEditing] = useState<{task: TodoTask; boardRevision: number} | null>(null)
     const [deleting, setDeleting] = useState<{task: TodoTask; boardRevision: number} | null>(null)
     const members = [...organization.members].sort((a, b) => a.name.localeCompare(b.name))
@@ -203,7 +218,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
 
     const saving = useRef(false)
     const canManage = hasWorkshopPermission(organization, userId ?? "current", "Manage tasks")
-    const busy = creatingTodo || creatingTask || movingTask || assigningTask || updatingTask || deletingTask
+    const busy = creatingTodo || creatingTask || movingTask || assigningTask || updatingTask || deletingTask || updatingDates
 
     function openTodo(id: string | null) {
         setError("")
@@ -225,6 +240,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         if (!canManage || saving.current) return
         const form = new FormData(event.currentTarget)
         const name = String(form.get("name") ?? "").trim()
+        const dates = readTodoDates(form), invalid = todoDateError(dates.startDate, dates.targetDate)
+        if (invalid) {setError(invalid); return}
         if (!name) {
             setError("Enter a TODO name.");
             return
@@ -236,7 +253,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                 ...scope,
                 name,
                 description: String(form.get("description") ?? "").trim(),
-                targetDate: String(form.get("targetDate") ?? "") || null
+                ...dates
             }).unwrap()
             setCreating(false)
             openTodo(todo.id)
@@ -252,6 +269,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         if (!selected || !addingTo || !canManage || saving.current) return
         const form = new FormData(event.currentTarget)
         const title = String(form.get("title") ?? "").trim()
+        const dates = readTodoDates(form), invalid = todoDateError(dates.startDate, dates.targetDate)
+        if (invalid) {setError(invalid); return}
         if (!title) {
             setError("Enter a task title.");
             return
@@ -265,7 +284,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                 title,
                 description: String(form.get("description") ?? "").trim(),
                 status: addingTo,
-                assigneeIds: draftAssignees
+                assigneeIds: draftAssignees,
+                ...dates
             }).unwrap()
             setAddingTo(null)
         } catch {
@@ -310,6 +330,13 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         finally {saving.current = false}
     }
 
+    async function saveDates(dates: TodoDates) {
+        if (!dating || !canManage || saving.current) throw new Error("TODO unavailable")
+        saving.current = true
+        try {await updateDates({...scope, todoId: dating.id, boardRevision: dating.boardRevision, ...dates}).unwrap()}
+        finally {saving.current = false}
+    }
+
     async function removeTask() {
         if (!deleting || !canManage || saving.current) throw new Error("Task unavailable")
         saving.current = true
@@ -321,7 +348,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         if (!selected || !canManage || saving.current) return
         saving.current = true; setError("")
         try {await createTask({...scope, todoId: selected.id, title: `${task.title.slice(0, 145)} copy`, description: task.description, status: task.status,
-            assigneeIds: (task.assigneeIds ?? []).filter(id => members.some(member => member.id === id))}).unwrap()}
+            assigneeIds: (task.assigneeIds ?? []).filter(id => members.some(member => member.id === id)), startDate: task.startDate ?? null, targetDate: task.targetDate ?? null}).unwrap()}
         catch {setError("The task could not be duplicated. Please try again.")}
         finally {saving.current = false}
     }
@@ -334,10 +361,10 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                         <Button variant="ghost" onClick={() => openTodo(null)}><ArrowLeft/> All TODOs</Button>}
                     <h2>{selected?.name ?? (selectedId ? "TODO board" : "TODOs")}</h2>
                     {selected?.description && <p>{selected.description}</p>}
-                    {selected?.targetDate && <TodoTargetDate todo={selected} prefix="Final target: "/>}
+                    {selected?.targetDate && <TodoTargetDate todo={selected} prefix="Target: "/>}
                 </div>
                 {canManage && !isError && (!selectedId || selected) &&
-                    <div className="workshop-todo-actions">{selected && <Button variant="outline" disabled={busy}
+                    <div className="workshop-todo-actions">{selected && <Button variant="outline" disabled={busy} onClick={() => setDating(selected)}><CalendarDays/>Edit dates</Button>}{selected && <Button variant="outline" disabled={busy}
                                                                                 onClick={() => setCustomizing(true)}><Settings2/> Customize
                         board</Button>}<Button className="workshop-page-action" disabled={busy} onClick={() => {
                         setError("");
@@ -450,6 +477,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
             {deleting && <TodoTaskDeleteDialog key={deleting.task.id} task={deleting.task} disabled={!canManage || busy}
                 onClose={() => setDeleting(null)} onDelete={removeTask}/>}
 
+            {dating && <TodoDatesDialog key={dating.id} todo={dating} disabled={!canManage || busy} onSave={saveDates} onClose={() => setDating(null)}/>}
             <Dialog open={creating || addingTo !== null} onOpenChange={open => {
                 if (!open && !busy) {
                     setCreating(false);
@@ -468,8 +496,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                         <Label>Description <span>Optional</span><Textarea name="description" maxLength={2000}
                                                                           placeholder="Add useful context for the team"
                                                                           rows={3}/></Label>
-                        {creating && <Label>Final target date <span>Optional</span><Input name="targetDate"
-                                                                                          type="date"/></Label>}
+                        <TodoDateFields key={creating ? "todo-dates" : "task-dates"}/>
                         {!creating && <div className="grid gap-2"><Label>Assignees <span>Optional</span></Label>
                             <TodoAssignees ids={draftAssignees} members={members} editable disabled={busy}
                                            taskTitle="new task"
