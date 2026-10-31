@@ -41,3 +41,4 @@ Thumbs.db
 # Shared, non-secret environment profiles
 !.env.development
 !.env.production
+/DEVICE_SETUP.md
