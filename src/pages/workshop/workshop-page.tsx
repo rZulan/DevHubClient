@@ -57,10 +57,10 @@ export function WorkshopPage() {
             <header className="workshop-entry-header">
                 <Link className="workshop-entry-brand" onClick={clearWorkshopResumePath} to="/">
                     <BrandMark/>
-                    <span>DevHub <b>Workshop</b></span>
+                    <span>Zevont <b>Workshop</b></span>
                 </Link>
                 <div className="workshop-entry-header-actions">
-                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft/>Back to DevHub</Link>
+                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft/>Back to Zevont</Link>
                     <ThemeToggle/>
                 </div>
             </header>

@@ -862,7 +862,7 @@
         font-size: .75rem;
     }
 
-    .workshop-org-switcher svg {
+    .workshop-org-switcher > svg {
         width: .8rem;
         margin-left: auto;
         color: #64748b;
@@ -5501,6 +5501,7 @@
         line-height: 1.1;
     }
 
+
     .workshop-dashboard-heading h2 strong {
         color: #22c55e;
         font-weight: inherit;
@@ -7814,7 +7815,7 @@
 
     .workshop-nav > p,
     .workshop-org-switcher small,
-    .workshop-org-switcher svg,
+    .workshop-org-switcher > svg,
     .workshop-sidebar-footer > a,
     .workshop-topbar > div:first-child small,
     .workshop-project-select > span {
@@ -10318,6 +10319,15 @@
 }
 
 .workshop-notes-page { display: flex; flex-direction: column; gap: 28px; }
+/* Use one theme-aware paper treatment for cards, dialogs, and picker swatches. */
+:is(.workshop-sticky-note, .notes-editor-paper, .note-color-picker button, .note-custom-color-swatch) {
+    --note-color: var(--note-base-color);
+    --note-ink: var(--note-light-ink);
+}
+.dark :is(.workshop-sticky-note, .notes-editor-paper, .note-color-picker button, .note-custom-color-swatch) {
+    --note-color: var(--note-dark-color);
+    --note-ink: var(--note-dark-ink);
+}
 .notes-board-status, .notes-board-status > span { display: flex; align-items: center; gap: 8px; }
 .notes-board-status svg { width: 13px; height: 13px; }
 .workshop-notes-grid, .notes-board-loading { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 18px; }
@@ -10385,13 +10395,15 @@
 .note-color-picker { margin: 20px 0 24px; }
 .note-color-picker legend { margin-bottom: 10px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
 .note-color-picker > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.note-color-picker button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #0000001a; border-radius: 50%; cursor: pointer; }
+.note-color-picker button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid color-mix(in srgb, var(--note-ink) 20%, transparent); border-radius: 50%; background: var(--note-color); color: var(--note-ink); cursor: pointer; }
 .note-color-picker button[aria-pressed="true"] { outline: 2px solid var(--foreground); outline-offset: 3px; }
 .note-color-picker button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .note-color-picker button svg { width: 16px; height: 16px; }
 .note-color-picker:disabled { opacity: .6; }
 .note-custom-color { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted-foreground); }
-.note-custom-color input { width: 32px; height: 32px; padding: 2px; border: 1px solid var(--border); border-radius: 50%; background: var(--card); cursor: pointer; }
+.note-custom-color-swatch { position: relative; display: block; width: 32px; height: 32px; border: 1px solid color-mix(in srgb, var(--note-ink) 20%, transparent); border-radius: 50%; background: var(--note-color); }
+.note-custom-color-swatch:focus-within { outline: 2px solid var(--primary); outline-offset: 3px; }
+.note-custom-color input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .notes-editor-footer { margin-top: 20px; }
 .notes-delete-button { margin-right: auto; color: var(--destructive); }
 .notes-editor-mode { display: flex; gap: 4px; margin-bottom: 12px; }
@@ -11845,6 +11857,8 @@
     .tool-layer-list small { margin-left: auto; color: var(--muted-foreground); }
     .tool-canvas.workshop-ideation { flex: 1; min-width: 0; min-height: 0; width: auto; height: auto; outline: none; }
     .tool-world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+    .canvas-palette-active { box-shadow: inset 0 0 0 2px var(--primary); }
+    .canvas-palette-hint { position: absolute; top: 72px; left: 50%; transform: translateX(-50%); z-index: 15; max-width: calc(100% - 32px); padding: 8px 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 6px 24px #0002; font-size: 12px; pointer-events: none; }
     .tool-node { position: absolute; touch-action: none; cursor: move; }
     .tool-node.locked { cursor: default; }
     .tool-node.selected { outline: 2px solid #a78bfa; outline-offset: 3px; }
@@ -12175,7 +12189,25 @@
 /* Responsive workshop: retain the desktop workspace, open panels on demand on smaller devices. */
 .workshop-shell { height: 100dvh; min-height: 0; }
 .workshop-sidebar { min-height: 0; }
+.workshop-projects-heading { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.workshop-projects-heading .workshop-projects-link { flex: 1; min-width: 0; width: auto; }
+.workshop-projects-toggle { display: grid; place-items: center; flex-shrink: 0; width: 32px; min-height: 36px; border: 0; border-radius: .5rem; background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.workshop-projects-toggle:hover { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
+.workshop-projects-toggle > .workshop-nav-chevron { width: .75rem; height: .75rem; margin-left: 0; }
+.workshop-projects-link:focus-visible, .workshop-projects-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.workshop-drawer .workshop-projects-toggle { width: 44px; min-height: 44px; }
 .workshop-nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent; }
+.workshop-dashboard-nav-row { position: relative; min-width: 0; }
+.workshop-nav .workshop-dashboard-nav-row > .workshop-nav-link { padding-right: 70px; }
+.workshop-dashboard-nav-switch { position: absolute; top: 50%; right: 6px; display: grid; grid-template-columns: 1fr 1fr; place-items: center; width: 56px; height: 28px; padding: 2px; transform: translateY(-50%); border: 1px solid var(--sidebar-border); border-radius: 999px; background: var(--sidebar); color: var(--muted-foreground); cursor: pointer; }
+.workshop-dashboard-nav-switch > svg { position: relative; z-index: 1; width: 13px; height: 13px; }
+.workshop-dashboard-switch-thumb { position: absolute; top: 2px; left: 2px; width: 24px; height: 22px; border: 1px solid var(--sidebar-border); border-radius: 999px; background: var(--sidebar-accent); box-shadow: 0 1px 3px #00000020; transition: transform 140ms ease; }
+.workshop-dashboard-nav-switch[data-view="personal"] > .workshop-dashboard-switch-thumb { transform: translateX(26px); }
+.workshop-dashboard-nav-switch[data-view="organization"] > .dashboard-org-icon, .workshop-dashboard-nav-switch[data-view="personal"] > .dashboard-personal-icon { color: var(--sidebar-accent-foreground); }
+.workshop-dashboard-nav-switch:hover:not(:disabled) { border-color: var(--muted-foreground); }
+.workshop-dashboard-nav-switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.workshop-dashboard-nav-switch:disabled { opacity: .4; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .workshop-dashboard-switch-thumb { transition: none; } }
 .workshop-sidebar-footer { flex-shrink: 0; }
 .workshop-drawer[data-slot="dialog-content"] {
     top: 0; bottom: 0; left: 0; width: min(340px, calc(100vw - 28px)); max-width: none;

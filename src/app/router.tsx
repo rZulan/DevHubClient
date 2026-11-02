@@ -15,6 +15,7 @@ export const router = createBrowserRouter([
         loader: rootLoader,
         HydrateFallback: RouterFallback,
         children: [
+            {path: "github-connected", lazy: async () => ({Component: (await import("@/pages/general/github-connected-page")).GitHubConnectedPage})},
             {
                 path: "b/:token",
                 lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
@@ -124,8 +125,8 @@ export const router = createBrowserRouter([
                                         path: "calendar",
                                         lazy: async () => ({Component: (await import("@/pages/workshop/workshop-calendar-page")).WorkshopCalendarPage}),
                                     },
-                                    // Archived Playground links lead to the active Notes tool.
-                                    {path: "ideation", loader: () => redirect("../notes")},
+                                    // Archived Playground links lead to the universal UML directory.
+                                    {path: "ideation", loader: () => redirect("../uml")},
                                     {
                                         path: "erd",
                                         lazy: async () => ({
@@ -151,10 +152,8 @@ export const router = createBrowserRouter([
                                         }),
                                     },
                                     {
-                                        path: "state-machine",
-                                        lazy: async () => ({
-                                            Component: (await import("@/pages/workshop/workshop-state-machine-page")).WorkshopStateMachinePage,
-                                        }),
+                                        path: "uml",
+                                        lazy: async () => ({Component: (await import("@/pages/workshop/workshop-uml-library-page")).WorkshopUmlLibraryPage}),
                                     },
                                     {
                                         path: "projects",

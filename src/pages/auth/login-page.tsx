@@ -83,7 +83,7 @@ export function LoginPage() {
                         Log in
                     </Button>
                     <p className="text-sm text-muted-foreground">
-                        New to DevHub?{" "}
+                        New to Zevont?{" "}
                         <Link className="font-medium text-foreground underline underline-offset-4"
                               to={`/register${location.search}`}>
                             Create an account
@@ -102,15 +102,15 @@ function getOAuthErrorMessage(search: string) {
         case "Authentication.ExistingAccountMustBeLinked":
             return "An account already uses this email. Log in with your password, then connect this provider from Account settings."
         case "Authentication.ExternalAccountAlreadyLinked":
-            return "This provider account is already linked to another DevHub account."
+            return "This provider account is already linked to another Zevont account."
         case "provider_rejected":
             return "The provider canceled or rejected the sign-in request."
         case "verified_email_required":
-            return "DevHub requires a verified email address from the provider."
+            return "Zevont requires a verified email address from the provider."
         case "external_authentication_failed":
             return "The provider sign-in could not be completed. Please try again."
         case "linking_session_expired":
-            return "Your DevHub session expired while linking the provider. Log in and try again."
+            return "Your Zevont session expired while linking the provider. Log in and try again."
         case null:
             return null
         default:

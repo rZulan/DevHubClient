@@ -27,6 +27,7 @@ import type {
     DashboardWidget,
     MemberAppearance,
     OrganizationDashboard,
+    PersonalDashboard,
     SaveColorSchemeInput,
     SaveOrganizationRoleInput,
     SaveProjectInput,
@@ -135,6 +136,7 @@ export const api = createApi({
         "Chats",
         "ChatMessages",
         "OrganizationDashboard",
+        "PersonalDashboard",
         "OrganizationAppearance",
     ],
     endpoints: (builder) => ({
@@ -549,6 +551,20 @@ export const api = createApi({
                 {type: "Chats", id: organizationId},
             ],
         }),
+        getPersonalDashboard: builder.query<PersonalDashboard, {organizationId: string; userId: string}>({
+            query: ({organizationId}) => `/organizations/${organizationId}/dashboard/personal`,
+            providesTags: (_result, _error, {organizationId, userId}) => [
+                {type: "PersonalDashboard", id: `${organizationId}:${userId}`},
+            ],
+        }),
+        savePersonalDashboard: builder.mutation<PersonalDashboard, {organizationId: string; userId: string; widgets: DashboardWidget[]}>({
+            query: ({organizationId, widgets}) => ({
+                url: `/organizations/${organizationId}/dashboard/personal`, method: "PUT", body: {widgets},
+            }),
+            invalidatesTags: (_result, _error, {organizationId, userId}) => [
+                {type: "PersonalDashboard", id: `${organizationId}:${userId}`},
+            ],
+        }),
         getOrganizationDashboard: builder.query<OrganizationDashboard, string>({
             query: (organizationId) => `/organizations/${organizationId}/dashboard`,
             providesTags: (_result, _error, organizationId) => [
@@ -707,5 +723,7 @@ export const {
     useRemoveChatMemberMutation,
     useSetChatAdminMutation,
     useGetOrganizationDashboardQuery,
+    useGetPersonalDashboardQuery,
+    useSavePersonalDashboardMutation,
     usePublishOrganizationDashboardMutation,
 } = api

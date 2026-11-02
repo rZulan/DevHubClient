@@ -1,8 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {bugFileError, bugFileLimits, bugFormData, bugStatuses, bugPriorities} from '../src/features/workshop/bug-reports.ts'
+import {bugError, bugFileError, bugFileLimits, bugFormData, bugStatuses, bugPriorities} from '../src/features/workshop/bug-reports.ts'
 import {grantsWorkshopPermission} from '../src/features/workshop/workshop-permissions.ts'
+
+test('field validation explains the specific failure before the generic detail', () => {
+    assert.equal(bugError({data: {detail: 'One or more request fields are invalid.', errors: {Email: ['Enter a valid email.']}}}), 'Enter a valid email.')
+    assert.equal(bugError({data: {detail: 'The public link is disabled.'}}), 'The public link is disabled.')
+})
 
 test('attachment limits handle file count, individual and combined sizes, types and empty files', () => {
     const file = {name: 'screenshot.PNG', size: 100}

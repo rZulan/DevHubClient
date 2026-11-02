@@ -65,7 +65,8 @@ export const shapePresets: ShapePreset[] = [
     })),
 ]
 
-export function shapeLabel(kind: ShapeKind) {
+export function shapeLabel(kind: ShapeKind, umlSymbol?: string) {
+    if (umlSymbol) return `UML ${umlSymbol.replaceAll("-", " ")}`
     if (kind === "text") return "Text"
     if (kind === "note") return "Note"
     return shapePresets.find(preset => preset.kind === kind)?.label ?? "Shape"

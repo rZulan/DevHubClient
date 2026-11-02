@@ -1,3 +1,4 @@
+import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useCallback, useMemo, useRef, useState, type SetStateAction} from "react"
 import {useOutletContext} from "react-router-dom"
@@ -7,6 +8,7 @@ import {Button} from "@/components/ui/button"
 import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {ToolCanvas} from "@/features/workshop/tool-canvas"
+import {canvasViewKey} from "@/features/workshop/canvas-view-storage"
 import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {erdDialects, erdDialectLabels, downloadFile, erdSql, newField, removeField, removeTable, tableHeight, cardinalityForEnds, relationshipEnds, type ErdDocument, type ErdDialect, type ErdField, type ErdRelationship, type ErdTable} from "@/features/workshop/tool-documents"
@@ -36,7 +38,7 @@ import "@/features/workshop/erd-table-card.css"
 export function WorkshopErdPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    if (!project) return <section className="workshop-empty-panel"><Database/><h3>No project selected</h3><p>Select or create a project to build its data model.</p></section>
+    if (!project) return <WorkshopNoProject icon={Database}/>
     return <ErdEditor key={`${userId}:${organization.id}:${project.id}`}/>
 }
 function ErdEditor() {
@@ -219,7 +221,8 @@ function ErdEditor() {
                 setDocument(next); selectTables(selectedIds.filter(id => next.tables.some(table => table.id === id))); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
                 if (next.tables.some(table => !renderIndex.tables.has(table.id))) setArrangement(value => value + 1)
             }}/>
-            <ToolCanvas nodes={canvasNodes} cullNodes deferMoves selectedIds={selectedIds} onSelect={selectTables} {...editor} onDelete={deleteSelected} contentBounds={connectionBounds} fitViewKey={arrangement}
+            <ToolCanvas viewStorageKey={canvasViewKey(userId, organization.id, project!.id, "erd")} nodes={canvasNodes} cullNodes deferMoves selectedIds={selectedIds} onSelect={selectTables} {...editor} onDelete={deleteSelected} contentBounds={connectionBounds} fitViewKey={arrangement}
+                emptyState={<WorkshopEmptyState className="workshop-empty-state-canvas pointer-events-none" icon={Database} title="No tables yet" description={canWrite ? "Add a table or import a schema from the toolbar to get started." : "Tables shared by your team will appear here."}/>}
                 onCopy={() => copyErdTables(document, selectedIds)} onPaste={pasteTables} onDuplicate={offset => {if (canEdit) pasteTables(copyErdTables(document, selectedIds), offset)}}
                 onConnect={document.relationships.length >= 2000 ? undefined : (fromId, toId) => {if (canEdit) setConnecting({fromId, toId})}}
                 onMove={positions => setDocument(current => {

@@ -25,13 +25,13 @@ const previewTodoColumns = [
 export function WorkshopScene({hero = false, preview = false, tool = "todos"}: {hero?: boolean, preview?: boolean, tool?: WorkshopTool}) {
     return <div className={`landing-workshop-scene ${hero ? "landing-workshop-hero" : ""} ${preview ? "landing-workshop-playing" : ""}`} data-tool={tool} aria-hidden="true">
         <div className="landing-app-window">
-            <div className="landing-window-bar"><span/><span/><span/><small>DevHub Workshop</small><LayoutGrid/></div>
+            <div className="landing-window-bar"><span/><span/><span/><small>Zevont Workshop</small><LayoutGrid/></div>
             <div className="landing-app-layout">
                 <div className="landing-app-sidebar"><strong><span>N</span>Northstar</strong><span><LayoutDashboard/>Dashboard</span><span><Users/>Teams</span><small>WEBSITE LAUNCH</small><span className={tool === "todos" ? "active" : ""}><ListTodo/>TODOs</span><span className={tool === "erd" ? "active" : ""}><Database/>ERD maker</span>{preview && <span className={tool === "notes" ? "active" : ""}><StickyNote/>Notes</span>}<div className="landing-app-members"><i>A</i><i>K</i><i>M</i></div></div>
                 <div className="landing-app-main"><div className="landing-app-heading"><span><small>{preview ? {todos: "01 / TODOs", erd: "02 / ERD MAKER", notes: "03 / NOTES"}[tool] : "PROJECT"}</small><strong>Website launch</strong></span><Plus/></div><div className="landing-tour-panel" key={tool}>{tool === "todos" ? <TodoBoardPreview playing={preview}/> : tool === "erd" ? <ErdBoardPreview/> : <NoteEditorPreview/>}</div></div>
             </div>
         </div>
-        {hero && <>{!preview && <div className="landing-floating-cursor"><MousePointer2/><span>Your team</span></div>}<div className="landing-floating-people">{[3, 8, 13].map(index => <img key={index} src={`/avatars/discovery/profile-${String(index).padStart(2, "0")}.png`} alt=""/>)}</div></>}
+        {hero && <>{!preview && <div className="landing-floating-cursor"><MousePointer2/></div>}<div className="landing-floating-people">{[3, 8, 13].map(index => <img key={index} src={`/avatars/discovery/profile-${String(index).padStart(2, "0")}.png`} alt=""/>)}</div></>}
     </div>
 }
 
@@ -68,7 +68,7 @@ function TodoBoardPreview({playing = false}: {playing?: boolean}) {
             <header><i/><strong>{column.name}</strong><small>{column.tasks.length}</small></header>
             {column.tasks.map((task, index) => <div className="landing-todo-card" key={task.title}>
                 <span>{task.label}</span><strong>{task.title}</strong><footer><i>{task.assignee}</i>{column.state === "done" ? <Check/> : <small>Today</small>}</footer>
-                {playing && column.state === "pending" && index === 0 && <div className="landing-task-cursor"><i/><MousePointer2/><span>Your team</span></div>}
+                {playing && column.state === "pending" && index === 0 && <div className="landing-task-cursor"><i/><MousePointer2/></div>}
             </div>)}
         </div>)}
     </div><div className="landing-todo-progress"><span>1 of 4 complete</span><div><i/></div></div></>

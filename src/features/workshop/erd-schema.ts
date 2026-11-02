@@ -111,7 +111,7 @@ export function erdSql(document: ErdDocument): string {
         }
         return `CREATE TABLE ${quote(table.name)} (\n${columns.join(",\n")}\n);`
     })
-    return `-- DevHub ERD · ${erdDialectLabels[dialect]}\n${dialect === "sqlite" ? "-- Enable foreign key enforcement on every SQLite connection.\nPRAGMA foreign_keys = ON;\n" : ""}\n${[...statements, ...deferred, ...indexes].join("\n\n")}`
+    return `-- Zevont ERD · ${erdDialectLabels[dialect]}\n${dialect === "sqlite" ? "-- Enable foreign key enforcement on every SQLite connection.\nPRAGMA foreign_keys = ON;\n" : ""}\n${[...statements, ...deferred, ...indexes].join("\n\n")}`
 }
 
 /** Replace the conceptual N:M edge with an editable physical junction and two FKs. */

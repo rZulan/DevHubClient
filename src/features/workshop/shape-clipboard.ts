@@ -1,5 +1,7 @@
 import {type ShapeKind, shapeKinds} from "./shape-catalog.ts"
 import {isShapeFont, type ShapeFont} from "./shape-fonts.ts"
+import {umlSymbolKinds, type UmlSymbol} from "./uml-catalog.ts"
+import {validUmlConnection, validUmlDetails, type UmlConnection, type UmlDetails} from "./uml-connection-types.ts"
 
 export {shapeFonts} from "./shape-fonts.ts"
 export const defaultTextStyle = {
@@ -42,6 +44,11 @@ export type RichTextRun = {
 }
 
 export type CanvasItem = {
+    umlSymbol?: UmlSymbol
+    connection?: UmlConnection
+    umlDetails?: UmlDetails
+    locked?: boolean
+    hidden?: boolean
     id: string
     kind: ShapeKind
     groupId?: string
@@ -94,7 +101,8 @@ export function decodeShapes(text: string): CanvasItem[] {
             && [item.x, item.y, item.width, item.height, item.rotation, item.cornerRadius, item.outlineWidth].every((value) => typeof value === "number" && Number.isFinite(value))
             && item.width >= 24 && item.height >= 24 && item.cornerRadius >= 0 && item.outlineWidth >= 1 && item.outlineWidth <= 20
             && [item.flipHorizontal, item.flipVertical].every((value) => typeof value === "boolean")
-            && shapeKinds.includes(item.kind) && (item.groupId === undefined || (typeof item.groupId === "string" && item.groupId.length > 0 && item.groupId.length <= 100))
+            && shapeKinds.includes(item.kind) && (item.umlSymbol === undefined || umlSymbolKinds.includes(item.umlSymbol)) && (item.groupId === undefined || (typeof item.groupId === "string" && item.groupId.length > 0 && item.groupId.length <= 100))
+            && (item.connection === undefined || validUmlConnection(item.connection)) && (item.umlDetails === undefined || validUmlDetails(item.umlDetails)) && (item.locked === undefined || typeof item.locked === "boolean") && (item.hidden === undefined || typeof item.hidden === "boolean")
             && ["fill", "outlined"].includes(item.appearance) && ["solid", "dashed", "dotted", "double", "none"].includes(item.outlineStyle)
             && typeof item.text === "string" && typeof item.noteHeader === "string" && typeof item.noteBody === "string"
             && item.text.length <= 100000 && item.noteHeader.length <= 10000 && item.noteBody.length <= 100000
@@ -181,7 +189,7 @@ function validNoteTextStyle(style: NoteTextStyle) {
 
 export function cloneShapes(items: CanvasItem[], offset: number, createId: () => string): CanvasItem[] {
     const groupIds = new Map<string, string>()
-    return items.map((item) => {
+    const copies = items.map((item) => {
         const copy = {...item, id: createId(), x: item.x + offset, y: item.y + offset}
         if (item.groupId) {
             copy.groupId = groupIds.get(item.groupId) ?? (() => {
@@ -192,4 +200,9 @@ export function cloneShapes(items: CanvasItem[], offset: number, createId: () =>
         }
         return copy
     })
+    const ids = new Map(items.map((item,index) => [item.id,copies[index].id]))
+    return copies.map(copy => !copy.connection ? copy : {...copy, connection: {...copy.connection,
+        start: "shapeId" in copy.connection.start ? {...copy.connection.start,shapeId:ids.get(copy.connection.start.shapeId) ?? copy.connection.start.shapeId} : {x:copy.connection.start.x+offset,y:copy.connection.start.y+offset},
+        end: "shapeId" in copy.connection.end ? {...copy.connection.end,shapeId:ids.get(copy.connection.end.shapeId) ?? copy.connection.end.shapeId} : {x:copy.connection.end.x+offset,y:copy.connection.end.y+offset},
+        bends: copy.connection.bends.map(point => ({x:point.x+offset,y:point.y+offset}))}})
 }

@@ -1,8 +1,10 @@
+import {UmlElementContent} from "./uml-element-content"
 import {ShapeGeometry} from "./shape-geometry"
 import {shapeLabel} from "../shape-catalog"
 import {Bold, Italic, Strikethrough, Underline,} from "lucide-react"
 import {
     type CSSProperties,
+    type ReactNode,
     type FocusEvent,
     type FormEvent,
     type KeyboardEvent,
@@ -31,6 +33,7 @@ import {
 import {shapeTextColor} from "./shape-presentation"
 
 type CanvasCardProps = {
+    children?: ReactNode
     selectionBox?: boolean
     showResizeHandles?: boolean
     canDrag: boolean
@@ -52,6 +55,7 @@ export type TextSelection = { itemId: string; part: TextPart; start: number; end
 export type TextStyleCommand = TextSelection & { id: number; changes: CharacterStyleChanges }
 
 export function CanvasCard({
+                               children,
                                selectionBox = false,
                                showResizeHandles = true,
                                canDrag,
@@ -375,7 +379,7 @@ export function CanvasCard({
         height: item.height,
         borderRadius: item.cornerRadius,
         border: 0,
-        background: (selectionBox || ["rectangle", "note", "entity", "text"].includes(item.kind)) && item.appearance === "fill" ? item.fillColor : "transparent",
+        background: (selectionBox || !item.umlSymbol && ["rectangle", "note", "entity", "text"].includes(item.kind)) && item.appearance === "fill" ? item.fillColor : "transparent",
         boxShadow: "none",
         zIndex: layer,
         transform: `rotate(${item.rotation}deg) scaleX(${item.flipHorizontal ? -1 : 1}) scaleY(${item.flipVertical ? -1 : 1})`,
@@ -383,12 +387,12 @@ export function CanvasCard({
     }
 
     return (
-        <section aria-label={selectionBox ? "Selection bounds" : shapeLabel(item.kind)}
+        <section aria-label={selectionBox ? "Selection bounds" : shapeLabel(item.kind,item.umlSymbol)}
                  aria-description={!selectionBox ? "Double-click text to edit" : undefined}
                  className={`workshop-diagram-node${selectionBox ? " workshop-group-bounds" : ""}${item.kind === "note" ? " workshop-note-shape" : ""}${editingPart ? " editing-text" : ""}`}
                  data-canvas-item-id={selectionBox ? undefined : item.id}
                  data-canvas-selection={selectionBox || undefined} data-shape="process"
-                 data-selected={selected && canDrag} {...dragHandlers} style={style} onDoubleClick={beginEditingAtPoint}
+                 data-selected={selected} {...dragHandlers} style={style} onDoubleClick={item.umlDetails ? undefined : beginEditingAtPoint}
                  onWheel={(event) => {
                      if (dragStart.current) event.stopPropagation()
                  }}>
@@ -421,7 +425,8 @@ export function CanvasCard({
                         type="button"
                     ><Icon/></button>)}
                 </div>}
-            {selectionBox || ["rectangle", "note", "entity", "text"].includes(item.kind) ?
+            {children}
+            {!selectionBox && item.umlSymbol ? <ShapeGeometry item={item}/> : selectionBox || ["rectangle", "note", "entity", "text"].includes(item.kind) ?
                 <span aria-hidden="true" className="workshop-shape-outline" style={{
                     borderColor: item.outlineColor,
                     borderWidth: item.outlineWidth,
@@ -440,7 +445,8 @@ export function CanvasCard({
                     <RichTextContent
                         runs={editingPart === "noteBody" ? editingInitialRuns.current : runsFor(item, "noteBody")}/></p>
             </div>}
-            {!selectionBox && item.kind !== "note" && (item.text || editingPart === "text") &&
+            {!selectionBox && item.umlDetails && <UmlElementContent item={item}/>}
+            {!selectionBox && !item.umlDetails && item.kind !== "note" && (item.text || editingPart === "text") &&
                 <div className="workshop-shape-text" style={{
                     textAlign: item.textAlign,
                     justifyContent: item.verticalAlign === "top" ? "flex-start" : item.verticalAlign === "bottom" ? "flex-end" : "center",

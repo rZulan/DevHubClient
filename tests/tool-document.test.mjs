@@ -11,10 +11,10 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/works
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
 }).outputText
 const document = {model: 'waterfall', currentPhase: 2, completed: false, notes: {implementation: 'saved'}}
-function harness({saved = {revision: 4, document}, draft, canWrite = true, persisted = true, loadError = false, storageError = false} = {}) {
+function harness({tool = 'sdlc', saved = {revision: 4, document}, draft, canWrite = true, persisted = true, loadError = false, storageError = false} = {}) {
     let index = 0, dirty = false, value, timerId = 0, notify, serverDocument = saved, now = Date.now()
     const slots = [], effects = [], timers = new Map(), storage = new Map(), saves = [], events = new Map()
-    const storageKey = 'devhub.tool-document:user:org:project:sdlc'
+    const storageKey = `devhub.tool-document:user:org:project:${tool}`
     if (draft) storage.set(storageKey, JSON.stringify(draft))
     const react = {
         useState(initial) {const i = index++; slots[i] ??= {value: initial}; return [slots[i].value, next => {slots[i].value = typeof next === 'function' ? next(slots[i].value) : next; dirty = true}]},
@@ -38,7 +38,7 @@ function harness({saved = {revision: 4, document}, draft, canWrite = true, persi
     }, localStorage: {getItem: key => storage.get(key) ?? null, setItem: (key, text) => {if (storageError) throw Error('blocked'); storage.set(key, text)}},
     window: {addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name)},
     Date: class extends Date {static now() {return now}}, setTimeout: fn => {timers.set(++timerId, fn); return timerId}, clearTimeout: id => timers.delete(id)})
-    function render() {index = 0; dirty = false; value = exports.useToolDocument({organizationId: 'org', projectId: 'project', tool: 'sdlc'}, 'user', canWrite, persisted)}
+    function render() {index = 0; dirty = false; value = exports.useToolDocument({organizationId: 'org', projectId: 'project', tool}, 'user', canWrite, persisted)}
     render(); const cleanup = effects[0]()
     return {get value() {if (dirty) render(); return value}, saves, storage, storageKey, events,
         async settle() {for (let i = 0; i < 10; i++) {await Promise.resolve(); if (dirty) render()}},

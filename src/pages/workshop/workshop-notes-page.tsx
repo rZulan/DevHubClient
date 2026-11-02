@@ -1,4 +1,5 @@
-import {useEffect, useRef, useState, type CSSProperties, type FormEvent} from "react"
+import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
+import {useEffect, useRef, useState, type FormEvent} from "react"
 import {useOutletContext} from "react-router-dom"
 import {Check, Download, Eye, LoaderCircle, Pencil, Plus, StickyNote as StickyNoteIcon, Trash2, X} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
@@ -9,8 +10,8 @@ import {createClientId} from "@/lib/create-client-id"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {downloadFile, type StickyNote} from "@/features/workshop/tool-documents"
-import {noteColors, noteTextColor} from "@/features/workshop/sticky-notes"
-import {NoteMarkdown, NoteMarkdownGuide} from "@/features/workshop/note-markdown"
+import {noteColors, noteStyle} from "@/features/workshop/sticky-notes"
+import {NoteMarkdown} from "@/features/workshop/note-markdown"
 import {NoteBodyEditor} from "@/features/workshop/note-body-editor"
 import {useNoteDrafts} from "@/features/workshop/use-note-drafts"
 import {noteDraftKey, type NoteDraft} from "@/features/workshop/note-drafts"
@@ -20,14 +21,10 @@ import {NotePreview} from "@/features/workshop/note-preview"
 import {beginNoteHover, endNoteHover, claimNoteHover, clearNoteHovers, type NotePeel} from "@/features/workshop/note-preview-peel"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 
-function noteStyle(color: string): CSSProperties {
-    return {"--note-color": color, "--note-ink": noteTextColor(color)} as CSSProperties
-}
-
 export function WorkshopNotesPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    if (!project) return <section className="workshop-empty-panel"><StickyNoteIcon/><h3>No project selected</h3><p>Select or create a project to start collecting notes.</p></section>
+    if (!project) return <WorkshopNoProject icon={StickyNoteIcon}/>
     return <NotesBoard key={`${userId}:${organization.id}:${project.id}`}/>
 }
 
@@ -45,6 +42,7 @@ function NotesBoard() {
     const previewSource = useRef<HTMLElement | null>(null)
     const previewPeel = useRef<NotePeel | null>(null)
     const [animatePreview, setAnimatePreview] = useState(false)
+    const resumableDrafts = recovery.drafts.filter(saved => saved.note.id !== draft?.id)
     useEffect(() => () => {clearNoteHovers(); previewPeel.current?.remove(); if (previewSource.current) delete previewSource.current.dataset.noteHoverActive}, [])
     const atLimit = document.notes.length >= 1000
     const statusText = status === "loading" ? "Loading notes…" : status === "load-error" ? "Could not load notes" : !canWrite ? "View only" : status === "saved" ? isPersistedOrganization ? "All changes saved" : "Saved in this browser" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved changes" : status === "conflict" ? "Save conflict" : "Save failed"
@@ -102,9 +100,9 @@ function NotesBoard() {
             <div><h2>Notes</h2><p className="notes-board-status"><span>{document.notes.length} {document.notes.length === 1 ? "note" : "notes"}</span><span aria-hidden="true">·</span><span role="status">{(status === "loading" || status === "saving") && <LoaderCircle className="animate-spin"/>}{statusText}</span></p></div>
             {canWrite && <Button disabled={!canEdit || atLimit} onClick={createNote}><Plus/>Create note</Button>}
         </section>
-        {canWrite && recovery.drafts.length > 0 && <section className="notes-drafts" aria-label="Note drafts">
+        {canWrite && resumableDrafts.length > 0 && <section className="notes-drafts" aria-label="Note drafts">
             <p>Drafts saved in this browser</p>
-            {recovery.drafts.map(saved => <div className="notes-draft-row" key={saved.note.id}>
+            {resumableDrafts.map(saved => <div className="notes-draft-row" key={saved.note.id}>
                 <span><strong>{saved.note.title.trim() || "Untitled note"}</strong><small>{saved.creating ? "New note draft" : "Unsaved edits"}</small></span>
                 <Button size="sm" variant="outline" onClick={() => resumeDraft(saved)}>Resume draft</Button>
                 <Button size="sm" variant="ghost" onClick={() => recovery.discard(saved.note.id)}>Discard draft</Button>
@@ -125,18 +123,18 @@ function NotesBoard() {
                     <div className={`sticky-note-body ${note.body ? "" : "empty"}`}>{note.body ? <NoteMarkdown body={note.body} compact/> : "No details yet."}</div>
                     <span className="sticky-note-footer"><time dateTime={note.updatedAt}>{new Date(note.updatedAt).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}</time></span>
                 </article>)}
-            </div> : <section className="workshop-empty-panel notes-empty-panel"><span className="notes-empty-icon"><StickyNoteIcon/></span><h3>A little space for your thoughts</h3><p>{canWrite ? "Capture meeting takeaways, reminders, and bright ideas. Give each note a color of its own." : "Notes shared by your team will appear here."}</p>{canWrite && <Button disabled={!canEdit} onClick={createNote}><Plus/>Create your first note</Button>}</section>)}
+            </div> : <WorkshopEmptyState icon={StickyNoteIcon} title="No notes yet" description={canWrite ? "Create a note to capture ideas, reminders, and meeting takeaways." : "Notes shared by your team will appear here."} action={canWrite && <Button disabled={!canEdit} onClick={createNote}><Plus/>Create note</Button>}/>)}
 
         {draft && mode === "read" && <NotePreview note={draft} source={previewSource.current} initialPeel={previewPeel.current} canEdit={canEdit} animateOpening={animatePreview} onEdit={canWrite ? () => setMode("write") : undefined} onClose={() => setDraft(null)}/>}
         <Dialog open={!!draft && mode !== "read"} onOpenChange={open => {if (!open) setDraft(null)}}>
-            <DialogContent className="notes-editor-dialog w-[calc(100%-2rem)] sm:max-w-xl lg:max-w-5xl" overlayClassName="notes-modal-overlay">
-                <DialogHeader><DialogTitle>{creating ? "Create note" : "Edit note"}</DialogTitle><DialogDescription>{project!.name} · Write in Markdown. Preview your formatting before saving.</DialogDescription></DialogHeader>
+            <DialogContent className="notes-editor-dialog w-[calc(100%-2rem)] sm:max-w-xl lg:max-w-5xl" overlayClassName="notes-modal-overlay" aria-describedby={undefined}>
+                <DialogHeader><DialogTitle>{creating ? "Create note" : "Edit note"}</DialogTitle></DialogHeader>
                 {draft && mode !== "read" && <form onSubmit={saveNote}>
                     <div className="notes-editor-mode" role="group" aria-label="Note editor mode">
                         <Button type="button" size="sm" variant={mode === "write" ? "secondary" : "ghost"} aria-pressed={mode === "write"} onClick={() => setMode("write")}><Pencil/>Write</Button>
                         <Button type="button" size="sm" variant={mode === "preview" ? "secondary" : "ghost"} aria-pressed={mode === "preview"} onClick={() => setMode("preview")}><Eye/>Preview</Button>
                     </div>
-                    <p className="notes-draft-status" role="status">{recovery.storageError ? "Draft recovery unavailable. Save your note to protect your writing." : recovery.drafts.some(item => item.note.id === draft.id) ? "Draft saved in this browser. You can close this editor and resume later." : "Your draft will be saved in this browser as you type."}</p>
+                    {recovery.storageError && <p className="notes-draft-status" role="alert">Draft recovery unavailable. Save your note to protect your writing.</p>}
                     <div className="notes-editor-paper" style={noteStyle(draft.color)}>
                         {mode === "write" ? <>
                             <div className="notes-editor-title">
@@ -146,10 +144,9 @@ function NotesBoard() {
                             <NoteBodyEditor body={draft.body} readOnly={!canEdit} onChange={body => updateDraft({...draft, body})}/>
                         </> : <div className="notes-editor-preview" role="region" aria-label="Markdown preview"><h3>{noteEmoji(draft) && <span className="note-emoji" aria-hidden="true">{noteEmoji(draft)}</span>}{draft.title || "Untitled note"}</h3>{draft.body ? <NoteMarkdown body={draft.body}/> : <p className="notes-reader-empty">Your formatted note will appear here.</p>}</div>}
                     </div>
-                    <NoteMarkdownGuide/>
                     {canWrite && <fieldset className="note-color-picker" disabled={!canEdit}><legend>Note color</legend><div>
-                        {noteColors.map(({name, color}) => <button type="button" key={color} style={{backgroundColor: color, color: noteTextColor(color)}} aria-label={`${name} note color`} aria-pressed={draft.color.toLowerCase() === color} title={name} onClick={() => updateDraft({...draft, color})}>{draft.color.toLowerCase() === color && <Check/>}</button>)}
-                        <label className="note-custom-color"><input type="color" aria-label="Custom note color" value={draft.color} onInput={event => updateDraft({...draft, color: event.currentTarget.value})}/><span>Custom</span></label>
+                        {noteColors.map(({name, color}) => <button type="button" key={color} style={noteStyle(color)} aria-label={`${name} note color`} aria-pressed={draft.color.toLowerCase() === color} title={name} onClick={() => updateDraft({...draft, color})}>{draft.color.toLowerCase() === color && <Check/>}</button>)}
+                        <label className="note-custom-color"><span className="note-custom-color-swatch" style={noteStyle(draft.color)}><input type="color" aria-label="Custom note color" value={draft.color} onInput={event => updateDraft({...draft, color: event.currentTarget.value})}/></span><span>Custom</span></label>
                     </div></fieldset>}
                     {canWrite && !canEdit && <p className="notes-editor-blocked">{status === "conflict" ? "Resolve the save conflict before editing this note. Your draft is still here." : "Editing is temporarily unavailable."}</p>}
                     <DialogFooter className="notes-editor-footer">

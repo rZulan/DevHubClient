@@ -1,10 +1,10 @@
-import {useCallback, useRef, useState, type CSSProperties} from "react"
+import {useCallback, useRef, useState} from "react"
 import {Pencil, X} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogTitle} from "@/components/ui/dialog"
 import {NoteMarkdown} from "./note-markdown"
 import {noteEmoji} from "./note-emojis"
-import {noteTextColor} from "./sticky-notes"
+import {noteStyle} from "./sticky-notes"
 import {claimNoteHover, createNotePeel, type NotePeel, type NotePreviewMotion} from "./note-preview-peel"
 import type {StickyNote} from "./tool-documents"
 import "./note-preview.css"
@@ -106,7 +106,7 @@ export function NotePreview({note, source, canEdit, animateOpening = true, initi
                 {onEdit && <Button type="button" disabled={!canEdit || isClosing} onClick={() => {editing.current = true; onEdit()}}><Pencil/>Edit note</Button>}
             </div>
             <div ref={attachPaper} className="notes-editor-paper notes-reader-paper note-preview-paper" data-closing={isClosing}
-                style={{"--note-color": note.color, "--note-ink": noteTextColor(note.color)} as CSSProperties}>
+                style={noteStyle(note.color)}>
                 <h3>{noteEmoji(note) && <span className="note-emoji" aria-hidden="true">{noteEmoji(note)}</span>}{note.title}</h3>
                 {note.body ? <NoteMarkdown body={note.body}/> : <p className="notes-reader-empty">No details yet.</p>}
             </div>

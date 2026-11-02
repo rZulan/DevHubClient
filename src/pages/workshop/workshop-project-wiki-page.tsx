@@ -1,3 +1,4 @@
+import {WorkshopNoProject, WorkshopEmptyPage, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from "react"
 import {Link, useLocation, useOutletContext, useSearchParams} from "react-router-dom"
 import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Plus, Search, Trash2} from "lucide-react"
@@ -28,8 +29,8 @@ export function WorkshopProjectWikiPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
     const [params] = useSearchParams(), requestedProject = params.get("project")
-    if (requestedProject && requestedProject !== project?.id) return <section className="workshop-empty-panel"><BookOpen/><h3>Project unavailable</h3><p>Select an accessible project to open its wiki.</p></section>
-    if (!project) return <section className="workshop-empty-panel"><BookOpen/><h3>No project selected</h3><p>Select or create a project to start its wiki.</p></section>
+    if (requestedProject && requestedProject !== project?.id) return <WorkshopEmptyPage icon={BookOpen} title="Project unavailable" description="Select an accessible project to open its wiki."/>
+    if (!project) return <WorkshopNoProject icon={BookOpen}/>
     return <ProjectWiki key={`${userId}:${organization.id}:${project.id}`}/>
 }
 
@@ -196,7 +197,7 @@ function ProjectWiki() {
                     </>}
                     <label htmlFor="wiki-message">Edit summary <span className="wiki-muted">(optional)</span></label><Input id="wiki-message" maxLength={500} readOnly={!canEdit} placeholder="What changed?" value={pageForm.message} onChange={event => setPageForm({...pageForm, message: event.target.value})}/>
                     <div className="wiki-editor-footer"><small>The latest 20 previous versions are kept per page.</small><div className="wiki-actions"><Button type="button" variant="outline" onClick={() => {setEditing(false); setPageForm(null); setPreview(false); setFormError(""); setImageOpen(false)}}>Cancel</Button><Button type="submit" disabled={!canEdit || changedRemotely || !pageForm.title.trim()}>Save page</Button></div></div>
-                </form> : !document.pages.length && !requestedSlug ? <div className="wiki-empty"><span className="wiki-empty-icon"><BookOpen/></span><span className="wiki-eyebrow">START WITH A SINGLE PAGE</span><h3>Give your project a home.</h3><p>{canWrite ? "From the first setup guide to the decisions behind your code, build a wiki your whole team can turn to." : "Your team's guides and documentation will appear here."}</p>{canManage && <Button disabled={!canEdit || !!pageForm} onClick={() => startEditing(undefined, "Home")}><Plus/>Create the first page</Button>}<div className="wiki-empty-ideas"><span><FileText/>Getting started</span><span><BookOpen/>Team guides</span><span><History/>Decisions & context</span></div></div> : !page ? <div className="wiki-empty"><FileText/><h3>Page not found</h3><p>This page may have been deleted, or its link is incomplete.</p>{canManage && <Button disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages} onClick={() => startEditing(undefined, requestedSlug?.replaceAll("-", " "))}><Plus/>Create this page</Button>}</div> : <>
+                </form> : !document.pages.length && !requestedSlug ? <WorkshopEmptyState icon={BookOpen} title="No wiki pages yet" description={canWrite ? "Create a page to share setup guides, team knowledge, and project decisions." : "Your team's guides and documentation will appear here."} action={canManage && <Button disabled={!canEdit || !!pageForm} onClick={() => startEditing(undefined, "Home")}><Plus/>Create page</Button>}/> : !page ? <WorkshopEmptyState icon={FileText} title="Page not found" description="This page may have been deleted, or its link is incomplete." action={canManage && <Button disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages} onClick={() => startEditing(undefined, requestedSlug?.replaceAll("-", " "))}><Plus/>Create page</Button>}/> : <>
                     <div className="wiki-reader"><div className="wiki-reader-document"><header className="wiki-article-header">
                         {ancestors.length > 0 && <nav className="wiki-page-ancestry" aria-label="Parent pages">{ancestors.map(parent => <span key={parent.id}><Link to={wikiPageHref(location.search, project.id, parent.slug)}>{parent.title}</Link><span aria-hidden="true">/</span></span>)}</nav>}
                         <div className="wiki-article-title">

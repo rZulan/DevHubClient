@@ -66,16 +66,17 @@ function navigation() {
 
 test('drop line follows every destination during one captured drag, including top and bottom', () => {
     const n = navigation()
+    const original = n.order(), bottomPointer = 100 + original.length * 45
     n.start('todo',121)
     assert.equal(n.indicator(),undefined)
-    for (const [pointerY, lineY] of [[160,45],[200,90],[250,135],[330,225],[375,267],[100,45]]) {
+    for (const [pointerY, lineY] of [[160,45],[200,90],[250,135],[330,225],[375,267],[bottomPointer, original.length * 45 - 3],[100,45]]) {
         n.move(pointerY)
         assert.equal(n.indicator().props.style.top,lineY)
         assert.equal(n.preview().props.style.top,pointerY - 120)
         assert.equal(n.indicator().props['aria-hidden'],'true')
     }
     n.drop(250)
-    assert.deepEqual(n.order(),['notes','erd','todo','ui-editor','sdlc','state-machine'])
+    assert.deepEqual(n.order(),['notes','erd','todo',...original.slice(3)])
     assert.equal(n.indicator(),undefined)
     assert.equal(n.preview(),undefined)
     assert.equal(n.storage.size,1)

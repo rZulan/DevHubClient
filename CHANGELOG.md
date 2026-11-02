@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-11-03
+
+### UML shape suggestions
+- Show a small, optional shape picker beside a connector dropped on empty canvas, with six prioritized suggestions and search.
+- Create and attach a chosen shape in one undoable action, preserve the arrow when suggestions are dismissed, and connect directly when dropped on an existing element.
+
+## 2026-11-02
+
+### Universal UML workspace
+- Replace the five separate UML tools with one directory-first workspace built from the archived Playground canvas.
+- Require a diagram name, allow an optional UML type, and keep independently saved canvases with rename, delete, and reopen actions.
+- Replace the add-shape palette with all 14 UML categories and UML connectors/notations; prioritize the selected type without hiding other categories.
+- Retain Playground editing controls and project autosave/recovery; preserve historical documents and migration history.
+- Rework arrows into attached UML relationships with edge dragging, endpoint reconnection, routes/waypoints, arrowheads, labels, roles, multiplicities, guards/effects, and message numbers.
+- Add UML element fields, additional activity/state/component/deployment notation, layer visibility/locking, alignment/arrangement, and SVG/PNG/JSON export with validated JSON import.
+- Preserve connections across move/resize/rotation, clipboard operations, undo/redo, and project saves; validate endpoint references on the client and API.
+- Edit labels inline by double-clicking an arrow’s midpoint or label, with Enter/blur to save, Escape to cancel, multiline text, and undo/redo.
+
+### Canvas drag and drop
+- Drag UI/UX shapes, screen presets, components, and starters onto their canvases. Place drops using the current pan and zoom, nest elements inside their target containers, and retain click-to-add and undo/redo.
+
+### Projects navigation
+- Open the project list from the Projects heading, remove the redundant All projects row, and provide a separate accessible expand/collapse button.
+
+### Landing preview
+- Play the Workshop tour by default, remove its button's hover loading effect, and return to Workshop when the Discovery preview is no longer requested.
+
+### Zevont branding
+- Rename navigation, workshop screens, sign-in messages, public bug reports, page metadata, and the installable app to Zevont.
+- Use Zevont in exported ERD SQL and the client package name; retain the existing logo.
+- Keep dev-hub.site links, API addresses, authentication cookies, saved preferences, and document formats compatible with the existing deployment.
+
 ## 2026-10-30
 
 ### Workshop limits

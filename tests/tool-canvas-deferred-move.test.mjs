@@ -5,34 +5,47 @@ import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as canvasView from '../src/features/workshop/canvas-view.ts'
+import * as viewStorage from '../src/features/workshop/canvas-view-storage.ts'
 import * as visibility from '../src/features/workshop/canvas-visibility.ts'
 import * as connectionDrag from '../src/features/workshop/connection-drag.ts'
+import * as canvasPalette from '../src/features/workshop/canvas-palette.ts'
+import {canvasStorage} from './fixtures/canvas-storage.mjs'
 
 const require = createRequire(import.meta.url)
 const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop/tool-canvas.tsx', import.meta.url), 'utf8'), {
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX},
 }).outputText
 
-function canvas(deferMoves = true, overrides = {}) {
-    const states = [], frames = new Map(), commits = [], history = []
+function canvas(deferMoves = true, overrides = {}, runEffects = false) {
+    const states = [], frames = new Map(), commits = [], history = [], effects = [], cleanups = [], observers = []
     let cursor = 0, frameId = 0, selected = [], effectEventCursor = 0, wheelHandler
     const react = {
-        useState(initial) {const index = cursor++; if (!(index in states)) states[index] = initial; return [states[index], next => {states[index] = typeof next === 'function' ? next(states[index]) : next}]},
+        useState(initial) {const index = cursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial; return [states[index], next => {states[index] = typeof next === 'function' ? next(states[index]) : next}]},
         useRef(initial) {const index = cursor++; return states[index] ??= {current: initial}},
-        useEffect() {}, useEffectEvent: callback => {if(effectEventCursor++===0) wheelHandler=callback; return callback},
+        useEffect(callback, deps) {
+            if (!runEffects) return
+            const index = cursor++, old = states[index]
+            if (!old || deps.some((dep, i) => !Object.is(dep, old[i]))) {states[index] = deps; effects.push(() => {cleanups[index]?.(); cleanups[index] = callback()})}
+        }, useEffectEvent: callback => {if(effectEventCursor++===0) wheelHandler=callback; return callback},
     }
     const exports = {}
-    vm.runInNewContext(source, {exports, requestAnimationFrame: callback => {frames.set(++frameId, callback); return frameId}, cancelAnimationFrame: id => frames.delete(id), require: name => {
+    vm.runInNewContext(source, {exports, window: {addEventListener() {}, removeEventListener() {}}, ResizeObserver: class {
+        constructor(callback) {this.callback = callback}
+        observe() {observers.push(this); this.callback()}
+        disconnect() {observers.splice(observers.indexOf(this), 1)}
+    }, requestAnimationFrame: callback => {frames.set(++frameId, callback); return frameId}, cancelAnimationFrame: id => frames.delete(id), require: name => {
         if (name === 'react') return react
         if (name === './canvas-view') return canvasView
+        if (name === './canvas-view-storage') return viewStorage
         if (name === './canvas-visibility') return visibility
         if (name === './connection-drag') return connectionDrag
+        if (name === './canvas-palette') return canvasPalette
         if (name === './use-canvas-touch') return {useCanvasTouch: () => ({})}
         if (name === './ideas/canvas-controls') return {ZoomControls: () => null}
         if (name === '@/components/ui/button') return {Button: 'button'}
         return require(name)
     }})
-    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, setPointerCapture() {}, querySelector: () => null, getBoundingClientRect: () => ({left: 0, top: 0})}
+    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, querySelector: () => null, getBoundingClientRect: () => ({left: 0, top: 0})}
     const event = (x, type = 'pointermove') => ({type, button: 0, pointerId: 1, clientX: x, clientY: 100, preventDefault() {}, stopPropagation() {}})
     function all(node, result = []) {
         if (Array.isArray(node)) node.forEach(child => all(child, result))
@@ -45,9 +58,14 @@ function canvas(deferMoves = true, overrides = {}) {
         const result = exports.ToolCanvas({nodes: [{id: 'table', x: 0, y: 0, width: 300, height: 100}], selectedIds: selected, onSelect: ids => {selected = ids}, onMove: moves => commits.push(moves),
             renderNode: () => null, canEdit: true, deferMoves, beginTransaction: () => history.push('begin'), endTransaction: () => history.push('end'), ...overrides})
         result.props.ref.current = root
+        effects.splice(0).forEach(effect => effect())
         return result
     }
     return {
+        render,
+        unmount() {cleanups.forEach(cleanup => cleanup?.())},
+        resize(width, height) {root.clientWidth = width; root.clientHeight = height; observers.forEach(observer => observer.callback()); render()},
+        fit() {all(render()).find(node => node.props.onFit).props.onFit(); render()},
         start() {all(render()).find(node => node.props.className?.startsWith('tool-node ')).props.onPointerDown(event(100, 'pointerdown'))},
         move(x) {render().props.onPointerMove(event(x))},
         release(x) {render().props.onPointerUp(event(x, 'pointerup'))},
@@ -81,6 +99,12 @@ function canvas(deferMoves = true, overrides = {}) {
             return {copied, prevented: event.defaultPrevented}
         },
         isHand() {return render().props.className.includes('hand-tool')},
+        palette(kind, dataTransfer, x = 220, y = 270) {
+            const event = {dataTransfer, clientX: x, clientY: y, prevented: false, preventDefault() {this.prevented = true}, stopPropagation() {}}
+            render().props[kind](event)
+            return event.prevented
+        },
+        paletteActive() {return render().props.className.includes('canvas-palette-active')},
         selection() {return selected},
         frames, commits, history,
     }
@@ -226,4 +250,52 @@ test('read-only canvas permits copying and selecting but blocks cut, paste and d
     c.key('d', {ctrlKey: true}); c.key('Delete'); c.key('a', {ctrlKey: true})
     assert.deepEqual(actions, [])
     assert.deepEqual(c.selection(), ['table'])
+})
+
+test('ERD restores zoom and pan across tool switches, delayed loading and explicit fit requests', t => {
+    canvasStorage(t)
+    const key = viewStorage.canvasViewKey('user', 'org', 'project', 'erd')
+    const first = canvas(true, {viewStorageKey: key, fitViewKey: 0}, true)
+    first.render(); first.render()
+    assert.notEqual(first.zoom(), .85, 'a new diagram still fits initially')
+    first.wheel(1200); first.flush()
+    first.capture({button: 1}); first.move(350); first.release(350)
+    const saved = {zoom: first.zoom(), pan: {x: first.pan()[0], y: first.pan()[1]}}
+    first.unmount()
+    const overrides = {viewStorageKey: key, fitViewKey: 0, nodes: []}
+    const returned = canvas(true, overrides, true)
+    assert.equal(returned.zoom(), saved.zoom)
+    assert.deepEqual(returned.pan(), [saved.pan.x, saved.pan.y])
+    overrides.nodes = [{id: 'table', x: 0, y: 0, width: 300, height: 100}]
+    returned.render(); returned.render()
+    assert.equal(returned.zoom(), saved.zoom, 'loading the tables does not fit over the saved view')
+    assert.deepEqual(returned.pan(), [saved.pan.x, saved.pan.y])
+    returned.resize(1200, 900)
+    assert.equal(returned.zoom(), saved.zoom, 'resizing preserves zoom')
+    assert.deepEqual(returned.pan(), [saved.pan.x + 100, saved.pan.y + 50])
+    overrides.fitViewKey++
+    returned.render(); returned.render()
+    assert.notEqual(returned.zoom(), saved.zoom, 'auto-arrange can still request a fit')
+    returned.wheel(700); returned.flush(); returned.render()
+    returned.fit()
+    const fitted = returned.zoom()
+    returned.unmount()
+    const reopened = canvas(true, {viewStorageKey: key, fitViewKey: 0}, true)
+    assert.equal(reopened.zoom(), fitted, 'manual Fit becomes the next saved view')
+    reopened.unmount()
+})
+
+test('switching tools before a queued wheel frame saves its final zoom and pan', t => {
+    canvasStorage(t)
+    const key = 'pending-wheel-view', original = {zoom: .4, pan: {x: -500, y: 200}}
+    viewStorage.saveCanvasView(key, original)
+    const first = canvas(true, {viewStorageKey: key}, true)
+    first.wheel(100)
+    first.unmount()
+    const next = viewStorage.readCanvasView(key)
+    assert.equal(next.zoom, original.zoom * Math.exp(-100 * .0015))
+    const reopened = canvas(true, {viewStorageKey: key}, true)
+    assert.equal(reopened.zoom(), next.zoom)
+    assert.deepEqual(reopened.pan(), [next.pan.x, next.pan.y])
+    reopened.unmount()
 })

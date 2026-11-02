@@ -9,6 +9,7 @@ import {directoryMemberTeams, directoryStats} from "./organization-directory"
 import type {WorkshopMember, WorkshopOrganization} from "./workshop-types"
 import "./organization-directory.css"
 import {WorkspaceAvatar} from "./workspace-avatar"
+import {WorkshopEmptyState} from "./workshop-empty-state"
 
 export function DirectoryHeading({organization, chart = false, children}: {organization: WorkshopOrganization; chart?: boolean; children?: ReactNode}) {
     return <header className="directory-heading">
@@ -74,5 +75,5 @@ export function DirectoryPersonDialog({member, organization, onClose}: {member: 
 }
 
 export function DirectoryEmpty({title, children, action}: {title: string; children: ReactNode; action?: ReactNode}) {
-    return <section className="directory-empty"><span><Users/></span><h3>{title}</h3><p>{children}</p>{action}</section>
+    return <WorkshopEmptyState icon={Users} title={title} description={children} action={action}/>
 }

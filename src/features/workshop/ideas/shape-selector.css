@@ -1,0 +1,87 @@
+.workshop-shape-menu.workshop-shape-library {
+    width: min(360px, calc(100% - 24px));
+    max-height: min(740px, calc(100% - 8rem));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--popover);
+    color: var(--popover-foreground);
+    box-shadow: 0 16px 48px #0003, 0 2px 8px #0001;
+    backdrop-filter: none;
+}
+
+.workshop-shape-library > .shape-library-header {
+    flex: none;
+    padding: 18px 16px 16px;
+    border-bottom: 0;
+}
+
+.workshop-shape-library > .shape-library-header > div { gap: 11px; }
+.workshop-shape-library .shape-library-header .shape-library-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: color-mix(in oklab, var(--primary) 7%, var(--popover));
+    color: var(--primary);
+}
+.shape-library-icon svg { width: 19px; height: 19px; }
+.workshop-shape-library .shape-library-header strong { color: var(--popover-foreground); font-size: 15px; letter-spacing: -.025em; line-height: 1.5; }
+.workshop-shape-library .shape-library-header small { color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
+.workshop-shape-library .shape-library-header .shape-library-close { width: 28px; height: 28px; color: var(--muted-foreground); cursor: pointer; }
+.workshop-shape-library .shape-library-header .shape-library-close svg { width: 16px; height: 16px; }
+.workshop-shape-library .shape-library-header .shape-library-close:hover { background: var(--accent); color: var(--accent-foreground); }
+
+.shape-library-tools { flex: none; display: grid; gap: 12px; padding: 0 16px 14px; border-bottom: 1px solid var(--border); }
+.shape-library-search { display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in oklab, var(--background) 65%, var(--popover)); color: var(--muted-foreground); }
+.shape-library-search:focus-within { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 15%, transparent); }
+.shape-library-search > svg { width: 15px; height: 15px; flex: none; }
+.shape-library-search input { width: 100%; min-width: 0; padding: 0; background: transparent; color: var(--popover-foreground); font-size: 12px; outline: none; }
+.shape-library-search input::placeholder { color: var(--muted-foreground); }
+.shape-library-search button { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 5px; cursor: pointer; }
+.shape-library-search button:hover { background: var(--accent); color: var(--accent-foreground); }
+.shape-library-search button svg { width: 13px; height: 13px; }
+.shape-library-browse { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.shape-library-category { position: relative; min-width: 0; max-width: 75%; }
+.shape-library-category select { appearance: none; width: 100%; padding: 6px 26px 6px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--popover); color: var(--popover-foreground); font: inherit; font-size: 12px; font-weight: 550; text-overflow: ellipsis; cursor: pointer; }
+.shape-library-category > svg { position: absolute; right: 8px; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); pointer-events: none; color: var(--muted-foreground); }
+.shape-library-count { flex: none; color: var(--muted-foreground); font-size: 11px; font-variant-numeric: tabular-nums; }
+.shape-library-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.shape-library-section + .shape-library-section { margin-top: 22px; }
+.shape-library-section-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+.shape-library-section-heading h3 { color: var(--muted-foreground); font-size: 10px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; }
+.shape-library-section-heading > span { display: grid; place-items: center; min-width: 19px; height: 17px; padding-inline: 4px; border-radius: 4px; background: var(--muted); color: var(--muted-foreground); font-size: 9px; font-variant-numeric: tabular-nums; }
+.shape-library-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.shape-library-card { position: relative; display: flex; min-width: 0; min-height: 99px; flex-direction: column; align-items: center; gap: 5px; padding: 10px 5px 9px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in oklab, var(--background) 35%, var(--popover)); color: var(--popover-foreground); cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; }
+.shape-library-card[draggable=true] { cursor: grab; }
+.shape-library-card[draggable=true]:active { cursor: grabbing; }
+.shape-library-card:hover, .shape-library-card:focus-visible { border-color: color-mix(in oklab, var(--primary) 55%, var(--border)); background: color-mix(in oklab, var(--primary) 7%, var(--popover)); box-shadow: 0 2px 7px #0001; }
+.shape-library-artboard { display: grid; place-items: center; width: 100%; height: 49px; flex: none; color: var(--popover-foreground); }
+.shape-library-art { position: relative; display: grid; place-items: center; flex: none; }
+.shape-library-art > svg { width: 100%; height: 100%; }
+.shape-library-art > .lucide { width: 28px; height: 28px; stroke-width: 1.5; }
+.shape-library-constraint { font-family: monospace; font-size: 26px; }
+.shape-library-name { width: 100%; color: var(--muted-foreground); font-size: 11px; font-weight: 500; line-height: 1.4; text-align: center; overflow-wrap: anywhere; }
+.shape-library-card:hover .shape-library-name, .shape-library-card:focus-visible .shape-library-name { color: var(--popover-foreground); }
+.shape-library-add { position: absolute; top: 5px; right: 5px; width: 12px; height: 12px; color: var(--primary); opacity: 0; transition: opacity .15s; }
+.shape-library-card:hover .shape-library-add, .shape-library-card:focus-visible .shape-library-add { opacity: 1; }
+.shape-library-footer { display: flex; flex: none; align-items: center; gap: 7px; min-height: 41px; padding: 10px 16px; border-top: 1px solid var(--border); color: var(--muted-foreground); }
+.shape-library-footer > svg { flex: none; width: 13px; height: 13px; }
+.shape-library-footer > span { flex: 1; min-width: 0; font-size: 10px; line-height: 1.4; }
+.shape-library-footer kbd { padding: 1px 4px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 9px; }
+.shape-library-empty { display: flex; min-height: 220px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.shape-library-empty > svg { width: 24px; height: 24px; color: var(--muted-foreground); }
+.shape-library-empty strong { font-size: 13px; font-weight: 600; }
+.shape-library-empty p { color: var(--muted-foreground); font-size: 12px; }
+.shape-library-empty button { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; cursor: pointer; }
+.shape-library-empty button svg { width: 13px; height: 13px; }
+.workshop-shape-library button:focus-visible, .shape-library-category select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+@media (max-width: 480px) {
+    .workshop-shape-menu.workshop-shape-library { left: 12px; width: calc(100% - 24px); }
+    .shape-library-grid { gap: 6px; }
+    .shape-library-content { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .shape-library-card, .shape-library-add { transition: none; }
+}

@@ -12,6 +12,8 @@ export type WorkshopPermission =
     | "Edit ideation"
     | "Edit ERD"
     | "Edit UI designs"
+    | "Edit state machines"
+    | "Edit UML diagrams"
     | "Manage notes"
     | "Manage wiki"
     | "Manage bug reports"
@@ -62,6 +64,7 @@ export type WorkshopTeam = {
 }
 
 export type WorkshopProject = {
+    githubRepositories?: import("./github-api").GitHubRepository[]
     id: string
     name: string
     summary: string
@@ -216,6 +219,7 @@ export type ApiTeam = {
 }
 
 export type ApiProject = {
+    gitHubRepositories?: import("./github-api").GitHubRepository[] | null
     id: string
     organizationId: string
     teamId: string
@@ -238,6 +242,7 @@ export type ApiProject = {
 }
 
 export type SaveProjectInput = {
+    gitHubRepositories?: import("./github-api").GitHubSelection[]
     name: string
     summary: string
     status: ProjectStatus
@@ -289,4 +294,9 @@ export type DashboardWidget = {
 export type OrganizationDashboard = {
     widgets: DashboardWidget[]
     publishedAtUtc?: string | null
+}
+
+export type PersonalDashboard = {
+    widgets: DashboardWidget[]
+    savedAtUtc?: string | null
 }

@@ -1,0 +1,10 @@
+import {LockKeyhole,UnlockKeyhole} from "lucide-react"
+import {Button} from "@/components/ui/button"
+import type {CanvasItem} from "../shape-clipboard"
+import {umlElementDetails,withUmlDetails} from "../uml-elements"
+import type {UmlDetails} from "../uml-connection-types"
+export function UmlElementFields({item,onChange}:{item:CanvasItem;onChange:(item:CanvasItem)=>void}){
+    const d=umlElementDetails(item),symbol=item.umlSymbol??"",classifier=["class","interface","enumeration","object","stereotype"].includes(symbol)
+    const field=(key:keyof UmlDetails,label:string,multiline=false,placeholder?:string)=><label className="workshop-property-field" key={key}><span>{label}</span>{multiline?<textarea rows={4} value={d[key]} placeholder={placeholder} maxLength={10000} onChange={e=>onChange(withUmlDetails(item,{...d,[key]:e.target.value}))}/>:<input value={d[key]} placeholder={placeholder} maxLength={key==="name"?150:2000} onChange={e=>onChange(withUmlDetails(item,{...d,[key]:e.target.value}))}/>}</label>
+    return <><Button size="sm" variant="ghost" onClick={()=>onChange({...item,locked:!item.locked})}>{item.locked?<UnlockKeyhole/>:<LockKeyhole/>}{item.locked?"Unlock element":"Lock element"}</Button><fieldset disabled={item.locked} className="uml-element-fields"><details open><summary>UML element</summary>{field("name","Name")}{field("stereotype","Stereotype",false,"interface · abstract · entity")}{classifier&&<>{field("attributes",symbol==="enumeration"?"Literals":"Attributes / values",true,"- id: UUID\n+ name: String")}{symbol!=="enumeration"&&field("operations","Operations",true,"+ save(): void")}</>}{symbol==="state"&&<>{field("entry","Entry action")}{field("activity","Do activity")}{field("exit","Exit action")}</>}{symbol==="fragment"&&<>{field("operator","Operator",false,"alt · opt · loop · par · ref")}{field("operands","Operands / guards",true,"[condition]\n---\n[else]")}</>}</details>{item.umlDetails&&<Button size="sm" variant="ghost" onClick={()=>onChange({...item,umlDetails:undefined})}>Edit as free text</Button>}</fieldset></>
+}

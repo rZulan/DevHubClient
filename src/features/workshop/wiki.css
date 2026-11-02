@@ -56,6 +56,7 @@
 .wiki-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted-foreground); white-space: nowrap; }
 .wiki-mode svg { width: 12px; height: 12px; }
 .wiki-main-content { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; scroll-padding-top: 24px; }
+.wiki-main-content > .workshop-empty-state { min-height: 100%; }
 .wiki-reader { display: grid; grid-template-columns: minmax(0, 1fr) 196px; gap: 36px; align-items: start; padding: 44px clamp(24px, 4cqw, 64px) 64px; }
 .wiki-reader-document { min-width: 0; }
 .wiki-reader:not(:has(.wiki-toc:not([hidden]))) { grid-template-columns: minmax(0, 1fr); }

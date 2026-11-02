@@ -1,3 +1,4 @@
+import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useId, useRef, useState, type CSSProperties} from "react"
 import {useOutletContext} from "react-router-dom"
@@ -26,7 +27,7 @@ import "@/features/workshop/sdlc-studio.css"
 export function WorkshopSdlcPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    if (!project) return <section className="workshop-empty-panel"><Stars/><h3>No project selected</h3><p>Select or create a project to chart its development journey.</p></section>
+    if (!project) return <WorkshopNoProject icon={Stars}/>
     return <SdlcRoadmap key={`${userId}:${organization.id}:${project.id}`}/>
 }
 function SdlcRoadmap() {

@@ -345,6 +345,7 @@ export function mapApiProject(project: ApiProject) {
         leadUserId: project.leadUserId,
         techStack: project.techStack,
         repository: project.repositoryUrl ?? "Not linked",
+        githubRepositories: project.gitHubRepositories ?? [],
         sdlc: project.sdlcMethod ?? "Not specified",
         database: project.databaseDetails ?? "Not specified",
         documentationUrl: project.documentationUrl ?? undefined,

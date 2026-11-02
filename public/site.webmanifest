@@ -1,6 +1,6 @@
 {
-  "name": "DevHub",
-  "short_name": "DevHub",
+  "name": "Zevont",
+  "short_name": "Zevont",
   "description": "A collaborative workspace for developer teams, projects, ideas, and delivery tools.",
   "start_url": "/",
   "display": "standalone",

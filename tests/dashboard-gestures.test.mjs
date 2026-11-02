@@ -7,13 +7,17 @@ import ts from 'typescript'
 const require = createRequire(import.meta.url)
 
 // Exercise the actual component's pointer handlers and draft state without auth/network.
-function dashboard(saved) {
+function dashboard(saved, options = {}) {
   const values = []
   let cursor = 0
   let hit
   let published = 0
   let payload
   let cached = saved
+  let personalCached = options.personalSaved
+  let personalSaves = 0
+  let params = new URLSearchParams(options.personal ? 'view=personal' : '')
+  let mountedKey
   const react = {
     useState(initial) {
       const index = cursor++
@@ -28,11 +32,18 @@ function dashboard(saved) {
     useMemo: fn => fn(), useEffect: () => {},
   }
   const mocks = {
+    '@/features/workshop/dashboard-view': {getDashboardView: (_user, _org, view) => view === 'personal' ? 'personal' : 'organization', setDashboardView: () => {}},
     react,
-    'react-router-dom': { useOutletContext: () => ({ organization: { id: '12345678-1234-4234-8234-123456789012', name: 'Test', members: [], teams: [], tasks: [] } }) },
-    '@/app/hooks': { useAppDispatch: () => action => { cached = action.saved; }, useAppSelector: fn => fn({ auth: { user: { id: 'owner', firstName: 'Test', lastName: 'User' } } }) },
-    '@/features/workshop/workshop-access': { hasWorkshopPermission: () => true },
-    '@/services/api': { api: { util: { updateQueryData: (_endpoint, _id, update) => ({ saved: update() }) } }, useGetOrganizationDashboardQuery: () => ({ data: cached }), usePublishOrganizationDashboardMutation: () => [body => { published++; payload = body; return { unwrap: async () => ({ widgets: body.widgets, publishedAtUtc: "2026-09-28T00:00:00Z" }) } }, {}] },
+    'react-router-dom': { useSearchParams: () => [params, update => {params = update(params)}], useOutletContext: () => ({ organization: { id: '12345678-1234-4234-8234-123456789012', name: 'Test', members: [], teams: [], tasks: [] } }) },
+    '@/app/hooks': { useAppDispatch: () => action => { if (action.endpoint === 'getPersonalDashboard') personalCached = action.saved; else cached = action.saved; }, useAppSelector: fn => fn({ auth: { user: { id: 'owner', firstName: 'Test', lastName: 'User' } } }) },
+    '@/features/workshop/workshop-access': { hasWorkshopPermission: () => options.canManage !== false },
+    '@/services/api': {
+      api: { util: { updateQueryData: (endpoint, _id, update) => ({ endpoint, saved: update() }) } },
+      useGetOrganizationDashboardQuery: () => ({ currentData: cached, error: options.orgError }),
+      useGetPersonalDashboardQuery: () => ({ currentData: personalCached, error: options.personalError }),
+      usePublishOrganizationDashboardMutation: () => [body => { published++; payload = body; return { unwrap: async () => ({ widgets: body.widgets, publishedAtUtc: '2026-09-28T00:00:00Z' }) } }, {}],
+      useSavePersonalDashboardMutation: () => [body => { personalSaves++; payload = body; return { unwrap: async () => ({ widgets: body.widgets, savedAtUtc: '2026-11-01T00:00:00Z' }) } }, {}],
+    },
     '@/lib/utils': { cn: (...classes) => classes.filter(Boolean).join(' ') },
   }
   const module = { exports: {} }
@@ -41,11 +52,17 @@ function dashboard(saved) {
   }).outputText
   vm.runInNewContext(source, {
     module, exports: module.exports,
+    URLSearchParams,
     require: name => mocks[name] ?? (name.startsWith('@/') ? new Proxy({}, { get: (_, key) => key }) : require(name)),
     document: { elementFromPoint: () => hit ? { closest: () => hit } : null },
     getComputedStyle: () => ({ columnGap: '20', rowGap: '20', gridAutoRows: '80' }),
   })
-  const render = () => { cursor = 0; return module.exports.WorkshopLobbyPage() }
+  const render = () => {
+    cursor = 0
+    const page = module.exports.WorkshopLobbyPage()
+    if (mountedKey !== page.key) {values.length = 0; mountedKey = page.key}
+    return page.type(page.props)
+  }
   function nodes(node, result = []) {
     if (Array.isArray(node)) node.forEach(child => nodes(child, result))
     else if (node && typeof node === 'object' && node.props) { result.push(node); nodes(node.props.children, result) }
@@ -53,16 +70,53 @@ function dashboard(saved) {
   }
   const all = () => nodes(render())
   const manage = all().find(node => node.props.onClick && [node.props.children].flat().some(child => typeof child === 'string' && child.trim() === 'Manage Dashboard'))
-  assert.ok(manage, 'manage dashboard button available')
-  manage.props.onClick()
+  if (options.autoEdit !== false) {
+    assert.ok(manage, 'manage dashboard button available')
+    manage.props.onClick()
+  }
   const widgets = () => all().filter(node => node.props['data-widget-id'])
   const widget = id => widgets().find(node => node.props['data-widget-id'] === id)
   const event = (x, y, options = {}) => ({ button: 0, isPrimary: true, pointerId: 1, clientX: x, clientY: y,
     preventDefault() {}, stopPropagation() {}, target: { closest: () => null },
     currentTarget: { setPointerCapture() {}, hasPointerCapture: () => true, releasePointerCapture() {}, closest: () => ({ clientWidth: 780 }) }, ...options,
   })
-  return { all, widget, widgets, event, hit: value => { hit = value }, published: () => published, payload: () => payload, cached: () => cached }
+  return { all, widget, widgets, event, switchView: view => params.set('view', view), hit: value => { hit = value }, published: () => published, personalSaves: () => personalSaves, payload: () => payload, cached: () => cached, personalCached: () => personalCached }
 }
+
+test('regular members can save their personal layout without publishing the organization dashboard', async () => {
+  const saved = {widgets: [{id: 'org-note', type: 'text', content: 'Shared', width: 2, height: 1}], publishedAtUtc: '2026-11-01T00:00:00Z'}
+  const d = dashboard(saved, {personal: true, canManage: false})
+  assert.ok(d.widget('default-assigned-tasks'))
+  assert.equal(d.widget('org-note'), undefined)
+  d.all().find(node => node.props.children === 'Save personal dashboard').props.onClick()
+  await new Promise(setImmediate)
+  assert.equal(d.personalSaves(), 1)
+  assert.equal(d.published(), 0)
+  assert.deepEqual(d.cached(), saved)
+  assert.equal(d.payload().userId, 'owner')
+  assert.ok(d.personalCached().savedAtUtc)
+  d.switchView('organization')
+  assert.ok(d.widget('org-note'))
+  assert.equal(d.all().some(node => node.props.onClick && [node.props.children].flat().some(child => typeof child === 'string' && child.trim() === 'Manage Dashboard')), false)
+  d.switchView('personal')
+  assert.ok(d.widget('default-assigned-tasks'))
+  assert.equal(d.widget('org-note'), undefined)
+})
+
+test('an intentionally empty personal layout stays empty after reload', () => {
+  const d = dashboard(undefined, {personal: true, personalSaved: {widgets: [], savedAtUtc: '2026-11-01T00:00:00Z'}, autoEdit: false})
+  assert.equal(d.widgets().length, 0)
+  assert.ok(d.all().some(node => node.props.title === 'No widgets yet'))
+})
+
+test('a failed personal load cannot be overwritten with the default layout', () => {
+  const d = dashboard(undefined, {personal: true, personalError: {status: 500}, autoEdit: false})
+  assert.ok(d.all().some(node => node.props.title === 'Could not load dashboard'))
+  const manage = d.all().find(node => node.props.onClick && [node.props.children].flat().some(child => typeof child === 'string' && child.trim() === 'Manage Dashboard'))
+  assert.equal(manage.props.disabled, true)
+  manage.props.onClick()
+  assert.equal(d.all().some(node => node.props.children === 'Save personal dashboard'), false)
+})
 
 test('dragging a quick-action body reorders within a row and across sections without publishing', () => {
   const d = dashboard()

@@ -44,6 +44,6 @@ export function CalendarGantt({items, start, end, today, selected, timeZone, onS
                 </div>
             </div>)}
         </div>
-        {!rows.length && empty}
+        {!rows.length && <div className="calendar-gantt-empty">{empty}</div>}
     </div>
 }

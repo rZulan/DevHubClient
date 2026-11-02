@@ -1,3 +1,4 @@
+import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
 import {useState} from "react"
 import {useNavigate, useOutletContext} from "react-router-dom"
 import {CalendarDays} from "lucide-react"
@@ -16,7 +17,7 @@ import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 
 export function WorkshopCalendarPage() {
     const context = useOutletContext<WorkshopOutletContext>(), userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    if (!context.project) return <section className="workshop-empty-panel"><CalendarDays/><h3>No project selected</h3><p>Select a project to view its calendar.</p></section>
+    if (!context.project) return <WorkshopNoProject icon={CalendarDays}/>
     return <CalendarContent key={`${userId}:${context.organization.id}:${context.project.id}`}/>
 }
 function CalendarContent() {

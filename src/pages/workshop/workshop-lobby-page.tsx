@@ -1,3 +1,5 @@
+import {WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
+import {getDashboardView, setDashboardView} from "@/features/workshop/dashboard-view"
 import {type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState} from "react"
 import {
     ArrowRight,
@@ -17,7 +19,7 @@ import {
     Users,
     X,
 } from "lucide-react"
-import {Link, useOutletContext} from "react-router-dom"
+import {Link, useOutletContext, useSearchParams} from "react-router-dom"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {Badge} from "@/components/ui/badge"
@@ -42,7 +44,7 @@ import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import {cn} from "@/lib/utils"
 import {DashboardQuickAction} from "@/features/workshop/dashboard-quick-action"
-import {api, useGetOrganizationDashboardQuery, usePublishOrganizationDashboardMutation,} from "@/services/api"
+import {api, useGetOrganizationDashboardQuery, usePublishOrganizationDashboardMutation, useGetPersonalDashboardQuery, useSavePersonalDashboardMutation} from "@/services/api"
 
 type WidgetCategory = "Quick Actions" | "Graphs" | "Info" | "Text"
 type WidgetCatalogItem = {
@@ -485,8 +487,26 @@ const defaultDashboardWidgets: DashboardWidget[] = [
 ]
 
 export function WorkshopLobbyPage() {
+    const {organization} = useOutletContext<WorkshopOutletContext>()
+    const userId = useAppSelector(state => state.auth.user?.id ?? "current")
+    const [params, setParams] = useSearchParams()
+    const view = getDashboardView(userId, organization.id, params.get("view"))
+    const personal = view === "personal"
+    useEffect(() => {
+        setDashboardView(userId, organization.id, view)
+        if (params.get("view") !== view) {
+            setParams(current => {const next = new URLSearchParams(current); next.set("view", view); return next}, {replace: true})
+        }
+    }, [userId, organization.id, view, params, setParams])
+    return <DashboardContent key={`${organization.id}:${userId}:${personal}`} personal={personal}/>
+}
+
+const defaultPersonalWidgets = defaultDashboardWidgets.filter(widget =>
+    ["welcome", "assigned-tasks", "quick-action-tasks", "quick-action-idea", "project-overview"].includes(widget.type))
+
+function DashboardContent({personal}: {personal: boolean}) {
     const dispatch = useAppDispatch()
-    const {organization, project} = useOutletContext<WorkshopOutletContext>()
+    const {organization, project, setDashboardEditing} = useOutletContext<WorkshopOutletContext>()
     const user = useAppSelector((state) => state.auth.user)
     const [isCreatingTeam, setIsCreatingTeam] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -514,13 +534,25 @@ export function WorkshopLobbyPage() {
     const [publishError, setPublishError] = useState("")
     const [now, setNow] = useState(() => new Date())
     const isPersistedOrganization = guidPattern.test(organization.id)
-    const canManageDashboard = isPersistedOrganization && hasWorkshopPermission(organization, user?.id ?? "current", "Manage dashboard")
+    const canManageDashboard = isPersistedOrganization && (personal || hasWorkshopPermission(organization, user?.id ?? "current", "Manage dashboard"))
     const canManageTeams = hasWorkshopPermission(organization, user?.id ?? "current", "Manage teams")
-    const {data: dashboard, isLoading: dashboardLoading} = useGetOrganizationDashboardQuery(
+    const orgQuery = useGetOrganizationDashboardQuery(
         organization.id,
-        {skip: !isPersistedOrganization},
+        {skip: !isPersistedOrganization || personal},
     )
-    const [publishDashboard, {isLoading: isPublishing}] = usePublishOrganizationDashboardMutation()
+    const personalKey = {organizationId: organization.id, userId: user?.id ?? "current"}
+    const personalQuery = useGetPersonalDashboardQuery(personalKey, {skip: !isPersistedOrganization || !personal})
+    const dashboardQuery = personal ? personalQuery : orgQuery
+    const dashboardLoading = dashboardQuery.isLoading
+    const dashboardError = dashboardQuery.error
+    const [publishDashboard, {isLoading: orgPublishing}] = usePublishOrganizationDashboardMutation()
+    const [savePersonalDashboard, {isLoading: personalSaving}] = useSavePersonalDashboardMutation()
+    const isPublishing = orgPublishing || personalSaving
+    useEffect(() => {
+        setDashboardEditing?.(isEditing || isPublishing)
+        return () => setDashboardEditing?.(false)
+    }, [isEditing, isPublishing, setDashboardEditing])
+    const defaults = personal ? defaultPersonalWidgets : defaultDashboardWidgets
 
     useEffect(() => {
         const timer = window.setInterval(() => setNow(new Date()), 30_000)
@@ -538,21 +570,23 @@ export function WorkshopLobbyPage() {
     const activeTasks = projectTasks.filter((task) => task.status === "progress").length
     const onlineMembers = members.filter((member) => member.online)
     const publishedWidgets = useMemo(() => ensureWidgetSectionIds(expandLegacyQuickActions(
-        dashboard?.publishedAtUtc ? dashboard.widgets : defaultDashboardWidgets,
-    )), [dashboard])
+        personal ? (personalQuery.currentData?.savedAtUtc ? personalQuery.currentData.widgets : defaults)
+            : (orgQuery.currentData?.publishedAtUtc ? orgQuery.currentData.widgets : defaults),
+    )), [personal, personalQuery.currentData, orgQuery.currentData, defaults])
     const visibleWidgets = useMemo(() => expandLegacyQuickActions(
         isEditing ? draftWidgets : publishedWidgets,
     ), [isEditing, draftWidgets, publishedWidgets])
     const widgetSections = useMemo(() => buildWidgetSections(visibleWidgets), [visibleWidgets])
 
     function beginEditing() {
+        if (!canManageDashboard || dashboardLoading || dashboardError) return
         setDraftWidgets(publishedWidgets.map(normalizeWidget))
         setPublishError("")
         setIsEditing(true)
     }
 
     function resetToDefault() {
-        setDraftWidgets(defaultDashboardWidgets.map(normalizeWidget))
+        setDraftWidgets(defaults.map(normalizeWidget))
         setFocusedWidgetId(undefined)
         setDraggedWidgetId(undefined)
         setDropTargetId(undefined)
@@ -754,13 +788,17 @@ export function WorkshopLobbyPage() {
     }
 
     async function publishChanges() {
+        if (!canManageDashboard || isPublishing) return
         setPublishError("")
         try {
-            const savedDashboard = await publishDashboard({
-                organizationId: organization.id,
-                widgets: captureWidgetPositions(expandLegacyQuickActions(draftWidgets)).map(normalizeWidget)
-            }).unwrap()
-            dispatch(api.util.updateQueryData("getOrganizationDashboard", organization.id, () => savedDashboard))
+            const widgets = captureWidgetPositions(expandLegacyQuickActions(draftWidgets)).map(normalizeWidget)
+            if (personal) {
+                const savedDashboard = await savePersonalDashboard({...personalKey, widgets}).unwrap()
+                dispatch(api.util.updateQueryData("getPersonalDashboard", personalKey, () => savedDashboard))
+            } else {
+                const savedDashboard = await publishDashboard({organizationId: organization.id, widgets}).unwrap()
+                dispatch(api.util.updateQueryData("getOrganizationDashboard", organization.id, () => savedDashboard))
+            }
             setIsEditing(false)
             setDraftWidgets([])
         } catch (error) {
@@ -779,18 +817,19 @@ export function WorkshopLobbyPage() {
             if (!(event.target as HTMLElement).closest("[data-widget-id]")) setFocusedWidgetId(undefined)
         }}>
             <section className="workshop-dashboard-heading">
-                <div><h2>{isEditing ? "Customize Dashboard" : "Dashboard"}</h2></div>
+                <div><h2>{personal ? "Personal Dashboard" : "Org Dashboard"}</h2>
+                </div>
                 <div className="workshop-dashboard-heading-actions">
                     <Badge variant="outline"><i/> {onlineMembers.length} online</Badge>
                     {canManageDashboard && !isEditing &&
-                        <Button onClick={beginEditing} type="button" variant="outline"><Settings2/> Manage
+                        <Button onClick={beginEditing} disabled={dashboardLoading || !!dashboardError} type="button" variant="outline"><Settings2/> Manage
                             Dashboard</Button>}
                 </div>
             </section>
 
             {isEditing && <div className="workshop-dashboard-editor-bar">
                 <div>
-                    <LayoutDashboard/><span><strong>Edit mode</strong><small>Changes stay private until you publish.</small></span>
+                    <LayoutDashboard/><span><strong>Edit mode</strong><small>{personal ? "Only you can see this layout. Save or discard to switch dashboards." : "Publish or discard to switch dashboards."}</small></span>
                 </div>
                 <div><Button onClick={() => openWidgetLibrary()} type="button" variant="outline"><Plus/> Add
                     widget</Button><Button onClick={resetToDefault} type="button" variant="outline"><RotateCcw/> Reset
@@ -798,14 +837,14 @@ export function WorkshopLobbyPage() {
                     setDraftWidgets([]);
                     setPublishError("");
                     setIsEditing(false)
-                }} type="button" variant="ghost">Discard</Button><Button disabled={isPublishing}
+                }} disabled={isPublishing} type="button" variant="ghost">Discard</Button><Button disabled={isPublishing}
                                                                          onClick={() => void publishChanges()}
-                                                                         type="button">{isPublishing ? "Publishing…" : "Publish for everyone"}</Button>
+                                                                         type="button">{personal ? isPublishing ? "Saving…" : "Save personal dashboard" : isPublishing ? "Publishing…" : "Publish for everyone"}</Button>
                 </div>
             </div>}
             {publishError && <p className="workshop-dashboard-publish-error">{publishError}</p>}
 
-            {dashboardLoading && !isEditing ? <div className="workshop-dashboard-loading">Loading dashboard…</div> : (
+            {dashboardError && !isEditing ? <WorkshopEmptyState icon={LayoutDashboard} title="Could not load dashboard" description="Try again to load your saved layout." action={<Button onClick={() => void dashboardQuery.refetch()}>Retry</Button>}/> : dashboardLoading && !isEditing ? <div className="workshop-dashboard-loading">Loading dashboard…</div> : (
                 <div className="workshop-widget-sections">
                     {widgetSections.map((section, sectionIndex) => {
                         const firstIndex = section.widgets[0].index
@@ -916,14 +955,14 @@ export function WorkshopLobbyPage() {
                         </section>
                     })}
                     {visibleWidgets.length === 0 &&
-                        <div className="workshop-dashboard-empty"><LayoutDashboard/><strong>This dashboard has no
-                            widgets</strong><span>{isEditing ? "Add a section to start building the dashboard." : "A dashboard manager can add and publish widgets."}</span>{isEditing &&
+                        <WorkshopEmptyState icon={LayoutDashboard} title="No widgets yet"
+                            description={isEditing ? "Add a section to start building the dashboard." : personal ? "Use Manage Dashboard to add your widgets." : "A dashboard manager can add and publish widgets."} action={isEditing &&
                             <Button onClick={() => openWidgetLibrary({
                                 index: 0,
                                 maxColumns: gridColumns,
                                 maxHeight: 2,
                                 newSection: true
-                            })} type="button"><Plus/> Add section</Button>}</div>}
+                            })} type="button"><Plus/>Add section</Button>}/>}
                     {isEditing && visibleWidgets.length > 0 && <button className="workshop-add-section-bottom"
                                                                        onClick={() => openWidgetLibrary({
                                                                            index: visibleWidgets.length,

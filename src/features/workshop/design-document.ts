@@ -12,7 +12,7 @@ export type DesignLayer = {
 }
 export type DesignDocument = {layers: DesignLayer[]; startFrameId?: string}
 export const designFonts = ["Inter", "Geist Variable", "Manrope Variable", "Arial", "Georgia", "IBM Plex Mono"]
-export const framePresets = [{name: "Phone", width: 390, height: 844}, {name: "Tablet", width: 834, height: 1194}, {name: "Desktop", width: 1440, height: 900}]
+export const framePresets = [{name: "Phone", width: 390, height: 844}, {name: "Tablet", width: 834, height: 1194}, {name: "Desktop", width: 1440, height: 900}] as const
 export function newDesignLayer(kind: DesignKind, changes: Partial<DesignLayer> = {}): DesignLayer {
     return {id: createClientId(), kind, name: kind[0].toUpperCase() + kind.slice(1), x: 0, y: 0, width: kind === "frame" ? 390 : kind === "text" ? 240 : 180,
         height: kind === "frame" ? 844 : kind === "button" || kind === "text" ? 48 : 120,

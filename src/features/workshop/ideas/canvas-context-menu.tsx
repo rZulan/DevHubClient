@@ -60,7 +60,7 @@ export function CanvasContextMenu({
                                     onClick={() => onAction("paste")}/>}
             <MenuButton icon={<Layers/>} label="Select all" shortcut="Ctrl+A" onClick={() => onAction("select-all")}/>
             <MenuButton icon={<Maximize2/>} label="Fit canvas" onClick={() => onAction("fit")}/>
-            {canEdit && <><MenuSeparator/><MenuButton icon={<Plus/>} label="Add rectangle"
+            {canEdit && <><MenuSeparator/><MenuButton icon={<Plus/>} label="Add UML element"
                                                       onClick={() => onAction("add-rectangle")}/></>}
         </> : <>
             <MenuButton icon={<Copy/>} label="Copy" shortcut="Ctrl+C" onClick={() => onAction("copy")}/>

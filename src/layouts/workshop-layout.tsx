@@ -1,4 +1,4 @@
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
+import {useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from "react"
 import {
     ArrowLeft,
     Building2,
@@ -98,6 +98,7 @@ export type WorkshopOutletContext = {
     openInviteDialog: () => void
     /** Previews a color scheme without saving it; pass nothing to restore the saved one. */
     previewColorScheme: (scheme?: ColorScheme) => void
+    setDashboardEditing?: (editing: boolean) => void
 }
 
 const teamColors = ["#a78bfa", "#38bdf8", "#fb7185", "#34d399", "#fbbf24"]
@@ -114,19 +115,19 @@ const pageTitles: Record<string, string> = {
     "project-wiki": "Project Wiki",
     "bug-reports": "Bug Reports",
     todo: "TODOs",
+    uml: "UML",
     calendar: "Calendar",
     notes: "Notes",
     erd: "ERD maker",
     "ui-editor": "UI/UX Editor",
     sdlc: "SDLC Roadmap",
-    "state-machine": "State Machine",
     projects: "Projects",
     "project-detail": "Project details",
     teams: "Teams",
     "org-chart": "Organization chart",
     settings: "Organization settings",
 }
-const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "state-machine", "projects", "project-detail", "project-wiki", "bug-reports"])
+const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "projects", "project-detail", "project-wiki", "bug-reports"])
 
 export function WorkshopLayout() {
     const {organizationId} = useParams()
@@ -142,6 +143,7 @@ export function WorkshopLayout() {
     }
 
     const [membersOpen, setMembersOpen] = useState(true)
+    const [dashboardEditing, setDashboardEditing] = useState(false)
     const mainColumn = useRef<HTMLElement>(null)
     const [contentWidth, setContentWidth] = useState<number | null>(null)
     const compact = useCompactWorkshop()
@@ -151,6 +153,7 @@ export function WorkshopLayout() {
     useEffect(() => {setNavigationOpen(false); setCompactMembersOpen(false)}, [location.pathname, compact, compactMembers])
     const [projectGroupsOpen, setProjectGroupsOpen] = useState<Record<string, boolean>>({planning: true, design: true, knowledge: true})
     const [projectsOpen, setProjectsOpen] = useState(true)
+    const projectsSubmenuId = useId()
     const [memberQuery, setMemberQuery] = useState("")
     const [inviteOpen, setInviteOpen] = useState(false)
     const [inviteLink, setInviteLink] = useState("")
@@ -310,7 +313,7 @@ export function WorkshopLayout() {
     useEffect(() => {
         const category = projectNavigationCategories.find(group => group.tools.some(path => path === activePath))
         if (category) setProjectGroupsOpen(current => ({...current, [category.id]: true}))
-        if (activePath === "projects" || activePath === "project-detail") setProjectsOpen(true)
+        if (activePath === "project-detail") setProjectsOpen(true)
     }, [activePath])
 
     const accessDenied = membershipError && "status" in membershipError &&
@@ -381,6 +384,7 @@ export function WorkshopLayout() {
         canInvite,
         openInviteDialog: () => void openInviteDialog(),
         previewColorScheme,
+        setDashboardEditing,
     }
 
     return (
@@ -421,27 +425,33 @@ export function WorkshopLayout() {
                 </div>
 
                 <nav aria-label="Workshop navigation" className="workshop-nav">
-                    <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={activePath} underConstruction/>
+                    <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={activePath} underConstruction dashboardEditing={dashboardEditing}/>
                     {projectNavigationCategories.map(category => <ProjectToolsNavigation key={`${user?.id}:${activeOrganizationId}:${category.id}`} userId={user?.id ?? "current"}
                         organizationId={activeOrganizationId} category={category} expanded={projectGroupsOpen[category.id] ?? true}
                         onToggle={() => setProjectGroupsOpen(current => ({...current, [category.id]: !current[category.id]}))}/>)}
                     <div className={cn("workshop-nav-group workshop-projects-group", projectsOpen && "open")}>
-                        <button
-                            aria-expanded={projectsOpen}
-                            className={cn(
-                                "workshop-nav-group-trigger",
-                                (activePath === "projects" || activePath === "project-detail") && "active",
-                            )}
-                            onClick={() => setProjectsOpen((open) => !open)}
-                            type="button"
-                        >
-                            <span className="workshop-construction-label">Projects<UnderConstructionIndicator/></span><CaretRightIcon className="workshop-nav-chevron"/>
-                        </button>
-                        <div className="workshop-nav-submenu">
-                            <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")}
-                                     end to="projects">
-                                <span className="workshop-construction-label">All projects<UnderConstructionIndicator/></span>
+                        <div className="workshop-projects-heading">
+                            <NavLink
+                                className={cn(
+                                    "workshop-nav-group-trigger workshop-projects-link",
+                                    (activePath === "projects" || activePath === "project-detail") && "active",
+                                )}
+                                end to="projects"
+                            >
+                                <span className="workshop-construction-label">Projects<UnderConstructionIndicator/></span>
                             </NavLink>
+                            <button
+                                aria-label={projectsOpen ? "Collapse projects" : "Expand projects"}
+                                aria-expanded={projectsOpen}
+                                aria-controls={projectsSubmenuId}
+                                className="workshop-projects-toggle"
+                                onClick={() => setProjectsOpen((open) => !open)}
+                                type="button"
+                            >
+                                <CaretRightIcon aria-hidden="true" className="workshop-nav-chevron"/>
+                            </button>
+                        </div>
+                        <div className="workshop-nav-submenu" id={projectsSubmenuId}>
                             {visibleProjects.map((candidate) => {
                                 const isCurrent = candidate.id === project?.id
                                 return (
@@ -494,7 +504,7 @@ export function WorkshopLayout() {
                 </nav>
 
                 <div className="workshop-sidebar-footer">
-                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft aria-hidden="true"/><span>Back to DevHub</span></Link>
+                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft aria-hidden="true"/><span>Back to Zevont</span></Link>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button className={`workshop-sidebar-user status-${currentStatus} h-auto`} type="button"
@@ -582,7 +592,7 @@ export function WorkshopLayout() {
                 </header>
 
                 <WorkshopStorageNotice organizationId={activeOrganizationId} persisted={isPersistedOrganization}/>
-                <main className={cn("workshop-content", ["erd", "ui-editor", "sdlc"].includes(activePath) && "workshop-content-canvas")}>
+                <main className={cn("workshop-content", ["erd", "ui-editor", "sdlc", "uml"].includes(activePath) && "workshop-content-canvas")}>
                     <WorkshopContentWidthContext value={contentWidth}>
                         <Outlet key={activeOrganizationId} context={outletContext}/>
                     </WorkshopContentWidthContext>

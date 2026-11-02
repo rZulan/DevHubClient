@@ -12,6 +12,7 @@ import {WorkshopPage} from "@/pages/workshop/workshop-page"
 import {setUser} from "@/features/auth/auth-slice"
 import {WorkshopErdPage} from "@/pages/workshop/workshop-erd-page"
 import {WorkshopIdeationPage} from "@/pages/workshop/workshop-ideation-page"
+import {WorkshopUmlLibraryPage} from "@/pages/workshop/workshop-uml-library-page"
 import {WorkshopUiEditorPage} from "@/pages/workshop/workshop-ui-editor-page"
 import {WorkshopSdlcPage} from "@/pages/workshop/workshop-sdlc-page"
 import {WorkshopLobbyPage} from "@/pages/workshop/workshop-lobby-page"
@@ -30,7 +31,6 @@ import {WorkshopCalendarPage} from "@/pages/workshop/workshop-calendar-page"
 import {WorkshopNotesPage} from "@/pages/workshop/workshop-notes-page"
 import {WorkshopProjectWikiPage} from "@/pages/workshop/workshop-project-wiki-page"
 import {WorkshopBugReportsPage} from "@/pages/workshop/workshop-bug-reports-page"
-import {WorkshopStateMachinePage} from "@/pages/workshop/workshop-state-machine-page"
 import type {WorkshopOrganization} from "@/features/workshop/workshop-types"
 import "@/index.css"
 
@@ -71,8 +71,8 @@ root.render(<Provider store={store}><ThemeProvider><WorkshopContext value={previ
                 <Route path="dashboard" element={<WorkshopLobbyPage/>}/><Route path="erd" element={<WorkshopErdPage/>}/><Route path="ui-editor" element={<WorkshopUiEditorPage/>}/><Route path="sdlc" element={<WorkshopSdlcPage/>}/>
                 <Route path="ideation" element={<WorkshopIdeationPage/>}/>
                 <Route path="todo" element={<WorkshopTodoPage/>}/><Route path="calendar" element={<WorkshopCalendarPage/>}/>
-                <Route path="notes" element={<WorkshopNotesPage/>}/><Route path="project-wiki" element={<WorkshopProjectWikiPage/>}/>
-                <Route path="bug-reports" element={<WorkshopBugReportsPage/>}/><Route path="state-machine" element={<WorkshopStateMachinePage/>}/>
+                <Route path="uml" element={<WorkshopUmlLibraryPage/>}/><Route path="notes" element={<WorkshopNotesPage/>}/><Route path="project-wiki" element={<WorkshopProjectWikiPage/>}/>
+                <Route path="bug-reports" element={<WorkshopBugReportsPage/>}/>
                 <Route path="projects" element={<WorkshopProjectsPage/>}/><Route path="projects/:projectId" element={<WorkshopProjectDetailPage/>}/>
                 <Route path="teams" element={<WorkshopTeamsPage/>}/><Route path="org-chart" element={<WorkshopOrgChartPage/>}/>
                 <Route path="settings" element={<WorkshopSettingsLayout/>}><Route path="general" element={<GeneralSettingsPage/>}/><Route path="appearance" element={<AppearanceSettingsPage/>}/><Route path="members" element={<MembersSettingsPage/>}/><Route path="invites" element={<InvitesSettingsPage/>}/><Route path="roles" element={<WorkshopRolesPage/>}/></Route>

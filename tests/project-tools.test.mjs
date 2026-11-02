@@ -7,14 +7,14 @@ test('preferences retain customized order, deduplicate and exclude archived tool
     assert.deepEqual(normalizeToolPreferences({order: ['todo', 'todo', 'unknown', 'ideation'], hidden: ['todo', 'unknown', 'ideation']}), {order: [...projectToolIds], hidden: ['todo']})
     const preferences = normalizeToolPreferences(null)
     assert.equal(moveTool(preferences, 'todo', -1), preferences)
-    assert.deepEqual(moveTool(preferences, 'erd', -1).order, ['todo', 'erd', 'notes', 'ui-editor', 'sdlc', 'state-machine', 'calendar', 'bug-reports', 'project-wiki'])
+    assert.deepEqual(moveTool(preferences, 'erd', -1).order, ['todo', 'erd', 'notes', 'ui-editor', 'sdlc', 'calendar', 'bug-reports', 'project-wiki', 'uml'])
 })
 test('drag arrangement moves tools across the list while preserving visibility and rejecting invalid drops', () => {
     const original = {...normalizeToolPreferences(null), hidden: ['todo']}
     const last = reorderTool(original, 'todo', 5)
-    assert.deepEqual(last.order, ['notes', 'erd', 'ui-editor', 'sdlc', 'state-machine', 'todo', 'calendar', 'bug-reports', 'project-wiki'])
+    assert.deepEqual(last.order, ['notes', 'erd', 'ui-editor', 'sdlc', 'calendar', 'todo', 'bug-reports', 'project-wiki', 'uml'])
     assert.deepEqual(last.hidden, ['todo'])
-    assert.deepEqual(reorderTool(last, 'sdlc', 0).order, ['sdlc', 'notes', 'erd', 'ui-editor', 'state-machine', 'todo', 'calendar', 'bug-reports', 'project-wiki'])
+    assert.deepEqual(reorderTool(last, 'sdlc', 0).order, ['sdlc', 'notes', 'erd', 'ui-editor', 'calendar', 'todo', 'bug-reports', 'project-wiki', 'uml'])
     assert.equal(reorderTool(original, 'erd', -1), original)
     assert.equal(reorderTool(original, 'erd', projectToolIds.length), original)
     assert.equal(reorderTool(original, 'erd', 1.5), original)
@@ -22,7 +22,7 @@ test('drag arrangement moves tools across the list while preserving visibility a
     assert.deepEqual(original.order, normalizeToolPreferences(null).order)
 })
 test('categories migrate legacy visibility and order without moving pages across groups', () => {
-    const legacy = {order: ['notes', 'sdlc', 'todo', 'erd', 'state-machine'], hidden: ['todo', 'notes']}
+    const legacy = {order: ['notes', 'sdlc', 'todo', 'erd'], hidden: ['todo', 'notes']}
     const planning = normalizeToolPreferences(legacy, projectNavigationCategories[0].tools)
     const knowledge = normalizeToolPreferences(legacy, projectNavigationCategories[2].tools)
     assert.deepEqual(planning, {order: ['sdlc', 'todo', 'calendar', 'bug-reports'], hidden: ['todo']})

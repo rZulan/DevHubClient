@@ -11,7 +11,7 @@ export function createNotePeel(source: HTMLElement, settling = false, initialPro
     element.setAttribute("aria-hidden", "true")
     element.inert = true
     Object.assign(element.style, {left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`})
-    element.style.setProperty("--note-color", style.getPropertyValue("--note-color").trim() || style.backgroundColor)
+    element.style.setProperty("--note-color", style.backgroundColor)
     for (const name of ["--workshop-font-code", "--workshop-font-ui"]) element.style.setProperty(name, style.getPropertyValue(name))
     const front = source.cloneNode(true) as HTMLElement
     front.removeAttribute("id")

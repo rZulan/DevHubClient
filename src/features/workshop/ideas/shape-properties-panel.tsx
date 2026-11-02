@@ -13,6 +13,8 @@ import {groupMemberLabel, shapeTextColor} from "./shape-presentation"
 export type ShapeStyleChanges = Partial<Pick<CanvasItem, "width" | "height" | "rotation" | "flipHorizontal" | "flipVertical" | "appearance" | "fillColor" | "outlineColor" | "outlineWidth" | "outlineStyle" | "cornerRadius" | "text" | "textAlign" | "verticalAlign" | "fontFamily" | "fontSize" | "bold" | "italic" | "underline" | "strikethrough" | "textColor" | "letterSpacing" | "lineHeight" | "textIndent" | "textRuns" | "noteHeaderRuns" | "noteBodyRuns" | "noteHeader" | "noteBody" | "noteHeaderStyle" | "noteBodyStyle">>
 
 type ShapePropertiesPanelProps = {
+    extra?: ReactNode
+    disabled?: boolean
     allItemsCount: number
     selectedGroupId?: string
     selectedIds: string[]
@@ -33,6 +35,8 @@ const PropertiesShapeContext = createContext("")
 
 export function ShapePropertiesPanel({
                                          allItemsCount,
+                                         extra,
+                                         disabled,
                                          selectedGroupId,
                                          selectedIds,
                                          selectedItem,
@@ -60,6 +64,8 @@ export function ShapePropertiesPanel({
                                                                     value={item.id}>{groupMemberLabel(item, index)}</option>)}
                     </WorkshopSelect></label>}
 
+                {extra}
+                <fieldset disabled={disabled} className="uml-properties-fieldset">
                 <PropertySection title="Shape" defaultOpen>
                     <div className="workshop-property-field"><span>Appearance</span>
                         <div className="workshop-shape-style-options" role="group" aria-label="Shape style">
@@ -152,7 +158,7 @@ export function ShapePropertiesPanel({
                                               selectedTextStyle={selectedTextStyle}
                                               onTextStyleUpdate={onTextStyleUpdate} onUpdate={onUpdate}/>
                 </> : <>
-                    <RectangleTextContent item={selectedItem} onUpdate={onUpdate}/>
+                    {!selectedItem.umlDetails && <RectangleTextContent item={selectedItem} onUpdate={onUpdate}/>}
                     <TypographyProperties item={selectedItem} propertyItems={propertyItems}
                                           selectedTextStyle={selectedTextStyle}
                                           useCharacterStyle={activeTextPart === "text"}
@@ -174,7 +180,7 @@ export function ShapePropertiesPanel({
                                 type="button" variant="outline"><Ungroup/> Ungroup</Button>
                     </div>
                 </PropertySection>
-            </aside>
+            </fieldset></aside>
     return <PropertiesShapeContext.Provider value={selectedItem.id}>
         {compact && <Button className="workshop-ideas-properties-toggle" variant="outline" onPointerDown={event => event.stopPropagation()} onClick={() => setOpen(true)}>Properties</Button>}
         <ResponsiveWorkshopPanel compact={compact} open={open} onOpenChange={setOpen} title="Shape properties" side="right">{panel}</ResponsiveWorkshopPanel>

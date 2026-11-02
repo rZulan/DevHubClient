@@ -15,7 +15,7 @@ const shortcuts = [
     {keys: ["Arrow keys"], label: "Move selection by 1 px"},
     {keys: ["Shift", "Arrow keys"], label: "Move selection by 10 px"},
     {keys: ["Hold", "Space"], label: "Temporarily pan the canvas"},
-    {keys: ["Esc"], label: "Exit text editing or clear selection"},
+    {keys: ["Esc"], label: "Cancel connection, exit editing, or clear selection"},
 ]
 
 export function IdeasShortcutsDialog({open, onOpenChange}: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -28,7 +28,7 @@ export function IdeasShortcutsDialog({open, onOpenChange}: { open: boolean; onOp
                 <div className="workshop-hotkeys-list">
                     {shortcuts.map(({keys, label}) => <ShortcutRow keys={keys} label={label} key={label}/>)}
                 </div>
-                <p className="workshop-hotkeys-tip">Double-click a shape to edit its text. Scroll to zoom, middle-drag
+                <p className="workshop-hotkeys-tip">Drag an edge handle to connect shapes. Double-click the middle of an arrow to edit its label; Enter saves, Escape cancels, and Shift+Enter adds a line. Select an arrow to reconnect its ends or adjust waypoints. Double-click shape text to edit it. Scroll to zoom, middle-drag
                     or hold Space and drag to pan, and hold Alt while dragging to bypass snapping.</p>
             </DialogContent>
         </Dialog>

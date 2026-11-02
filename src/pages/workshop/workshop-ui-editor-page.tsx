@@ -1,6 +1,7 @@
+import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useRef, useState} from "react"
 import {useOutletContext} from "react-router-dom"
-import {ArrowRight, Check, FileImage, ImageDown, PencilRuler, Play, Plus, Sparkles} from "lucide-react"
+import {Check, FileImage, ImageDown, PencilRuler, Play, Plus, Sparkles} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
@@ -9,6 +10,9 @@ import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {downloadFile} from "@/features/workshop/tool-documents"
 import {DesignCanvas} from "@/features/workshop/design-canvas"
+import {canvasViewKey} from "@/features/workshop/canvas-view-storage"
+import {paletteDragProps, type CanvasPoint, type DesignPaletteElement} from "@/features/workshop/canvas-palette"
+import {placeDesignElement} from "@/features/workshop/palette-placement"
 import {designTools, type DesignTool} from "@/features/workshop/design-tools"
 import {DesignLayersPanel, DesignInspector} from "@/features/workshop/design-panels"
 import {DesignPlayer} from "@/features/workshop/design-player"
@@ -20,7 +24,7 @@ import "@/features/workshop/design-editor.css"
 export function WorkshopUiEditorPage() {
     const {organization, project} = useOutletContext<WorkshopOutletContext>()
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current"
-    if (!project) return <section className="workshop-empty-panel"><PencilRuler/><h3>No project selected</h3><p>Select or create a project to design its interface.</p></section>
+    if (!project) return <WorkshopNoProject icon={PencilRuler}/>
     return <UiEditor key={`${userId}:${organization.id}:${project.id}`}/>
 }
 function UiEditor() {
@@ -52,10 +56,17 @@ function UiEditor() {
     }
     function select(id: string, additive = false) {setSelectedIds(current => additive ? current.includes(id) ? current.filter(i => i !== id) : [...current, id] : [id]); setTool("select"); focusCanvas()}
     function addLayers(layers: DesignLayer[], fit = false) {
-        if (!canEdit) return
-        if (document.layers.length + layers.length > 5000) {setError("This design can contain up to 5,000 layers."); return}
-        if (!apply({...document, layers: [...document.layers, ...layers]})) return
+        if (!canEdit) return false
+        if (document.layers.length + layers.length > 5000) {setError("This design can contain up to 5,000 layers."); return false}
+        if (!apply({...document, layers: [...document.layers, ...layers]})) return false
         setSelectedIds(layers.filter(l => !layers.some(p => p.id === l.parentId)).map(l => l.id)); setTool("select"); if (fit) setFitKey(v => v + 1); focusCanvas()
+        return true
+    }
+    function dropElement(element: DesignPaletteElement, point: CanvasPoint) {
+        if (!canAdd) return false
+        const layers = placeDesignElement(document, element, point)
+        if (!layers.length) {setError("Unlock this screen before dropping elements into it."); return false}
+        return addLayers(layers)
     }
     function frameX() {return document.layers.length ? Math.max(...document.layers.map(l => l.x + l.width)) + 100 : 80}
     function addFrame(width: number, height: number, name: string) {addLayers([newDesignLayer("frame", {name, width, height, x: frameX(), y: 80})], true)}
@@ -136,10 +147,11 @@ function UiEditor() {
         {error && <div className="tool-document-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         <div className="tool-editor-body ui-editor-body">
             <DesignLayersPanel document={document} selectedIds={selectedIds} onSelect={select} canEdit={canEdit} onPatch={patch} onReparent={reparent} onSort={direction => {if (primary) apply(reorderDesignLayer(document, primary.id, direction))}} onComponent={component} onFrame={addFrame} onStarter={starter} onImage={() => chooseImage()}/>
-            <div className="ui-canvas-area"><DesignCanvas document={document} selectedIds={selectedIds} onSelect={setSelectedIds} tool={tool} onTool={setTool} canEdit={canEdit} onChange={apply} onCreate={create} fitKey={fitKey} prototype={mode === "prototype"} onEditText={(id, text) => patch(id, {text})} onAction={action}/>
+            <div className="ui-canvas-area"><DesignCanvas viewStorageKey={canvasViewKey(userId, organization.id, project!.id, "ui-editor")} document={document} selectedIds={selectedIds} onSelect={setSelectedIds} tool={tool} onTool={setTool} canEdit={canEdit} onChange={apply} onCreate={create} fitKey={fitKey} prototype={mode === "prototype"} onEditText={(id, text) => patch(id, {text})} onAction={action} onPaletteDrop={dropElement}>
                 {!ready && <div className="ui-canvas-loading" role="status">Opening your design workspace…</div>}
-                {ready && !document.layers.length && <div className="ui-design-empty"><div className="ui-empty-art" aria-hidden="true"><div className="ui-empty-art-screen"><span/><i/><i/><div/><b/></div><div className="ui-empty-art-swatch"><i/><i/><i/><i/></div><span className="ui-empty-art-cursor"><PencilRuler/></span><small>your next great idea</small></div><span className="ui-empty-eyebrow">IDEAS, MEET CANVAS.</span><h2>Make something<br/><em>worth clicking.</em></h2><p>A space to design interfaces, shape the details,<br/>and bring your next experience to life.</p><div className="ui-empty-actions"><Button disabled={!canAdd} onClick={() => addFrame(390, 844, "Mobile screen")}><Plus/>Start with a frame</Button><button type="button" disabled={!canAdd} onClick={() => starter("onboarding")}><Sparkles/>Try a starter<ArrowRight/></button></div><span className="ui-empty-hint"><kbd>F</kbd> to draw a frame anywhere on the canvas</span></div>}
-                <div className="ui-design-toolbar" role="toolbar" aria-label="Design tools">{designTools.map(({id, icon: Icon, label, key}) => <button type="button" key={id} disabled={id !== "select" && id !== "hand" && !canAdd} className={tool === id ? "active" : ""} aria-label={`${label} tool`} aria-pressed={tool === id} title={`${label} · ${key}`} onClick={() => {setTool(id); focusCanvas()}}><Icon/><span className="ui-tool-tooltip">{label}<kbd>{key}</kbd></span></button>)}</div>
+                {ready && !document.layers.length && <WorkshopEmptyState className="workshop-empty-state-canvas" icon={PencilRuler} title="No designs yet" description={canWrite ? "Add a frame or choose a starter to begin designing your interface." : "Designs shared by your team will appear here."} action={canWrite && <><Button disabled={!canAdd} onClick={() => addFrame(390, 844, "Mobile screen")}><Plus/>Add frame</Button><Button variant="outline" disabled={!canAdd} onClick={() => starter("onboarding")}><Sparkles/>Try a starter</Button></>}>{canWrite && <span className="workshop-empty-state-detail"><kbd>F</kbd> to draw a frame on the canvas</span>}</WorkshopEmptyState>}
+                </DesignCanvas>
+                <div className="ui-design-toolbar" role="toolbar" aria-label="Design tools">{designTools.map(({id, icon: Icon, label, key}) => <button type="button" key={id} disabled={id !== "select" && id !== "hand" && !canAdd} {...(id !== "select" && id !== "hand" ? paletteDragProps({tool: "ui-editor", source: "shape", kind: id}, canAdd) : {})} className={tool === id ? "active" : ""} aria-label={`${label} tool`} aria-pressed={tool === id} title={`${label} · ${key}${id !== "select" && id !== "hand" ? " · Drag to canvas" : ""}`} onClick={() => {setTool(id); focusCanvas()}}><Icon/><span className="ui-tool-tooltip">{label}<kbd>{key}</kbd></span></button>)}</div>
             </div>
             <DesignInspector document={document} selectedIds={selectedIds} mode={mode} canEdit={canEdit} onPatch={patch} onGeometry={changes => {if (primary) apply(moveDesignLayers(document, [{...primary, ...changes}]))}} onRemove={remove} onDuplicate={duplicate} onAlign={align} onStart={id => apply({...document, startFrameId: id})} onFrame={addFrame} onMode={setMode} onImage={chooseImage} onBegin={editor.beginTransaction} onEnd={editor.endTransaction}/>
         </div>

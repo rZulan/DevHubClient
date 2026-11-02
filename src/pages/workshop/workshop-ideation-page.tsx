@@ -1,6 +1,8 @@
-import {presetItems, type ShapePreset} from "@/features/workshop/shape-catalog"
+import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
+import {type ShapePreset} from "@/features/workshop/shape-catalog"
 import {canvasGridBackground} from "@/features/workshop/canvas-view"
-import {Lightbulb} from "lucide-react"
+import {readCanvasView, saveCanvasView} from "@/features/workshop/canvas-view-storage"
+import {ArrowLeft, Lightbulb, Waypoints, Undo2, Redo2, Layers} from "lucide-react"
 import {
     type CSSProperties,
     type MouseEvent as ReactMouseEvent,
@@ -12,11 +14,9 @@ import {
     useState,
     type WheelEvent,
 } from "react"
-import {useOutletContext} from "react-router-dom"
+import {Navigate, useOutletContext} from "react-router-dom"
 
-import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
-import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import type {ResizeDirection} from "@/features/workshop/resize-rectangle"
@@ -24,9 +24,20 @@ import {type SnapGuide, snapShape} from "@/features/workshop/snap-shape"
 import {axisAlignedBounds, combinedBounds, fitBounds, zoomAt} from "@/features/workshop/canvas-view"
 import {resizeSelection} from "@/features/workshop/resize-selection"
 import {rotateSelection} from "@/features/workshop/rotate-selection"
-import {useIdeasDocument} from "@/features/workshop/use-ideas-document"
 import {WorkshopCanvasNotice} from "@/features/workshop/workshop-limit-notices"
-import {useIdeasCollaboration} from "@/features/workshop/use-ideas-collaboration"
+import {prioritizedUmlPresets, umlPresets} from "@/features/workshop/uml-catalog"
+import type {UmlDiagram} from "@/features/workshop/uml-library"
+import {upgradeUmlConnections, visibleUmlItems, canConnectUmlShape, newUmlConnection, syncUmlConnections, umlEndpointAt, umlEndpointPoint, umlConnectionRoute, umlSelectionWithConnections, translateUmlItems} from "@/features/workshop/uml-connections"
+import {umlConnectorSymbols, umlSides, type UmlConnection, type UmlConnectorSymbol, type UmlSide} from "@/features/workshop/uml-connection-types"
+import {UmlConnectionSuggestions} from "@/features/workshop/ideas/uml-connection-suggestions"
+import {addUmlSuggestedElement, createUmlPresetItems, umlFacingEndpoint, validUmlConnectionSuggestion, type UmlConnectionSuggestion} from "@/features/workshop/uml-connection-drop"
+import {UmlConnectionsLayer} from "@/features/workshop/ideas/uml-connections-layer"
+import {UmlConnectionLabelEditor} from "@/features/workshop/ideas/uml-connection-label-editor"
+import {UmlConnectorPanel} from "@/features/workshop/ideas/uml-connector-panel"
+import {UmlElementFields} from "@/features/workshop/ideas/uml-element-fields"
+import {UmlCanvasActions} from "@/features/workshop/ideas/uml-canvas-actions"
+import {UmlLayersPanel} from "@/features/workshop/ideas/uml-layers-panel"
+import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {expandGroupedIds, groupShapes, ungroupShapes} from "@/features/workshop/shape-groups"
 import {CanvasCard, type TextSelection, type TextStyleCommand} from "@/features/workshop/ideas/canvas-card"
 import {CanvasToolbar, ShapeSelector, ZoomControls} from "@/features/workshop/ideas/canvas-controls"
@@ -41,42 +52,27 @@ import {
     type CanvasItem,
     cloneShapes,
     decodeShapes,
-    defaultTextStyle,
     encodeShapes,
-    normalizeCanvasItem
 } from "@/features/workshop/shape-clipboard"
 
 export function WorkshopIdeationPage() {
-    const {organization, project} = useOutletContext<WorkshopOutletContext>()
-    const userId = useAppSelector((state) => state.auth.user?.id)
-    if (!project) return <section className="workshop-empty-panel"><Lightbulb/><h3>No project canvas yet</h3><p>Select
-        or create a project to start capturing ideas.</p></section>
-    return <IdeasCanvas key={`${userId}:${organization.id}:${project.id}`}/>
+    return <Navigate to="../uml" replace/>
 }
 
-function IdeasCanvas() {
-    const {organization, project} = useOutletContext<WorkshopOutletContext>()
-    const userId = useAppSelector((state) => state.auth.user?.id)
-    const hasEditPermission = hasWorkshopPermission(organization, userId ?? "current", "Edit ideation")
-    const ideasKey = {organizationId: organization.id, projectId: project!.id}
-    const {
-        items,
-        setItems: setDocumentItems,
-        status: saveStatus,
-        saveError,
-        applyRemote,
-        save,
-        retry,
-        reload
-    } = useIdeasDocument(ideasKey, userId ?? "current", hasEditPermission)
+export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {diagram: UmlDiagram; adapter: {canEdit: boolean; status: string; error: string; setItems: (items: CanvasItem[]) => void; save: () => void; retry: () => void; reload: () => void}; onBack: () => void; viewStorageKey?: string}) {
+    const {project} = useOutletContext<WorkshopOutletContext>()
+    const items = useMemo(()=>upgradeUmlConnections(diagram.items),[diagram.items]), setDocumentItems = adapter.setItems, saveStatus = adapter.status, saveError = adapter.error, save = adapter.save, retry = adapter.retry, reload = adapter.reload, hasEditPermission = adapter.canEdit
     const itemsRef = useRef(items)
     itemsRef.current = items
     const history = useRef<{ past: CanvasItem[][]; future: CanvasItem[][] }>({past: [], future: []})
     const historyTransaction = useRef<CanvasItem[] | null>(null)
+    const lastLocalItems = useRef(items)
+    useEffect(() => {if (items !== lastLocalItems.current) {history.current = {past: [], future: []}; historyTransaction.current = null; lastLocalItems.current = items}}, [items])
 
     function setItems(action: CanvasItem[] | ((current: CanvasItem[]) => CanvasItem[])) {
+        if (!hasEditPermission) return
         const current = itemsRef.current
-        const next = typeof action === "function" ? action(current) : action
+        const next = syncUmlConnections(typeof action === "function" ? action(current) : action)
         if (next === current || next.length === current.length && next.every((item, index) => item === current[index])) return
         if (!historyTransaction.current) {
             history.current.past.push(current)
@@ -84,6 +80,7 @@ function IdeasCanvas() {
         }
         history.current.future = []
         itemsRef.current = next
+        lastLocalItems.current = next
         setDocumentItems(next)
     }
 
@@ -101,21 +98,25 @@ function IdeasCanvas() {
     }
 
     function undo() {
+        if (!hasEditPermission) return
         const previous = history.current.past.pop()
         if (!previous) return
         historyTransaction.current = null
         history.current.future.push(itemsRef.current)
         itemsRef.current = previous
+        lastLocalItems.current = previous
         setDocumentItems(previous)
         setSnapGuides([])
     }
 
     function redo() {
+        if (!hasEditPermission) return
         const next = history.current.future.pop()
         if (!next) return
         historyTransaction.current = null
         history.current.past.push(itemsRef.current)
         itemsRef.current = next
+        lastLocalItems.current = next
         setDocumentItems(next)
         setSnapGuides([])
     }
@@ -131,12 +132,22 @@ function IdeasCanvas() {
         window.addEventListener("keydown", saveShortcut, true)
         return () => window.removeEventListener("keydown", saveShortcut, true)
     }, [hasEditPermission])
-    const [zoom, setZoom] = useState(0.85)
-    const [pan, setPan] = useState({x: 60, y: 30})
+    const [savedView] = useState(() => readCanvasView(viewStorageKey))
+    const [zoom, setZoom] = useState(savedView?.zoom ?? 0.85)
+    const [pan, setPan] = useState(savedView?.pan ?? {x: 60, y: 30})
+    useEffect(() => {saveCanvasView(viewStorageKey, {zoom, pan})}, [viewStorageKey, zoom, pan])
     const [tool, setTool] = useState<"select" | "hand">("select")
+    const [connecting, setConnecting] = useState(false)
+    const [connectionSymbol, setConnectionSymbol] = useState<UmlConnectorSymbol>(diagram.type === "sequence" ? "sync" : diagram.type === "class" || diagram.type === "use-case" ? "association" : "directed")
+    const [connectionRouting, setConnectionRouting] = useState<UmlConnection["routing"]>(diagram.type === "sequence" || diagram.type === "communication" ? "straight" : "orthogonal")
+    const [connectionDraft, setConnectionDraft] = useState<CanvasItem>()
+    const [pendingConnection, setPendingConnection] = useState<UmlConnectionSuggestion & {beforeDrop:CanvasItem[];afterDrop:CanvasItem[]}>()
+    const [editingLabelId, setEditingLabelId] = useState<string>()
+    const [layersOpen, setLayersOpen] = useState(false)
+    const connectionGesture = useRef<{pointerId:number; original:CanvasItem; draft:CanvasItem; mode:"new"|"start"|"end"|"bend"; index:number; clientX:number; clientY:number; moved:boolean}|null>(null)
     const [spacePanning, setSpacePanning] = useState(false)
     const [isPanning, setIsPanning] = useState(false)
-    const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false)
+    const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(true)
     const [isHotkeysOpen, setIsHotkeysOpen] = useState(false)
     const [contextMenu, setContextMenu] = useState<{
         x: number;
@@ -149,11 +160,7 @@ function IdeasCanvas() {
     const [activeTextSelection, setActiveTextSelection] = useState<TextSelection>()
     const [textStyleCommand, setTextStyleCommand] = useState<TextStyleCommand>()
     const textStyleCommandId = useRef(0)
-    const {selectorsByShape} = useIdeasCollaboration(ideasKey, selectedIds, (document) => {
-        history.current = {past: [], future: []}
-        historyTransaction.current = null
-        applyRemote(document)
-    })
+    const selectorsByShape = new Map<string, string[]>()
     const [snapping, setSnapping] = useState(true)
     const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([])
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
@@ -197,14 +204,97 @@ function IdeasCanvas() {
     const [marquee, setMarquee] = useState<{ x: number; y: number; width: number; height: number }>()
     const panStart = useRef<{ pointerX: number; pointerY: number; panX: number; panY: number } | null>(null)
     const touch = useCanvasTouch(canvasRef, {zoom, pan}, view => {setZoom(view.zoom); setPan(view.pan)}, () => {
-        endPan(); groupStart.current = []; setSnapGuides([]); endHistoryTransaction()
+        cancelConnection(); endPan(); groupStart.current = []; setSnapGuides([]); endHistoryTransaction()
     })
     const canEditIdeation = hasEditPermission && !["loading", "load-error", "conflict"].includes(saveStatus)
     const panningMode = tool === "hand" || spacePanning
+    const editingLabel = canEditIdeation && !panningMode ? visibleUmlItems(items).find(item=>item.id===editingLabelId && item.connection && !item.locked) : undefined
+
+    function editConnectionLabel(id:string) {
+        const item=itemsRef.current.find(candidate=>candidate.id===id)
+        if(!canEditIdeation || panningMode || !item?.connection || item.locked || item.hidden) return
+        cancelConnection()
+        setSelectedIds([id])
+        setPropertyItemId(id)
+        setEditingLabelId(id)
+    }
+    function commitConnectionLabel(text:string) {
+        const id=editingLabelId
+        if(canEditIdeation) setItems(current=>current.map(item=>item.id===id && item.connection && !item.locked && item.text!==text ? {...item,text,textRuns:undefined} : item))
+        setEditingLabelId(undefined)
+    }
+    useEffect(()=>{if(editingLabelId && !editingLabel) setEditingLabelId(undefined)},[editingLabelId,editingLabel])
+
+    function offerConnectionSuggestions(item:CanvasItem,end:"start"|"end",beforeDrop:CanvasItem[]) {
+        const endpoint=item.connection![end]
+        if("shapeId" in endpoint) {setPendingConnection(undefined);return}
+        setPendingConnection({connectionId:item.id,end,point:endpoint,beforeDrop,afterDrop:itemsRef.current})
+    }
+    function chooseSuggestedElement(presetId:string) {
+        if(!canEditIdeation || !pendingConnection) return "This canvas is not editable right now."
+        const current=itemsRef.current,result=addUmlSuggestedElement(current,pendingConnection,presetId,createClientId)
+        if(!result) return "This connection changed. Drag its end again to add an element."
+        const combineUndo=current===pendingConnection.afterDrop && history.current.past.at(-1)===pendingConnection.beforeDrop && !historyTransaction.current
+        setItems(result.items)
+        if(combineUndo) history.current.past.pop()
+        setSelectedIds([result.id]);setPropertyItemId(result.id)
+        setPendingConnection(undefined)
+        return ""
+    }
+    useEffect(()=>{
+        if(pendingConnection && (!canEditIdeation || !validUmlConnectionSuggestion(items,pendingConnection))) setPendingConnection(undefined)
+    },[canEditIdeation,items,pendingConnection])
+
+    function worldPoint(event: {clientX:number;clientY:number}) {
+        const rect = canvasRef.current!.getBoundingClientRect()
+        return {x:(event.clientX-rect.left-pan.x)/zoom,y:(event.clientY-rect.top-pan.y)/zoom}
+    }
+    function cancelConnection() {connectionGesture.current=null;setConnectionDraft(undefined)}
+    function startConnection(event: ReactPointerEvent, item:CanvasItem, mode:"new"|"start"|"end"|"bend", index=0) {
+        if (!canEditIdeation || event.button!==0 || !event.isPrimary || item.locked || panningMode) return
+        event.preventDefault();event.stopPropagation()
+        canvasRef.current?.focus({preventScroll:true})
+        canvasRef.current?.setPointerCapture(event.pointerId)
+        connectionGesture.current={pointerId:event.pointerId,original:item,draft:item,mode,index,clientX:event.clientX,clientY:event.clientY,moved:false}
+        setConnectionDraft(item);setEditingLabelId(undefined)
+    }
+    function beginEdge(event: ReactPointerEvent, item:CanvasItem, side:UmlSide, offset=.5) {
+        const start={shapeId:item.id,side,offset}
+        const added=newUmlConnection(itemsRef.current,start,umlEndpointPoint(itemsRef.current,start),connectionSymbol,connectionRouting)
+        if (diagram.type==="sequence"||diagram.type==="communication") added.connection!.number=Math.min(10000,1+Math.max(0,...itemsRef.current.map(n=>n.connection?.number??0)))
+        startConnection(event,added,"new")
+    }
+    function moveConnection(event: ReactPointerEvent) {
+        const gesture=connectionGesture.current
+        if (!gesture || gesture.pointerId!==event.pointerId) return false
+        event.preventDefault();event.stopPropagation()
+        gesture.moved ||= Math.hypot(event.clientX-gesture.clientX,event.clientY-gesture.clientY)>4
+        const point=worldPoint(event), c=gesture.original.connection!
+        let connection:UmlConnection
+        if (gesture.mode==="bend") {const bends=[...c.bends];bends[gesture.index]=point;connection={...c,bends}}
+        else {const endpoint=umlEndpointAt(itemsRef.current,point,14/zoom)??point;connection={...c,[gesture.mode==="start"?"start":"end"]:endpoint}}
+        gesture.draft={...gesture.original,connection};setConnectionDraft(gesture.draft)
+        return true
+    }
+    function finishConnection(event: ReactPointerEvent) {
+        if (!connectionGesture.current || connectionGesture.current.pointerId!==event.pointerId) return
+        moveConnection(event)
+        const gesture=connectionGesture.current
+        if (gesture.moved && canEditIdeation && !itemsRef.current.find(n=>n.id===gesture.original.id)?.locked) {
+            const beforeDrop=itemsRef.current
+            setItems(current=>gesture.mode==="new" ? [...current,gesture.draft] : current.map(item=>item.id===gesture.original.id ? gesture.draft : item))
+            setSelectedIds([gesture.original.id]);setPropertyItemId(gesture.original.id)
+            if(gesture.mode!=="bend") offerConnectionSuggestions(gesture.draft,gesture.mode==="start" ? "start" : "end",beforeDrop)
+        }
+        cancelConnection()
+        if(canvasRef.current?.hasPointerCapture(event.pointerId))canvasRef.current.releasePointerCapture(event.pointerId)
+    }
+    useEffect(()=>{const cancel=()=>cancelConnection();window.addEventListener("blur",cancel);return()=>window.removeEventListener("blur",cancel)},[])
+    useEffect(()=>{if(!canEditIdeation)cancelConnection()},[canEditIdeation])
 
     useEffect(() => {
         function keyDown(event: globalThis.KeyboardEvent) {
-            if (event.code !== "Space" || event.repeat || isHotkeysOpen || isEditingText(event.target)) return
+            if (event.code !== "Space" || event.repeat || isHotkeysOpen || isEditingText(event.target) || event.target instanceof Element && !!event.target.closest("[data-uml-connection-suggestions]")) return
             event.preventDefault()
             setSpacePanning(true)
         }
@@ -266,7 +356,7 @@ function IdeasCanvas() {
     }
 
     function beginPan(event: ReactPointerEvent<HTMLDivElement>) {
-        if (!event.isPrimary) return
+        if (!event.isPrimary || connectionGesture.current) return
         event.currentTarget.focus({preventScroll: true})
         if (event.button === 0 && !panningMode && event.pointerType !== "touch") {
             event.preventDefault()
@@ -293,6 +383,7 @@ function IdeasCanvas() {
     }
 
     function movePan(event: ReactPointerEvent<HTMLDivElement>) {
+        if (moveConnection(event)) return
         const start = selectionStart.current
         if (start && start.pointerId === event.pointerId) {
             const bounds = event.currentTarget.getBoundingClientRect()
@@ -306,6 +397,7 @@ function IdeasCanvas() {
             }
             setMarquee(box)
             const hits = items.filter((item) => {
+                if (item.hidden) return false
                 const bounds = axisAlignedBounds(item)
                 return bounds.x <= box.x + box.width && bounds.x + bounds.width >= box.x
                     && bounds.y <= box.y + box.height && bounds.y + bounds.height >= box.y
@@ -322,7 +414,7 @@ function IdeasCanvas() {
 
     function handleWheel(event: WheelEvent<HTMLDivElement>) {
         event.preventDefault()
-        if (selectionStart.current || groupStart.current.length) return
+        if (connectionGesture.current || selectionStart.current || groupStart.current.length) return
         const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewportSize.height : 1)
         const nextZoom = zoom * Math.exp(-delta * 0.0015)
         if (nextZoom === zoom) return
@@ -341,56 +433,47 @@ function IdeasCanvas() {
     }
 
     function addRectangle(at?: { x: number; y: number }) {
-        addPreset({id: "rectangle", label: "Rectangle", category: "Basic shapes", kind: "rectangle"}, at)
+        addPreset(prioritizedUmlPresets(diagram.type)[0], at)
     }
 
     function addPreset(preset: ShapePreset, at?: { x: number; y: number }) {
-        const parts = presetItems(preset)
-        const groupId = parts.length > 1 ? createClientId() : undefined
-        const width = Math.max(...parts.map(part => (part.x ?? 0) + (part.width ?? 190)))
-        const height = Math.max(...parts.map(part => (part.y ?? 0) + (part.height ?? 105)))
-        const origin = at ?? {
-            x: (viewportSize.width / 2 - pan.x) / zoom - width / 2,
-            y: (viewportSize.height / 2 - pan.y) / zoom - height / 2
+        if (!canEditIdeation) return
+        const symbol=preset.changes?.umlSymbol
+        if (symbol && umlConnectorSymbols.includes(symbol as UmlConnectorSymbol)) {
+            setConnectionSymbol(symbol as UmlConnectorSymbol);setConnecting(true);setTool("select")
+            if(at){
+                const source=selectedItem && canConnectUmlShape(selectedItem) ? selectedItem : undefined
+                const added=newUmlConnection(itemsRef.current,source ? umlFacingEndpoint(source,at) : {x:at.x-200,y:at.y},umlEndpointAt(itemsRef.current,at,14/zoom)??at,symbol as UmlConnectorSymbol,connectionRouting)
+                if(diagram.type==="sequence"||diagram.type==="communication") added.connection!.number=Math.min(10000,1+Math.max(0,...itemsRef.current.map(n=>n.connection?.number??0)))
+                setEditingLabelId(undefined)
+                const beforeDrop=itemsRef.current
+                setItems(current=>[...current,added])
+                setSelectedIds([added.id]);setPropertyItemId(added.id)
+                offerConnectionSuggestions(added,"end",beforeDrop)
+            }
+            return
         }
-        const added = parts.map(part => normalizeCanvasItem({
-            ...defaultTextStyle,
-            width: 190,
-            height: 105,
-            appearance: "outlined",
-            fillColor: "#a78bfa",
-            outlineColor: "#a78bfa",
-            text: "",
-            textAlign: "center",
-            verticalAlign: "center",
-            cornerRadius: 0,
-            outlineWidth: 2,
-            outlineStyle: "solid",
-            ...part,
-            id: createClientId(),
-            groupId,
-            x: origin.x + (part.x ?? 0),
-            y: origin.y + (part.y ?? 0),
-        }))
+        const shapes=createUmlPresetItems(preset,{x:0,y:0},createClientId),bounds=combinedBounds(shapes)
+        const origin=at??{x:(viewportSize.width/2-pan.x)/zoom-bounds.width/2,y:(viewportSize.height/2-pan.y)/zoom-bounds.height/2}
+        const added=translateUmlItems(shapes,origin)
         setItems(current => [...current, ...added])
-        setTool("select")
+        setTool("select");setConnecting(false)
         setSelectedIds(added.map(item => item.id))
-        setIsShapeMenuOpen(false)
     }
 
     function resetView() {
-        if (!items.length) {
+        if (!items.some(n=>!n.hidden)) {
             setZoom(1)
             setPan({x: viewportSize.width / 2, y: viewportSize.height / 2})
             return
         }
-        const view = fitBounds(combinedBounds(items), viewportSize, selectedItem && tool === "select" && viewportSize.width > 600 ? 300 : 0)
+        const view = fitBounds(combinedBounds(visibleUmlItems(items)), viewportSize, selectedItem && tool === "select" && viewportSize.width > 600 ? 300 : 0)
         setZoom(view.zoom)
         setPan(view.pan)
     }
 
     function updateShapeStyle(changes: ShapeStyleChanges) {
-        setItems((current) => current.map((item) => propertyTargetIds.has(item.id) ? {...item, ...changes} : item))
+        setItems((current) => current.map((item) => propertyTargetIds.has(item.id) && !item.locked ? {...item, ...changes} : item))
     }
 
     function updateSelectedTextStyle(changes: CharacterStyleChanges) {
@@ -402,7 +485,7 @@ function IdeasCanvas() {
         setItems((current) => {
             const selected = current.filter((item) => selectedIds.includes(item.id))
             if (!selected) return current
-            const others = current.filter((item) => !selectedIds.includes(item.id))
+            const others = current.filter((item) => !selectedIds.includes(item.id) || item.locked)
             return position === "front" ? [...others, ...selected] : [...selected, ...others]
         })
     }
@@ -423,6 +506,7 @@ function IdeasCanvas() {
     }
 
     function insertCopies(source: CanvasItem[], offset: number) {
+        if(source.every(n=>itemsRef.current.includes(n))) source = umlSelectionWithConnections(itemsRef.current,source.map(n=>n.id))
         if (!source.length) return
         const copies = cloneShapes(source, offset, createClientId)
         setItems((current) => [...current, ...copies])
@@ -430,7 +514,7 @@ function IdeasCanvas() {
         setSnapGuides([])
     }
 
-    async function copySelection(source = selectedItems) {
+    async function copySelection(source = umlSelectionWithConnections(itemsRef.current,selectedIds)) {
         if (!source.length) return
         const text = encodeShapes(source)
         contextClipboard.current = source.map((item) => ({...item}))
@@ -453,11 +537,7 @@ function IdeasCanvas() {
         if (at) {
             const copies = cloneShapes(source, 0, createClientId)
             const bounds = combinedBounds(copies)
-            const positioned = copies.map((item) => ({
-                ...item,
-                x: item.x + at.x - bounds.x,
-                y: item.y + at.y - bounds.y
-            }))
+            const positioned = translateUmlItems(copies,{x:at.x-bounds.x,y:at.y-bounds.y})
             setItems((current) => [...current, ...positioned])
             setSelectedIds(positioned.map((item) => item.id))
             return
@@ -469,7 +549,7 @@ function IdeasCanvas() {
     }
 
     function deleteSelection() {
-        setItems((current) => current.filter((item) => !selectedIds.includes(item.id)))
+        setItems((current) => current.filter((item) => !selectedIds.includes(item.id) || item.locked))
         setSelectedIds([])
     }
 
@@ -519,13 +599,13 @@ function IdeasCanvas() {
         else if (action === "ungroup") ungroupSelection()
         else if (action === "front") changeShapeOrder("front")
         else if (action === "back") changeShapeOrder("back")
-        else if (action === "select-all") setSelectedIds(items.map((item) => item.id))
+        else if (action === "select-all") setSelectedIds(visibleUmlItems(items).map((item) => item.id))
         else if (action === "fit") resetView()
         else if (action === "add-rectangle") addRectangle({x: menu.worldX, y: menu.worldY})
     }
 
     function flipSelection(axis: "horizontal" | "vertical") {
-        setItems((current) => current.map((item) => !selectedIds.includes(item.id) ? item : axis === "horizontal"
+        setItems((current) => current.map((item) => !selectedIds.includes(item.id) || item.locked || item.connection ? item : axis === "horizontal"
             ? {...item, flipHorizontal: !item.flipHorizontal}
             : {...item, flipVertical: !item.flipVertical}))
     }
@@ -535,7 +615,7 @@ function IdeasCanvas() {
     }
 
     function changeSelectionSize(next: CanvasItem, direction?: ResizeDirection, bypass = true, keyboard = false) {
-        const source = keyboard ? selectedItems : groupStart.current
+        const source = (keyboard ? selectedItems : groupStart.current).filter(n=>!n.connection&&!n.locked)
         if (source.length < 2) return
         const original = combinedBounds(source)
         const constrained = resizeSelection(source, original, next)
@@ -552,37 +632,40 @@ function IdeasCanvas() {
     }
 
     function changeSelectionRotation(degrees: number) {
-        const source = groupStart.current.length ? groupStart.current : selectedItems
+        const source = (groupStart.current.length ? groupStart.current : selectedItems).filter(n=>!n.connection&&!n.locked)
         if (source.length < 2) return
         const rotated = rotateSelection(source, degrees)
         setItems((current) => current.map((item) => rotated.find((member) => member.id === item.id) ?? item))
     }
 
     if (!project) {
-        return <section className="workshop-empty-panel"><Lightbulb/><h3>No project canvas yet</h3><p>Select or create a
-            project to start capturing ideas.</p></section>
+        return <WorkshopNoProject icon={Lightbulb}/>
     }
 
     return (
         <div
             ref={canvasRef}
             tabIndex={0}
-            aria-label="Playground canvas"
+            aria-label={`${diagram.name} UML canvas`}
+            onDragOver={event => {if (canEditIdeation && event.dataTransfer.types.includes("application/x-zevont-uml-preset")) {event.preventDefault(); event.dataTransfer.dropEffect = "copy"}}}
+            onDrop={event => {if (!canEditIdeation || (event.target as Element).closest(".workshop-shape-menu")) return; const preset = umlPresets.find(p => p.id === event.dataTransfer.getData("application/x-zevont-uml-preset")); if (!preset || !canvasRef.current) return; event.preventDefault(); const bounds = canvasRef.current.getBoundingClientRect(); addPreset(preset, {x: (event.clientX - bounds.left - pan.x) / zoom, y: (event.clientY - bounds.top - pan.y) / zoom})}}
             onCopy={(event) => {
                 if (isEditingText(event.target) || tool !== "select" || !canEditIdeation || !selectedItems.length || groupStart.current.length) return
                 event.preventDefault()
-                const text = encodeShapes(selectedItems)
+                const copied = umlSelectionWithConnections(itemsRef.current,selectedIds)
+                const text = encodeShapes(copied)
                 event.clipboardData.setData("text/plain", text)
                 lastPaste.current = {text, count: 0}
-                contextClipboard.current = selectedItems.map((item) => ({...item}))
+                contextClipboard.current = copied
             }}
             onCut={(event) => {
                 if (isEditingText(event.target) || tool !== "select" || !canEditIdeation || !selectedItems.length || groupStart.current.length) return
                 event.preventDefault()
-                const text = encodeShapes(selectedItems)
+                const copied = umlSelectionWithConnections(itemsRef.current,selectedIds)
+                const text = encodeShapes(copied)
                 event.clipboardData.setData("text/plain", text)
                 lastPaste.current = {text, count: 0}
-                contextClipboard.current = selectedItems.map((item) => ({...item}))
+                contextClipboard.current = copied
                 deleteSelection()
             }}
             onPaste={(event) => {
@@ -597,6 +680,7 @@ function IdeasCanvas() {
                 canvasRef.current?.focus({preventScroll: true})
             }}
             onKeyDown={(event) => {
+                if(event.key==="Escape" && connectionGesture.current){event.preventDefault();cancelConnection();return}
                 if (!isEditingText(event.target) && canEditIdeation && (event.ctrlKey || event.metaKey)) {
                     const key = event.key.toLowerCase()
                     const isUndo = key === "z" && !event.shiftKey
@@ -625,7 +709,7 @@ function IdeasCanvas() {
                 }
                 if ((event.target as HTMLElement).closest("input, select, textarea, button, [contenteditable=true]")) return
                 if (event.key === "Escape") {
-                    setSelectedIds([]);
+                    setSelectedIds([]);setConnecting(false);
                     setSnapGuides([]);
                     setIsShapeMenuOpen(false);
                     return
@@ -633,31 +717,42 @@ function IdeasCanvas() {
                 if (tool !== "select" || !canEditIdeation) return
                 if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
                     event.preventDefault();
-                    setSelectedIds(items.map((item) => item.id))
+                    setSelectedIds(visibleUmlItems(items).map((item) => item.id))
                 } else if (event.key === "Delete" || event.key === "Backspace") {
                     event.preventDefault();
-                    setItems((current) => current.filter((item) => !selectedIds.includes(item.id)));
+                    setItems((current) => current.filter((item) => !selectedIds.includes(item.id) || item.locked));
                     setSelectedIds([])
                 } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
                     event.preventDefault()
                     const step = event.shiftKey ? 10 : 1
-                    setItems((current) => current.map((item) => selectedIds.includes(item.id) ? {
-                        ...item,
-                        x: item.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
-                        y: item.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0)
-                    } : item))
+                    const offset={x:event.key==="ArrowLeft"?-step:event.key==="ArrowRight"?step:0,y:event.key==="ArrowUp"?-step:event.key==="ArrowDown"?step:0}
+                    setItems(current=>current.map(item=>selectedIds.includes(item.id)&&!item.locked?translateUmlItems([item],offset)[0]:item))
                 }
             }}
-            className={`workshop-ideation${panningMode ? " hand-tool" : ""}${isPanning ? " panning" : ""}`}
+            className={`workshop-ideation${connecting ? " uml-connecting" : ""}${panningMode ? " hand-tool" : ""}${isPanning ? " panning" : ""}`}
             onAuxClick={(event) => {
                 if (event.button === 1) event.preventDefault()
             }}
+            onDoubleClick={event=>{
+                if(!canEditIdeation || panningMode || isEditingText(event.target)) return
+                const target=event.target instanceof Element ? event.target : null
+                if(target?.closest(".workshop-canvas-toolbar, .workshop-shape-menu, .workshop-shape-properties, .workshop-canvas-meta, .workshop-canvas-minimap, .workshop-zoom-control, [role=dialog]")) return
+                const shapeId=target?.closest<HTMLElement>("[data-canvas-item-id]")?.dataset.canvasItemId
+                if(shapeId && !items.find(item=>item.id===shapeId)?.connection) return
+                const point=worldPoint(event)
+                const link=visibleUmlItems(items).find(item=>{
+                    if(!item.connection || item.locked || !selectedIdSet.has(item.id)) return false
+                    const center=umlConnectionRoute(items,item).label
+                    return Math.hypot(point.x-center.x,point.y-center.y)<=14/zoom
+                })
+                if(link){event.preventDefault();event.stopPropagation();editConnectionLabel(link.id)}
+            }}
             onPointerDown={beginPan}
             {...touch}
-            onPointerCancel={endPan}
-            onLostPointerCapture={endPan}
+            onPointerCancel={()=>{cancelConnection();endPan()}}
+            onLostPointerCapture={()=>{cancelConnection();endPan()}}
             onPointerMove={movePan}
-            onPointerUp={endPan}
+            onPointerUp={event=>{finishConnection(event);endPan()}}
             onContextMenu={openContextMenu}
             onWheel={handleWheel}
             style={{
@@ -668,8 +763,8 @@ function IdeasCanvas() {
             } as CSSProperties}
         >
             <div className="workshop-canvas-meta" onPointerDown={(event) => event.stopPropagation()}>
-                <span><Lightbulb/></span>
-                <div><small>{project.name}</small><strong>Playground</strong></div>
+                <Button type="button" size="icon-sm" variant="ghost" aria-label="Back to UML diagrams" onClick={onBack}><ArrowLeft/></Button>
+                <div><small>{project.name} · UML</small><strong>{diagram.name}</strong></div>
                 <small role="status">{({
                     loading: "Loading…",
                     saved: "Saved",
@@ -701,28 +796,39 @@ function IdeasCanvas() {
                 shapeMenuOpen={isShapeMenuOpen}
                 snapping={snapping}
                 onSelectTool={() => {
-                    setTool("select");
+                    setTool("select");setConnecting(false);
                     canvasRef.current?.focus({preventScroll: true})
                 }}
-                onHandTool={() => setTool("hand")}
+                onHandTool={() => {setTool("hand");setConnecting(false)}}
                 onToggleShapes={() => setIsShapeMenuOpen((current) => !current)}
                 onToggleSnapping={() => {
                     setSnapping((current) => !current);
                     setSnapGuides([])
                 }}
                 onShowShortcuts={() => setIsHotkeysOpen(true)}
-            />
+            >
+                {canEditIdeation&&<><Button size="sm" variant={connecting?"secondary":"ghost"} aria-pressed={connecting} title="Drag from a shape edge to connect" onClick={()=>{setConnecting(!connecting);setTool("select")}}><Waypoints/>Connect</Button>
+                <WorkshopSelect aria-label="Connection type" value={connectionSymbol} onValueChange={value=>{setConnectionSymbol(value as UmlConnectorSymbol);setConnecting(true);setTool("select")}}>{umlConnectorSymbols.map(symbol=><option key={symbol} value={symbol}>{umlPresets.find(p=>p.changes?.umlSymbol===symbol)?.label||symbol}</option>)}</WorkshopSelect>
+                <WorkshopSelect aria-label="Default connection routing" value={connectionRouting} onValueChange={value=>setConnectionRouting(value as UmlConnection["routing"])}><option value="orthogonal">Elbow</option><option value="straight">Straight</option><option value="curve">Curve</option></WorkshopSelect>
+                <Button size="icon-sm" variant="ghost" aria-label="Undo canvas change" disabled={!history.current.past.length} onClick={undo}><Undo2/></Button><Button size="icon-sm" variant="ghost" aria-label="Redo canvas change" disabled={!history.current.future.length} onClick={redo}><Redo2/></Button></>}
+                <Button size="icon-sm" variant={layersOpen?"secondary":"ghost"} aria-label="Layers" aria-pressed={layersOpen} onClick={()=>setLayersOpen(!layersOpen)}><Layers/></Button>
+                <UmlCanvasActions diagram={{...diagram,items}} selectedIds={selectedIds} canEdit={canEditIdeation} onItems={setItems}/>
+            </CanvasToolbar>
+            {pendingConnection && <UmlConnectionSuggestions key={pendingConnection.connectionId} anchor={{x:pan.x+pendingConnection.point.x*zoom,y:pan.y+pendingConnection.point.y*zoom}} viewport={viewportSize} umlType={diagram.type} onChoose={chooseSuggestedElement} onClose={restoreFocus=>{setPendingConnection(undefined);if(restoreFocus)canvasRef.current?.focus({preventScroll:true})}}/>}
             <IdeasShortcutsDialog open={isHotkeysOpen} onOpenChange={setIsHotkeysOpen}/>
             {contextMenu &&
                 <CanvasContextMenu canEdit={canEditIdeation} hasClipboard={contextClipboard.current.length > 0}
                                    hasGroupedItems={selectedItems.some((item) => item.groupId)}
                                    selectionCount={selectedItems.length} target={contextMenu.target} x={contextMenu.x}
                                    y={contextMenu.y} onAction={runContextAction}/>}
-            {canEditIdeation && isShapeMenuOpen &&
-                <ShapeSelector onAdd={addPreset} onClose={() => setIsShapeMenuOpen(false)}/>}
-            {canEditIdeation && tool === "select" && selectedItem && (
+            {layersOpen && <UmlLayersPanel items={items} selectedIds={selectedIds} canEdit={canEditIdeation} onSelect={id=>{setSelectedIds([id]);setPropertyItemId(id)}} onUpdate={item=>setItems(current=>current.map(n=>n.id===item.id?item:n))} onClose={()=>setLayersOpen(false)}/>}
+            {canEditIdeation && isShapeMenuOpen && !layersOpen &&
+                <ShapeSelector umlType={diagram.type} onAdd={addPreset} onClose={() => setIsShapeMenuOpen(false)}/>}
+            {canEditIdeation && tool === "select" && selectedItem && (selectedItem.connection ? <UmlConnectorPanel key={selectedItem.id} item={selectedItem} items={items} onChange={next=>setItems(current=>current.map(n=>n.id===next.id?next:n))} onDelete={deleteSelection}/> : (
                 <ShapePropertiesPanel
                     key={selectedItem.id}
+                    extra={<UmlElementFields item={selectedItem} onChange={next=>setItems(current=>current.map(n=>n.id===next.id?next:n))}/>}
+                    disabled={selectedItem.locked}
                     allItemsCount={items.length}
                     selectedGroupId={selectedGroupId}
                     selectedIds={selectedIds}
@@ -738,10 +844,10 @@ function IdeasCanvas() {
                     onGroup={groupSelection}
                     onUngroup={ungroupSelection}
                 />
-            )}
-            <div className="workshop-canvas-world" aria-label="Infinite playground canvas">
-                {items.map((item, index) => (
-                    <CanvasCard canDrag={canEditIdeation && tool === "select" && !spacePanning}
+            ))}
+            <div className="workshop-canvas-world" aria-label="Infinite UML canvas">
+                {items.filter(item=>!item.connection&&!item.hidden).map((item, index) => (
+                    <CanvasCard canDrag={canEditIdeation && tool === "select" && !spacePanning && !item.locked && !connecting}
                                 showResizeHandles={selectedItems.length < 2} item={item} layer={index + 1} key={item.id}
                                 remoteSelectors={selectorsByShape.get(item.id)} selected={selectedIdSet.has(item.id)}
                                 textStyleCommand={textStyleCommand} onTextSelectionChange={(selection) => {
@@ -755,7 +861,7 @@ function IdeasCanvas() {
                             ? groupSelected ? selectedIds.filter((id) => !itemIds.includes(id)) : expandGroupedIds(items, [...selectedIds, ...itemIds])
                             : groupSelected ? selectedIds : itemIds
                         setSelectedIds(ids)
-                        groupStart.current = items.filter((candidate) => resizing ? candidate.id === item.id : ids.includes(candidate.id))
+                        groupStart.current = items.filter((candidate) => !candidate.connection&&!candidate.locked&&(resizing ? candidate.id === item.id : ids.includes(candidate.id)))
                         if (toggle) {
                             groupStart.current = [];
                             return false
@@ -786,9 +892,14 @@ function IdeasCanvas() {
                         setSnapGuides([]);
                         groupStart.current = [];
                         endHistoryTransaction()
-                    }} zoom={zoom}/>
+                    }} zoom={zoom}>
+                        <div className="uml-node-hit" data-locked={item.locked||!canEditIdeation} onPointerDown={event=>{if(item.locked){event.stopPropagation();setSelectedIds([item.id]);setPropertyItemId(item.id)}else if(connecting){const endpoint=umlEndpointAt([item],worldPoint(event),14/zoom);if(endpoint&&"shapeId"in endpoint)beginEdge(event,item,endpoint.side,endpoint.offset)}}}/>
+                        {canEditIdeation&&!panningMode&&!item.locked&&canConnectUmlShape(item)&&umlSides.map(side=><button key={side} type="button" className="uml-edge-handle" data-side={side} title={`Drag to connect from ${side}`} aria-label={`Connect from ${side} edge`} onClick={event=>{if(event.detail===0){const start={shapeId:item.id,side,offset:.5},point=umlEndpointPoint(items,start),link=newUmlConnection(items,start,{x:point.x+100,y:point.y+60},connectionSymbol,connectionRouting);setItems(current=>[...current,link]);setSelectedIds([link.id]);setPropertyItemId(link.id)}}} style={{"--uml-handle-size":`${12/zoom}px` } as CSSProperties} onPointerDown={event=>beginEdge(event,item,side)} onDoubleClick={event=>event.stopPropagation()}/>)}
+                    </CanvasCard>
                 ))}
-                {canEditIdeation && tool === "select" && selectedItems.length > 1 && selectedItem && (
+                {editingLabel && <UmlConnectionLabelEditor key={editingLabel.id} item={editingLabel} items={items} zoom={zoom} onCommit={commitConnectionLabel} onCancel={()=>setEditingLabelId(undefined)}/>}
+                <UmlConnectionsLayer canInteract={!panningMode} items={items} selectedIds={selectedIds} canEdit={canEditIdeation&&!panningMode} zoom={zoom} draft={connectionDraft} onSelect={(id,additive)=>{setSelectedIds(current=>additive?(current.includes(id)?current.filter(n=>n!==id):[...current,id]):[id]);setPropertyItemId(id);setEditingLabelId(undefined);canvasRef.current?.focus({preventScroll:true})}} onEditLabel={editConnectionLabel} editingLabelId={editingLabel?.id} onEndpoint={(event,id,end)=>{const item=itemsRef.current.find(n=>n.id===id);if(item)startConnection(event,item,end)}} onBend={(event,id,index)=>{const item=itemsRef.current.find(n=>n.id===id);if(item)startConnection(event,item,"bend",index)}}/>
+                {canEditIdeation && tool === "select" && selectedItems.length > 1 && selectedItems.every(n=>!n.connection&&!n.locked) && selectedItem && (
                     <CanvasCard
                         selectionBox
                         canDrag={!spacePanning}
@@ -843,7 +954,7 @@ function IdeasCanvas() {
 
             <ZoomControls zoom={zoom} onZoom={setViewZoom} onFit={resetView}/>
 
-            <CanvasMinimap items={items} viewport={{
+            <CanvasMinimap items={visibleUmlItems(items)} viewport={{
                 x: -pan.x / zoom,
                 y: -pan.y / zoom,
                 width: viewportSize.width / zoom,

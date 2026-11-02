@@ -13,5 +13,5 @@ export function shapeTextColor(fillColor: string) {
 export function groupMemberLabel(item: CanvasItem, index: number) {
     if (item.kind === "note") return item.noteHeader.trim() ? `Note · ${item.noteHeader.trim().slice(0, 36)}` : `Note ${index + 1}`
     const text = item.text.trim().split(/\r?\n/, 1)[0]
-    return text ? `${shapeLabel(item.kind)} · ${text.slice(0, 36)}` : `${shapeLabel(item.kind)} ${index + 1}`
+    return text ? `${shapeLabel(item.kind,item.umlSymbol)} · ${text.slice(0, 36)}` : `${shapeLabel(item.kind,item.umlSymbol)} ${index + 1}`
 }

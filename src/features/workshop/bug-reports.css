@@ -21,6 +21,8 @@
 .bug-portal-state > span.enabled { background: #22a06b; }
 .bug-portal-state svg { height: 12px; width: 12px; }
 .bug-portal-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.bug-portal-urls { display: grid; gap: 16px; margin-top: 16px; }
+.bug-portal-urls .bug-portal-link { margin-top: 0; }
 .bug-portal-link input { flex: 1 1 220px; font-size: 11px; min-width: 0; font-family: "IBM Plex Mono", monospace; background: var(--background); }
 .bug-portal-link button { flex-shrink: 0; }
 .bug-portal-link a { display: grid; place-items: center; padding: 8px; color: var(--muted-foreground); }

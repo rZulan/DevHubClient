@@ -1,3 +1,4 @@
+import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {type CSSProperties, type DragEvent, type FormEvent, useEffect, useLayoutEffect, useRef, useState} from "react"
 import {
     ArrowLeft,
@@ -89,8 +90,7 @@ function TodoLoading({label = "Loading TODOs…"}: { label?: string }) {
 
 export function WorkshopTodoPage() {
     const context = useOutletContext<WorkshopOutletContext>()
-    if (!context.project) return <section className="workshop-empty-panel"><CheckCircle2/><h3>No project selected</h3>
-        <p>Create a project to organize TODOs and tasks.</p></section>
+    if (!context.project) return <WorkshopNoProject icon={CheckCircle2}/>
     return <TodoPageContent key={`${context.organization.id}/${context.project.id}`} {...context}
                             project={context.project}/>
 }
@@ -377,14 +377,12 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
             {selected && !isError && <TodoBoardProgress tasks={selected.tasks} columns={columns} busy={busy || isFetching}/>}
             {error && !creating && !addingTo && <p role="alert" className="workshop-form-error">{error}</p>}
             {isError && (selectedId || !todos.length) ?
-                <section className="workshop-empty-panel"><h3>Could not load TODOs</h3><p>Please try again to retrieve
-                    your saved work.</p><Button onClick={() => void refetch()}>Retry</Button></section>
+                <WorkshopEmptyState icon={CheckCircle2} title="Could not load TODOs" description="Please try again to retrieve your saved work." action={<Button onClick={() => void refetch()}>Retry</Button>}/>
                 : (!selectedId && columnCount === null) || (isFetching && (selectedId ? !selected : !todos.length)) ?
                     <TodoLoading/>
-                    : selectedId && !selected ? <section className="workshop-empty-panel">
-                            <h3>{isFetching ? "Opening TODO…" : "TODO not found"}</h3>
-                            <p>{isFetching ? "Loading the task board." : "This TODO is no longer available in this project."}</p>
-                        </section>
+                    : selectedId && !selected ? <WorkshopEmptyState icon={CheckCircle2}
+                            title={isFetching ? "Opening TODO…" : "TODO not found"}
+                            description={isFetching ? "Loading the task board." : "This TODO is no longer available in this project."}/>
                         : selected ? (
                             <div className="workshop-board workshop-todo-board"
                                  style={{"--todo-column-count": columns.length} as CSSProperties}
@@ -454,9 +452,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                     </button>
                                 })}
                             </div>
-                        ) : <section className="workshop-empty-panel"><CheckCircle2/><h3>No TODOs yet</h3>
-                            <p>{canManage ? "Create your first TODO, then add tasks to its board." : "TODOs created by your team will appear here."}</p>
-                        </section>}
+                        ) : <WorkshopEmptyState icon={CheckCircle2} title="No TODOs yet"
+                            description={canManage ? "Create a TODO, then add tasks to its board." : "TODOs created by your team will appear here."}/>}
 
             {!selectedId && todos.length > 0 && (isFetching || isError || hasNextPage) &&
                 <div className="workshop-todo-pagination" ref={loadMoreRef}>

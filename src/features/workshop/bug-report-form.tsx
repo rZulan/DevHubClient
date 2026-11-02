@@ -9,6 +9,13 @@ import {bugError, bugFileAccept, bugFileError, bugFileSize, bugFormData, bugPrio
 
 export function BugReportForm({categories, initialEmail = "", onSubmit, onSuccess, onCancel}: {categories: BugCategory[]; initialEmail?: string; onSubmit: (form: FormData) => Promise<BugReceipt>; onSuccess: (receipt: BugReceipt) => void; onCancel?: () => void}) {
     const [values, setValues] = useState<BugFormValues>({email: initialEmail, title: "", description: "", steps: "", environment: "", priority: "medium", categoryId: ""})
+    const [emailError, setEmailError] = useState("")
+    const emailInput = useRef<HTMLInputElement>(null)
+    function validateEmail(field: HTMLInputElement) {
+        const message = field.validity.valueMissing ? "Enter your email address." : !field.validity.valid ? "Enter a valid email address, such as you@example.com." : ""
+        setEmailError(message)
+        return !message
+    }
     const [files, setFiles] = useState<File[]>([]), [error, setError] = useState(""), [busy, setBusy] = useState(false), [dragging, setDragging] = useState(false)
     const submissionId = useRef(createClientId()), input = useRef<HTMLInputElement>(null), submitting = useRef(false)
     const dirty = !!(values.title || values.description || values.steps || files.length)
@@ -26,6 +33,7 @@ export function BugReportForm({categories, initialEmail = "", onSubmit, onSucces
     async function submit(event: FormEvent) {
         event.preventDefault()
         if (submitting.current) return
+        if (emailInput.current && !validateEmail(emailInput.current)) {emailInput.current.focus(); return}
         const failure = bugFileError(files)
         if (failure) {setError(failure); return}
         submitting.current = true; setBusy(true); setError("")
@@ -35,7 +43,12 @@ export function BugReportForm({categories, initialEmail = "", onSubmit, onSucces
     }
     return <form className="bug-submit-form" onSubmit={submit}>
         <fieldset disabled={busy}>
-            <label htmlFor="bug-email">Your email <span>Required</span></label><Input id="bug-email" type="email" autoComplete="email" required maxLength={254} placeholder="you@example.com" value={values.email} onChange={event => update("email", event.target.value)}/><p className="bug-field-help">Your email identifies who sent this report. You don’t need a DevHub account.</p>
+            <label htmlFor="bug-email">Your email <span>Required</span></label><Input ref={emailInput} id="bug-email" type="email" autoComplete="email" required maxLength={254} placeholder="you@example.com" value={values.email}
+                aria-invalid={!!emailError} aria-describedby={emailError ? "bug-email-error" : undefined}
+                onBlur={event => validateEmail(event.currentTarget)}
+                onInvalid={event => {event.preventDefault(); validateEmail(event.currentTarget); event.currentTarget.focus()}}
+                onChange={event => {update("email", event.target.value); if (emailError) validateEmail(event.currentTarget)}}/>
+            {emailError && <p id="bug-email-error" className="bug-error" role="alert">{emailError}</p>}
             <label htmlFor="bug-title">Report title <span>Required</span></label><Input id="bug-title" required maxLength={200} placeholder="A short description of the problem" value={values.title} onChange={event => update("title", event.target.value)}/>
             <div className="bug-form-columns"><div><label htmlFor="bug-category">Category</label><WorkshopSelect id="bug-category" value={values.categoryId} onValueChange={selectedValue => update("categoryId", selectedValue)}><option value="">Uncategorized</option>{categories.filter(category => !category.archived).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</WorkshopSelect></div><div><label htmlFor="bug-priority">Impact</label><WorkshopSelect id="bug-priority" value={values.priority} onValueChange={selectedValue => update("priority", selectedValue)}>{bugPriorities.map(priority => <option key={priority.id} value={priority.id}>{priority.label}</option>)}</WorkshopSelect></div></div>
             <label htmlFor="bug-description">What happened? <span>Required</span></label><Textarea id="bug-description" required maxLength={20000} placeholder="Describe the problem, what you expected, and what happened instead." value={values.description} onChange={event => update("description", event.target.value)}/>
@@ -49,7 +62,6 @@ export function BugReportForm({categories, initialEmail = "", onSubmit, onSucces
             {!!files.length && <ul className="bug-file-list">{files.map((file, index) => <li key={`${file.name}:${index}`}><Paperclip/><span>{file.name}<small>{bugFileSize(file.size)}</small></span><Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${file.name}`} onClick={() => setFiles(current => current.filter((_, i) => i !== index))}><X/></Button></li>)}</ul>}
         </fieldset>
         {error && <p role="alert" className="bug-error">{error}</p>}
-        <p className="bug-submit-privacy">Your report, email, and attachments will be visible to members who can access this project. Leave out passwords and access tokens.</p>
         <div className="bug-form-footer">{onCancel && <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Keep draft & close</Button>}<Button type="submit" disabled={busy || !values.email.trim() || !values.title.trim() || !values.description.trim()}>{busy ? <LoaderCircle className="animate-spin"/> : <Paperclip/>}{busy ? "Sending report…" : "Submit bug report"}</Button></div>
     </form>
 }

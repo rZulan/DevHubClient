@@ -1,12 +1,12 @@
-import {useState} from "react"
-import {type ShapePreset, shapePresets} from "../shape-catalog"
-import {normalizeCanvasItem} from "../shape-clipboard"
-import {ShapeGeometry} from "./shape-geometry"
-import {Focus, Hand, Keyboard, Minus, MousePointer2, Plus, Search, Shapes, Type, X} from "lucide-react"
+import {type ReactNode} from "react"
+import {Focus, Hand, Keyboard, Minus, MousePointer2, Plus, Shapes} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
 
+export {ShapeSelector} from "./shape-selector"
+
 type CanvasToolbarProps = {
+    children?: ReactNode
     canEdit: boolean
     tool: "select" | "hand"
     shapeMenuOpen: boolean
@@ -19,6 +19,7 @@ type CanvasToolbarProps = {
 }
 
 export function CanvasToolbar({
+                                  children,
                                   canEdit,
                                   tool,
                                   shapeMenuOpen,
@@ -39,6 +40,7 @@ export function CanvasToolbar({
         <span/>
         {canEdit && <Button aria-label="Shapes and text" aria-expanded={shapeMenuOpen} className={shapeMenuOpen ? "active h-8" : "h-8"}
                             onClick={onToggleShapes} type="button" variant="ghost"><Shapes/> <b>Shapes</b></Button>}
+        {children}
         {canEdit &&
             <Button aria-pressed={snapping} title="Snap to shape edges and centers. Hold Alt to bypass while dragging."
                     onClick={onToggleSnapping} size="sm" type="button"
@@ -46,55 +48,6 @@ export function CanvasToolbar({
         <Button aria-label="Show keyboard shortcuts" title="Keyboard shortcuts" onClick={onShowShortcuts} size="icon-sm"
                 type="button" variant="ghost"><Keyboard/></Button>
     </div>
-}
-
-export function ShapeSelector({onAdd, onClose}: { onAdd: (preset: ShapePreset) => void; onClose: () => void }) {
-    const [query, setQuery] = useState("")
-    const matches = shapePresets.filter(preset => (preset.label + " " + preset.category).toLowerCase().includes(query.trim().toLowerCase()))
-    const categories = [...new Set(matches.map(preset => preset.category))]
-    return <aside aria-label="Shape selector" className="workshop-shape-menu"
-                  onPointerDown={(event) => event.stopPropagation()} onWheel={(event) => event.stopPropagation()}
-                  onKeyDown={(event) => {
-                      event.stopPropagation();
-                      if (event.key === "Escape") onClose()
-                  }}>
-        <header>
-            <div><Shapes/><span><strong>Shapes & text</strong></span></div>
-            <Button aria-label="Close shapes" onClick={onClose} size="icon-sm" type="button"
-                    variant="ghost"><X/></Button></header>
-        <label><Search/><input aria-label="Search shapes" placeholder="Search shapes, diagrams, text…" value={query}
-                               onChange={event => setQuery(event.target.value)}/></label>
-        <div className="workshop-shape-sections">{categories.map(category => <section key={category}><h3>{category}</h3>
-            <div>
-                {matches.filter(preset => preset.category === category).map(preset => <Button key={preset.id}
-                                                                                              aria-label={"Add " + preset.label.toLowerCase()}
-                                                                                              title={preset.label}
-                                                                                              className="h-auto"
-                                                                                              onClick={() => onAdd(preset)}
-                                                                                              type="button"
-                                                                                              variant="ghost">
-                    <span className="workshop-preset-preview">{preset.kind === "text" ?
-                        <Type/> : preset.id === "waterfall" ? <svg viewBox="0 0 64 44" aria-hidden="true">
-                            <path d="M4 4h24v10H4z M20 17h24v10H20z M36 30h24v10H36z" fill="none" stroke="currentColor"
-                                  strokeWidth="2"/>
-                        </svg> : preset.id === "erd" ? <svg viewBox="0 0 64 44" aria-hidden="true">
-                            <path d="M2 6h20v32H2z M42 6h20v32H42z M2 15h20 M42 15h20 M22 22h20" fill="none"
-                                  stroke="currentColor" strokeWidth="2"/>
-                        </svg> : <ShapeGeometry item={normalizeCanvasItem({
-                            kind: preset.kind,
-                            width: 64,
-                            height: 44,
-                            outlineWidth: 2,
-                            outlineColor: "currentColor",
-                            outlineStyle: preset.changes?.outlineStyle ?? "solid",
-                            appearance: "outlined",
-                            cornerRadius: preset.changes?.cornerRadius ?? 0
-                        })}/>}</span><small>{preset.label}</small>
-                </Button>)}
-            </div>
-        </section>)}{matches.length === 0 &&
-            <p className="workshop-shapes-empty">No shapes found. Try another search.</p>}</div>
-    </aside>
 }
 
 export function ZoomControls({zoom, onZoom, onFit}: {

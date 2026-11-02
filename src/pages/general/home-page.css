@@ -61,7 +61,6 @@
 .landing-workshop-hero > .landing-app-window { transform: rotateY(-13deg) rotateX(6deg) rotateZ(5deg); }
 .landing-floating-cursor { position: absolute; top: 44px; left: 3px; display: flex; align-items: center; gap: 5px; color: var(--landing-lilac); transform: rotate(-9deg); }
 .landing-floating-cursor > svg { width: 22px; height: 22px; }
-.landing-floating-cursor > span { padding: 6px 10px; border: 1px solid color-mix(in srgb, var(--landing-lilac) 35%, var(--border)); border-radius: 5px; background: var(--card); font-size: 10px; }
 .landing-floating-people { position: absolute; right: 0; top: 20px; display: flex; transform: rotate(7deg); }
 .landing-floating-people > img { width: 39px; height: 39px; margin-left: -10px; object-fit: cover; border: 3px solid var(--background); border-radius: 50%; }
 .landing-showcases { display: grid; gap: 100px; margin-top: 120px; }
@@ -148,7 +147,6 @@
 .landing-workshop-playing .landing-todo-progress > div > i { animation: landing-task-progress 3.6s ease-in-out both; }
 .landing-task-cursor { position: absolute; top: 27%; left: 25%; z-index: 3; pointer-events: none; color: var(--landing-lilac); animation: landing-task-pointer 3.6s ease-in-out both; }
 .landing-task-cursor > svg { position: relative; width: 18px; height: 18px; fill: var(--card); filter: drop-shadow(0 1px 2px #00000040); }
-.landing-task-cursor > span { position: absolute; top: 17px; left: 11px; width: max-content; padding: 4px 6px; border: 1px solid color-mix(in srgb, var(--landing-lilac) 50%, var(--border)); border-radius: 4px; background: var(--card); font-size: 7px; line-height: 1; }
 .landing-task-cursor > i { position: absolute; top: -6px; left: -6px; width: 18px; height: 18px; border: 1px solid var(--landing-lilac); border-radius: 50%; opacity: 0; animation: landing-task-click 3.6s ease-out both; }
 .landing-tour-erd { position: relative; height: 190px; border-radius: 5px; background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 12px 12px; }
 .landing-tour-erd > svg { position: absolute; inset: 0; width: 100%; height: 100%; stroke: #c6b5f5; stroke-width: 2; }

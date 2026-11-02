@@ -12,7 +12,7 @@ const tools: Record<ProjectToolId, {label: string; underConstruction?: boolean}>
     erd: {label: "ERD maker"},
     "ui-editor": {label: "UI/UX Editor", underConstruction: true},
     sdlc: {label: "SDLC Roadmap", underConstruction: true},
-    "state-machine": {label: "State Machine", underConstruction: true},
+    uml: {label: "UML"},
     calendar: {label: "Calendar"},
     "bug-reports": {label: "Bug Reports", underConstruction: true},
     "project-wiki": {label: "Project Wiki", underConstruction: true},

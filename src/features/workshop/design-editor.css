@@ -199,6 +199,8 @@
 .ui-design-toolbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: 66px; display: flex; gap: 3px; padding: 5px; border-radius: 11px; background: var(--background); border: 1px solid var(--border); box-shadow: 0 6px 24px #0000000b, 0 1px 3px #00000005; z-index: 12; }
 .ui-design-toolbar > button { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 7px; color: var(--muted-foreground); }
 .ui-design-toolbar > button:hover { background: var(--secondary); color: var(--foreground); }.ui-design-toolbar > button.active { background: var(--primary); color: var(--primary-foreground); }
+.ui-assets-grid > button[draggable=true], .ui-frame-presets > button[draggable=true], .ui-starter-item[draggable=true], .ui-design-toolbar > button[draggable=true] { cursor: grab; }
+.ui-assets-grid > button[draggable=true]:active, .ui-frame-presets > button[draggable=true]:active, .ui-starter-item[draggable=true]:active, .ui-design-toolbar > button[draggable=true]:active { cursor: grabbing; }
 .ui-design-toolbar > button:nth-child(2) { margin-right: 6px; }.ui-design-toolbar > button:nth-child(2)::after { content: ""; position: absolute; right: -5px; top: 7px; bottom: 7px; width: 1px; background: var(--border); }
 .ui-design-toolbar svg { width: 16px; height: 16px; stroke-width: 1.7; }
 .ui-tool-tooltip { position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); padding: 6px 8px; border-radius: 5px; white-space: nowrap; background: var(--foreground); color: var(--background); display: none; font-size: 10px; gap: 10px; align-items: center; pointer-events: none; box-shadow: 0 3px 10px #0001; }

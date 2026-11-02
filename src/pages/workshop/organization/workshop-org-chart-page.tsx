@@ -1,5 +1,5 @@
 import {type CSSProperties, useState} from "react"
-import {Building2, ChevronDown, Layers, LoaderCircle, Network, Users} from "lucide-react"
+import {ChevronDown, Layers, LoaderCircle, Network, Users} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
 import {Button} from "@/components/ui/button"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
@@ -48,7 +48,7 @@ export function WorkshopOrgChartPage() {
         <section className="directory-chart" aria-label={view === "roles" ? "Role hierarchy" : "Team structure"}>
             <div className="directory-chart-meta"><span><Network/>{view === "roles" ? "Role hierarchy" : "Team structure"}</span><span role="status">{visiblePeople} of {organization.members.length} people</span><Button variant="ghost" size="sm" disabled={!groups.length} onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groups.map(group => group.id)))}>{allCollapsed ? "Expand all" : "Collapse all"}</Button></div>
             {directoryData.isLoading ? <div className="directory-loading" role="status"><LoaderCircle className="animate-spin"/> Loading organization…</div> : <>
-                <div className="directory-chart-root"><WorkspaceAvatar name={organization.name} avatarUrl={organization.avatarUrl} fallback={<Building2/>}/><div><small>Organization</small><h3>{organization.name}</h3><p>{organization.members.length} people <i/> {stats.teams} teams</p></div></div>
+                <div className="directory-chart-root"><WorkspaceAvatar name={organization.name} avatarUrl={organization.avatarUrl} kind="organization"/><div><small>Organization</small><h3>{organization.name}</h3><p>{organization.members.length} people <i/> {stats.teams} teams</p></div></div>
                 {groups.length ? <div className="directory-chart-branches">{groups.map((group, index) => {
                     const isCollapsed = collapsed.has(group.id)
                     return <section className="directory-chart-branch" key={group.id} style={{"--directory-color": group.color} as CSSProperties}>
@@ -59,7 +59,7 @@ export function WorkshopOrgChartPage() {
                         </button>
                         {!isCollapsed && <div className="directory-branch-people" id={`directory-group-${group.id}`}>{group.members.map(member => <DirectoryPerson key={member.id} member={member} organization={organization} leader={"leaderId" in group && member.id === group.leaderId} onClick={() => setPerson(member)}/>)}</div>}
                     </section>
-                })}</div> : <DirectoryEmpty title={organization.members.length ? "No people found" : "Your organization starts here"} action={(query || teamFilter !== "all") ? <Button variant="outline" onClick={() => {setQuery(""); setTeamFilter("all")}}>Clear filters</Button> : undefined}>{organization.members.length ? "Try a different search or choose all people." : "Members will appear here as they join the organization."}</DirectoryEmpty>}
+                })}</div> : <DirectoryEmpty title={organization.members.length ? "No people found" : "No members yet"} action={(query || teamFilter !== "all") ? <Button variant="outline" onClick={() => {setQuery(""); setTeamFilter("all")}}>Clear filters</Button> : undefined}>{organization.members.length ? "Try a different search or choose all people." : "Members will appear here as they join the organization."}</DirectoryEmpty>}
             </>}
         </section>
         <DirectoryPersonDialog member={person} organization={organization} onClose={() => setPerson(null)}/>

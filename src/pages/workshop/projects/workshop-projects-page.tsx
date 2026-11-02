@@ -1,44 +1,40 @@
-import {type ChangeEvent, type FormEvent, type KeyboardEvent, useMemo, useState} from "react"
+import {type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode, useId, useMemo, useState} from "react"
 import {
-    ArrowUpRight,
-    CalendarDays,
     Check,
     ChevronLeft,
     ChevronRight,
-    Database,
     ExternalLink,
     FileText,
     FolderKanban,
-    GitBranch,
-    Layers3,
     LoaderCircle,
     Palette,
     Plus,
-    Rocket,
     ShieldCheck,
     Tag,
-    UserRound,
-    Users,
-    Workflow,
     X,
 } from "lucide-react"
 import {Link, useOutletContext} from "react-router-dom"
 
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
-import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {Textarea} from "@/components/ui/textarea"
 import {getApiErrorMessage} from "@/features/auth/api-error"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useWorkshop} from "@/features/workshop/workshop-context"
+import {sdlcModelIds, sdlcModels} from "@/features/workshop/sdlc-models"
+import {ProjectFormField as ProjectField} from "@/features/workshop/project-form-field"
 import type {ProjectStatus, SaveProjectInput, WorkshopMember,} from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import {useCreateProjectMutation, useListTeamMembersQuery,} from "@/services/api"
+import "@/features/workshop/project-create.css"
+import "@/features/workshop/project-cards.css"
+import {GitHubRepositoriesField} from "@/features/workshop/github-repositories-field"
+import {readGitHubSelections} from "@/features/workshop/github-repository-selection"
 
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const projectStatuses: ProjectStatus[] = [
@@ -50,33 +46,14 @@ const projectStatuses: ProjectStatus[] = [
     "Archived",
 ]
 const projectWizardSteps = [
-    {
-        label: "Basics",
-        title: "Project basics",
-        description: "Name the project and assign its team and lead.",
-        icon: FolderKanban
-    },
-    {
-        label: "Technical",
-        title: "Technical setup",
-        description: "Record where the project lives and what it is built with.",
-        icon: Database
-    },
-    {
-        label: "Delivery",
-        title: "Delivery plan",
-        description: "Set the working method and important project dates.",
-        icon: CalendarDays
-    },
-    {
-        label: "Links",
-        title: "Working links",
-        description: "Connect documentation, designs, and the live application.",
-        icon: ExternalLink
-    },
+    {label: "Basics", title: "Project basics"},
+    {label: "Technical", title: "Technical setup"},
+    {label: "Delivery", title: "Delivery plan"},
+    {label: "Links", title: "Working links"},
 ]
 
 export function WorkshopProjectsPage() {
+    const wizardId = useId()
     const {
         organization,
         project: currentProject,
@@ -227,7 +204,7 @@ export function WorkshopProjectsPage() {
 
     return (
         <div className="workshop-page">
-            <section className="workshop-page-heading compact">
+            {organization.projects.length > 0 && <section className="workshop-page-heading compact">
                 <div>
 
                     <h2>Everything your teams are building.</h2>
@@ -242,195 +219,131 @@ export function WorkshopProjectsPage() {
                 ) : (
                     <span className="workshop-owner-only"><ShieldCheck/> Owner or team leader managed</span>
                 )}
-            </section>
+            </section>}
 
             {organization.projects.length ? (
                 <div className="workshop-project-grid">
-                    {organization.projects.map((project) => {
-                        const teams = organization.teams.filter((team) => project.teamIds.includes(team.id))
-                        const lead = organization.members.find((member) => member.id === project.leadUserId)
-                        return (
-                            <article className={currentProject?.id === project.id ? "current" : ""} key={project.id}>
-                                <header>
-                                    <span className="workshop-project-icon"><FolderKanban/></span>
-                                    <span className="workshop-status-badge"
-                                          data-status={project.status}>{project.status}</span>
-                                </header>
-                                <div className="workshop-project-title">
-                                    <h3 className="workshop-construction-label">{project.name}<UnderConstructionIndicator/></h3>
-                                    {currentProject?.id === project.id && <small>Current</small>}
+                    {organization.projects.map(project => (
+                        <article className={`project-summary-card${currentProject?.id === project.id ? " current" : ""}`} key={project.id}>
+                            <header>
+                                <div className="project-summary-heading">
+                                    <span className="workshop-project-icon" aria-hidden="true"><FolderKanban/></span>
+                                    <h3><Link className="project-summary-link" to={project.id} aria-label={`Open project ${project.name}`}>{project.name}</Link></h3>
                                 </div>
-                                <p>{project.summary}</p>
-                                <div className="workshop-project-ownership">
-                                    <span><Users/> {teams.map((team) => team.name).join(" + ") || "Team unavailable"}</span>
-                                    <span><UserRound/> {lead?.name ?? "Assigned project lead"}</span>
-                                </div>
-                                <div className="workshop-project-meta">
-                                    <div>
-                                        <GitBranch/><span><small>Repository</small><strong>{project.repository}</strong></span>{project.repository.startsWith("http") &&
-                                        <ArrowUpRight/>}</div>
-                                    <div><Workflow/><span><small>Delivery method</small><strong>{project.sdlc}</strong></span>
-                                    </div>
-                                    <div><Database/><span><small>Data storage</small><strong>{project.database}</strong></span>
-                                    </div>
-                                    <div>
-                                        <Layers3/><span><small>Environments</small><strong>{project.environments.join(" · ") || "Not specified"}</strong></span>
-                                    </div>
-                                </div>
-                                {project.techStack.length > 0 &&
-                                    <div className="workshop-stack-row">{project.techStack.map((technology) => <span
-                                        key={technology}>{technology}</span>)}</div>}
-                                {(project.documentationUrl || project.designUrl || project.liveUrl) && (
-                                    <div className="workshop-project-links">
-                                        {project.documentationUrl && <a href={project.documentationUrl} rel="noreferrer"
-                                                                        target="_blank"><FileText/> Docs</a>}
-                                        {project.designUrl && <a href={project.designUrl} rel="noreferrer"
-                                                                 target="_blank"><Palette/> Design</a>}
-                                        {project.liveUrl && <a href={project.liveUrl} rel="noreferrer"
-                                                               target="_blank"><Rocket/> Live</a>}
-                                    </div>
-                                )}
-                                <footer>
-                                    <span><CalendarDays/> {formatSchedule(project.startDate, project.targetDate)}</span>
-                                    <div className="workshop-project-card-actions">
-                                        <Button asChild size="sm" variant="outline"><Link to={project.id}>Open
-                                            project <ArrowUpRight/></Link></Button>
-                                        <Button disabled={currentProject?.id === project.id}
-                                                onClick={() => selectProject(project.id)} size="sm" type="button"
-                                                variant="outline">
-                                            {currentProject?.id === project.id ? "Selected" : "Set current"}
-                                        </Button>
-                                    </div>
-                                </footer>
-                            </article>
-                        )
-                    })}
+                                <span className="workshop-status-badge" data-status={project.status}>{project.status}</span>
+                            </header>
+                            <p>{project.summary}</p>
+                            <footer>
+                                {currentProject?.id === project.id && <span className="project-summary-current"><Check aria-hidden="true"/>Current project</span>}
+                                <Button className="project-summary-set-current" type="button" variant="outline" size="sm"
+                                    disabled={currentProject?.id === project.id} onClick={() => selectProject(project.id)}
+                                    aria-label={`Set ${project.name} as current project`}>Set as current</Button>
+                            </footer>
+                        </article>
+                    ))}
                 </div>
             ) : (
-                <section className="workshop-empty-panel">
-                    <FolderKanban/>
-                    <h3>Create your first project</h3>
-                    <p>Start with the owning team and lead, then capture the technical setup, delivery plan, dates, and
-                        working links.</p>
-                    {manageableTeams.length > 0 &&
-                        <Button onClick={openCreateProject} type="button"><Plus/> New project</Button>}
-                </section>
+                <WorkshopEmptyState icon={FolderKanban} title="No projects yet"
+                    description={organization.teams.length === 0 ? "Create a team first, then add a project to bring your work together." : "Projects you can access will appear here. Create a project to get started."}
+                    action={manageableTeams.length > 0 ? <Button onClick={openCreateProject} type="button"><Plus/>Create project</Button>
+                        : organization.teams.length === 0 ? <Button asChild variant="outline"><Link to={`/workshop/${organization.id}/teams`}>View teams</Link></Button> : undefined}/>
             )}
 
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <Dialog open={isModalOpen} onOpenChange={open => {if (!isCreating) setIsModalOpen(open)}}>
                 {isModalOpen && (
-                    <DialogContent className="workshop-modal workshop-project-modal sm:max-w-2xl">
-                        <span className="workshop-modal-icon"><FolderKanban/></span>
-                        <DialogHeader>
-                            <DialogTitle id="project-modal-title">Create a project</DialogTitle>
-                            <DialogDescription>Capture the details people need to understand, build, and ship the
-                                project.</DialogDescription>
+                    <DialogContent className="workshop-modal project-create-dialog" aria-describedby={undefined} showCloseButton={!isCreating}>
+                        <DialogHeader className="project-create-header">
+                            <span className="workshop-modal-icon" aria-hidden="true"><FolderKanban/></span>
+                            <DialogTitle>Create project</DialogTitle>
+                            <span className="project-create-step-count">{wizardStep + 1} / {projectWizardSteps.length}</span>
                         </DialogHeader>
-                        <nav aria-label="Project creation progress" className="workshop-wizard-progress">
-                            {projectWizardSteps.map(({icon: Icon, label}, index) => (
-                                <div
-                                    aria-current={wizardStep === index ? "step" : undefined}
-                                    className={wizardStep === index ? "active" : wizardStep > index ? "complete" : ""}
-                                    key={label}
-                                >
-                                    <span>{wizardStep > index ? <Check/> : <Icon/>}</span>
-                                    <small>{label}</small>
-                                </div>
-                            ))}
+                        <nav aria-label="Project creation progress" className="project-create-progress">
+                            <ol>{projectWizardSteps.map(({label}, index) => (
+                                <li aria-current={wizardStep === index ? "step" : undefined} data-complete={wizardStep > index} key={label}>
+                                    <span aria-hidden="true">{wizardStep > index ? <Check/> : index + 1}</span>
+                                    <span>{label}</span>
+                                </li>
+                            ))}</ol>
                         </nav>
-                        <div className="workshop-wizard-heading">
-                            <span>Step {wizardStep + 1} of {projectWizardSteps.length}</span>
-                            <h3>{projectWizardSteps[wizardStep].title}</h3>
-                            <p>{projectWizardSteps[wizardStep].description}</p>
-                        </div>
-                        <form onSubmit={handleCreateProject}>
-                            <section className="workshop-project-wizard-panel" data-wizard-step="0"
-                                     hidden={wizardStep !== 0}>
-                                <div className="workshop-form-grid">
-                                    <Label>Project name<Input autoFocus maxLength={150} name="name"
-                                                              placeholder="Northstar" required/></Label>
-                                    <Label>Status<Select defaultValue="Planning" name="status"><SelectTrigger
-                                        className="w-full"><SelectValue/></SelectTrigger><SelectContent>{projectStatuses.map((status) =>
-                                        <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent></Select></Label>
-                                    <Label className="wide">Summary<Textarea maxLength={2000} name="summary"
-                                                                             placeholder="What is this project and what outcome should it create?"
-                                                                             required rows={3}/></Label>
-                                    <Label>Owning team<Select name="teamId" onValueChange={chooseTeam} required
-                                                              value={selectedTeamId}><SelectTrigger
-                                        className="w-full"><SelectValue
-                                        placeholder="Choose a team"/></SelectTrigger><SelectContent>{manageableTeams.map((team) =>
-                                        <SelectItem key={team.id}
-                                                    value={team.id}>{team.name}</SelectItem>)}</SelectContent></Select></Label>
-                                    <Label>Project lead<Select name="leadUserId" onValueChange={setSelectedLeadId}
-                                                               required value={selectedLeadId}><SelectTrigger
-                                        className="w-full"><SelectValue
-                                        placeholder="Choose a project lead"/></SelectTrigger><SelectContent>{teamMembers.length === 0 && selectedTeam &&
-                                        <SelectItem value={selectedTeam.leaderId}>Team
-                                            leader</SelectItem>}{teamMembers.map((member) => <SelectItem key={member.id}
-                                                                                                         value={member.id}>{member.name} ·
-                                        @{member.username}</SelectItem>)}</SelectContent></Select></Label>
-                                </div>
-                            </section>
-
-                            <section className="workshop-project-wizard-panel" data-wizard-step="1"
-                                     hidden={wizardStep !== 1}>
-                                <div className="workshop-form-grid">
-                                    <Label className="wide">GitHub or repository URL <span>Optional</span><Input
-                                        name="repositoryUrl" placeholder="https://github.com/organization/project"
-                                        type="url"/></Label>
-                                    <Label className="wide">Tech stack <span>Up to 10 tags</span><ChipInput
-                                        name="techStack"
-                                        placeholder="Press Enter or add a comma after each technology"/></Label>
-                                    <Label className="wide">Database & storage <span>Optional</span><ChipInput
-                                        maxLength={500} name="databaseDetails"
-                                        placeholder="Press Enter or add a comma after each service"/></Label>
-                                    <Label className="wide">Environments <span>Up to 10 tags</span><ChipInput
-                                        name="environments"
-                                        placeholder="Press Enter or add a comma after each environment"/></Label>
-                                </div>
-                            </section>
-
-                            <section className="workshop-project-wizard-panel" data-wizard-step="2"
-                                     hidden={wizardStep !== 2}>
-                                <div className="workshop-form-grid three">
-                                    <Label>SDLC method<Input maxLength={150} name="sdlcMethod"
-                                                             placeholder="Agile · 2-week sprints"/></Label>
-                                    <Label>Start date<Input name="startDate" type="date"/></Label>
-                                    <Label>Target release<Input name="targetDate" type="date"/></Label>
-                                </div>
-                            </section>
-
-                            <section className="workshop-project-wizard-panel" data-wizard-step="3"
-                                     hidden={wizardStep !== 3}>
-                                <div className="workshop-form-grid three">
-                                    <Label>Documentation<FileInput icon={<FileText/>} name="documentationUrl"
-                                                                   placeholder="https://docs..."/></Label>
-                                    <Label>Design file<FileInput icon={<Palette/>} name="designUrl"
-                                                                 placeholder="https://figma.com/..."/></Label>
-                                    <Label>Live app<FileInput icon={<ExternalLink/>} name="liveUrl"
-                                                              placeholder="https://app..."/></Label>
-                                </div>
-                            </section>
-
-                            {projectError && <p className="workshop-form-error">{projectError}</p>}
-                            <div className="workshop-project-form-actions">
-                                <Button onClick={() => setIsModalOpen(false)} type="button"
-                                        variant="ghost">Cancel</Button>
+                        <form className="project-create-form" onSubmit={handleCreateProject}>
+                            <div className="project-create-body">
+                                <h3>{projectWizardSteps[wizardStep].title}</h3>
+                                <section className="project-create-step" data-wizard-step="0" hidden={wizardStep !== 0}>
+                                    <div className="project-create-grid">
+                                        <ProjectField id={`${wizardId}-name`} label="Project name">
+                                            <Input id={`${wizardId}-name`} autoFocus maxLength={150} name="name" placeholder="e.g. Northstar" required/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-status`} label="Status">
+                                            <Select defaultValue="Planning" name="status"><SelectTrigger id={`${wizardId}-status`}><SelectValue/></SelectTrigger><SelectContent>{projectStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent></Select>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-summary`} label="Summary" wide>
+                                            <Textarea id={`${wizardId}-summary`} maxLength={2000} name="summary" placeholder="A short project summary" required rows={3}/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-team`} label="Owning team">
+                                            <Select name="teamId" onValueChange={chooseTeam} required value={selectedTeamId}><SelectTrigger id={`${wizardId}-team`}><SelectValue placeholder="Choose a team"/></SelectTrigger><SelectContent>{manageableTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}</SelectContent></Select>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-lead`} label="Project lead">
+                                            <Select name="leadUserId" onValueChange={setSelectedLeadId} required value={selectedLeadId}><SelectTrigger id={`${wizardId}-lead`}><SelectValue placeholder="Choose a lead"/></SelectTrigger><SelectContent>{teamMembers.length === 0 && selectedTeam && <SelectItem value={selectedTeam.leaderId}>Team leader</SelectItem>}{teamMembers.map(member => <SelectItem key={member.id} value={member.id}>{member.name} · @{member.username}</SelectItem>)}</SelectContent></Select>
+                                        </ProjectField>
+                                    </div>
+                                </section>
+                                <section className="project-create-step" data-wizard-step="1" hidden={wizardStep !== 1}>
+                                    <div className="project-create-grid">
+                                        <div className="project-create-field wide"><GitHubRepositoriesField/></div>
+                                        <ProjectField id={`${wizardId}-repository`} label="Repository URL" hint="Optional" wide>
+                                            <Input id={`${wizardId}-repository`} name="repositoryUrl" placeholder="https://github.com/organization/project" type="url"/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-stack`} label="Tech stack" hint="Optional" wide>
+                                            <ChipInput id={`${wizardId}-stack`} name="techStack" placeholder="React, TypeScript, .NET"/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-database`} label="Database & storage" hint="Optional">
+                                            <ChipInput id={`${wizardId}-database`} maxLength={500} name="databaseDetails" placeholder="SQL Server, Redis"/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-environments`} label="Environments" hint="Optional">
+                                            <ChipInput id={`${wizardId}-environments`} name="environments" placeholder="Development, Production"/>
+                                        </ProjectField>
+                                    </div>
+                                </section>
+                                <section className="project-create-step" data-wizard-step="2" hidden={wizardStep !== 2}>
+                                    <div className="project-create-grid">
+                                        <ProjectField id={`${wizardId}-method`} label="SDLC method" hint="Optional" wide>
+                                            <Select name="sdlcMethod" defaultValue="unspecified">
+                                                <SelectTrigger id={`${wizardId}-method`}><SelectValue/></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="unspecified">Not specified</SelectItem>
+                                                    {sdlcModelIds.map(id => <SelectItem key={id} value={sdlcModels[id].title}>{sdlcModels[id].title}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-start`} label="Start date" hint="Optional">
+                                            <Input id={`${wizardId}-start`} name="startDate" type="date"/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-target`} label="Target release" hint="Optional">
+                                            <Input id={`${wizardId}-target`} name="targetDate" type="date"/>
+                                        </ProjectField>
+                                    </div>
+                                </section>
+                                <section className="project-create-step" data-wizard-step="3" hidden={wizardStep !== 3}>
+                                    <div className="project-create-grid single">
+                                        <ProjectField id={`${wizardId}-docs`} label="Documentation" hint="Optional">
+                                            <FileInput id={`${wizardId}-docs`} icon={<FileText/>} name="documentationUrl" placeholder="https://docs.example.com"/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-design`} label="Design file" hint="Optional">
+                                            <FileInput id={`${wizardId}-design`} icon={<Palette/>} name="designUrl" placeholder="https://figma.com/..."/>
+                                        </ProjectField>
+                                        <ProjectField id={`${wizardId}-app`} label="Live app" hint="Optional">
+                                            <FileInput id={`${wizardId}-app`} icon={<ExternalLink/>} name="liveUrl" placeholder="https://app.example.com"/>
+                                        </ProjectField>
+                                    </div>
+                                </section>
+                                {projectError && <p className="workshop-form-error project-create-error" role="alert">{projectError}</p>}
+                            </div>
+                            <div className="project-create-footer">
+                                <Button disabled={isCreating} onClick={() => setIsModalOpen(false)} type="button" variant="ghost">Cancel</Button>
                                 <div>
-                                    {wizardStep > 0 && <Button onClick={() => {
-                                        setProjectError("");
-                                        setWizardStep((current) => current - 1)
-                                    }} type="button" variant="outline"><ChevronLeft/> Back</Button>}
-                                    {wizardStep < projectWizardSteps.length - 1 ? (
-                                        <Button className="workshop-primary-action"
-                                                onClick={(event) => advanceWizard(event.currentTarget.form!)}
-                                                type="button">Next <ChevronRight/></Button>
-                                    ) : (
-                                        <Button className="workshop-primary-action" disabled={isCreating} type="submit">
-                                            {isCreating ? <LoaderCircle className="animate-spin"/> : <Plus/>}
-                                            Create project
-                                        </Button>
-                                    )}
+                                    {wizardStep > 0 && <Button disabled={isCreating} onClick={() => {setProjectError(""); setWizardStep(current => current - 1)}} type="button" variant="outline"><ChevronLeft/>Back</Button>}
+                                    {wizardStep < projectWizardSteps.length - 1 ? <Button onClick={event => advanceWizard(event.currentTarget.form!)} type="button">Next<ChevronRight/></Button>
+                                        : <Button disabled={isCreating} type="submit">{isCreating ? <LoaderCircle className="animate-spin"/> : <Plus/>}{isCreating ? "Creating…" : "Create project"}</Button>}
                                 </div>
                             </div>
                         </form>
@@ -442,22 +355,26 @@ export function WorkshopProjectsPage() {
 }
 
 function FileInput({
+                       id,
                        icon,
                        name,
                        placeholder,
                    }: {
-    icon: React.ReactNode
+    id: string
+    icon: ReactNode
     name: string
     placeholder: string
 }) {
-    return <span className="workshop-link-input">{icon}<Input name={name} placeholder={placeholder} type="url"/></span>
+    return <span className="project-create-link">{icon}<Input id={id} name={name} placeholder={placeholder} type="url"/></span>
 }
 
 function ChipInput({
+                       id,
                        maxLength,
                        name,
                        placeholder,
                    }: {
+    id: string
     maxLength?: number
     name: string
     placeholder: string
@@ -512,7 +429,7 @@ function ChipInput({
         <span className="workshop-tag-editor">
       <span className="workshop-tag-entry">
         <Input
-            aria-label={`Add ${name}`}
+            id={id}
             disabled={chips.length >= maxTags}
             maxLength={maxLength}
             onBlur={commitDraft}
@@ -525,9 +442,7 @@ function ChipInput({
                 size="icon" type="button" variant="ghost"><Tag/></Button>
       </span>
       <span className={`workshop-tag-list${chips.length === 0 ? " empty" : ""}`}>
-        {chips.length === 0 ? (
-            <small>Your tags will appear here</small>
-        ) : chips.map((chip) => (
+        {chips.map((chip) => (
             <span className="workshop-input-chip" key={chip}>
             {chip}
                 <Button
@@ -543,7 +458,7 @@ function ChipInput({
         ))}
       </span>
       <span className="workshop-tag-footer">
-        <small>{maxTags - chips.length} {maxTags - chips.length === 1 ? "tag" : "tags"} remaining</small>
+        <small>{chips.length} / {maxTags}</small>
         <Button disabled={chips.length === 0 && !draft} onClick={() => {
             setChips([]);
             setDraft("")
@@ -574,25 +489,14 @@ function readProjectInput(
         leadUserId,
         techStack: list("techStack"),
         repositoryUrl: optional("repositoryUrl"),
+        gitHubRepositories: readGitHubSelections(form.get("githubRepositories")),
         documentationUrl: optional("documentationUrl"),
         designUrl: optional("designUrl"),
         liveUrl: optional("liveUrl"),
-        sdlcMethod: optional("sdlcMethod"),
+        sdlcMethod: form.get("sdlcMethod") === "unspecified" ? undefined : optional("sdlcMethod"),
         databaseDetails: optional("databaseDetails"),
         environments: list("environments"),
         startDate: optional("startDate"),
         targetDate: optional("targetDate"),
     }
-}
-
-function formatSchedule(startDate?: string, targetDate?: string) {
-    if (!startDate && !targetDate) return "Dates not set"
-    if (!startDate) return `Target ${formatDate(targetDate!)}`
-    if (!targetDate) return `Started ${formatDate(startDate)}`
-    return `${formatDate(startDate)} – ${formatDate(targetDate)}`
-}
-
-function formatDate(value: string) {
-    return new Intl.DateTimeFormat(undefined, {month: "short", day: "numeric"})
-        .format(new Date(`${value}T00:00:00`))
 }

@@ -16,6 +16,7 @@ import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {organizationProfileDraft, syncOrganizationProfileDraft} from "@/features/workshop/organization-profile-draft"
 import {WorkspaceAvatarEditor} from "@/features/workshop/workspace-avatar-editor"
 import {WorkspaceAvatar} from "@/features/workshop/workspace-avatar"
+import {DeleteConfirmationField} from "@/features/workshop/delete-confirmation-field"
 import {
     useDeleteOrganizationMutation,
     useLeaveOrganizationMutation,
@@ -191,10 +192,7 @@ export function GeneralSettingsPage() {
                             event.preventDefault();
                             if (confirmation === organization.name) void remove()
                         }}>
-                            <Label>Type <b>{organization.name}</b> to confirm
-                                <Input autoComplete="off" autoFocus
-                                       onChange={(event) => setConfirmation(event.target.value)} value={confirmation}/>
-                            </Label>
+                            <DeleteConfirmationField name={organization.name} value={confirmation} onChange={setConfirmation} disabled={isDeleting}/>
                             <Button disabled={confirmation !== organization.name || isDeleting} type="submit"
                                     variant="destructive">
                                 {isDeleting ? <LoaderCircle className="animate-spin"/> : <Trash2/>} Delete organization

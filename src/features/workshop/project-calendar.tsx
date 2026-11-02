@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState, type KeyboardEvent} from "react"
-import {ArrowUpRight, ChevronLeft, ChevronRight, Plus, Search, X} from "lucide-react"
+import {ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Plus, Search, X} from "lucide-react"
 import {Button} from "@/components/ui/button"
+import {WorkshopEmptyState} from "./workshop-empty-state"
 import {CalendarMonthPicker} from "./calendar-month-picker"
 import {CalendarSchedulePreview} from "./calendar-schedule-preview"
 import {CalendarGantt} from "./calendar-gantt"
@@ -73,7 +74,10 @@ export function ProjectCalendar({items, timeZone, canEdit, onAdd, onOpen}: {
         </button></CalendarSchedulePreview>
     }
     function emptyState(day = false) {
-        return <div className="calendar-empty"><span className="calendar-empty-mark" aria-hidden="true">{day ? Number(selected.slice(-2)) : "—"}</span><strong>{isFiltered ? "No matching items" : day ? "Nothing scheduled this day" : "Nothing scheduled this month"}</strong><p>{isFiltered ? "Try another search or show more types." : day ? "Add an event to plan this date." : "Add an event or set dates on your TODOs and tasks."}</p>{isFiltered ? <button type="button" onClick={resetFilters}>Clear filters</button> : canEdit && <Button size="sm" variant="outline" onClick={() => onAdd(selected)}><Plus/>Add event</Button>}</div>
+        return <WorkshopEmptyState className="workshop-empty-state-inset calendar-empty-state" icon={CalendarDays}
+            title={isFiltered ? "No matching items" : day ? "No events this day" : "No events this month"}
+            description={isFiltered ? "Try another search or show more types." : day ? "Add an event to plan this date." : null}
+            action={isFiltered ? <Button size="sm" variant="outline" onClick={resetFilters}>Clear filters</Button> : canEdit && <Button size="sm" variant="outline" onClick={() => onAdd(selected)}><Plus/>Add event</Button>}/>
     }
 
     return <section className="project-calendar" aria-label="Project calendar" data-view={view}>

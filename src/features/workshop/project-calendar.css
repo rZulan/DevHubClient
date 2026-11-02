@@ -218,6 +218,7 @@
 .project-calendar[data-view=gantt] .calendar-day-agenda { display: none; }
 .calendar-gantt { position: relative; max-height: 580px; overflow: auto; overscroll-behavior-inline: contain; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
 .calendar-gantt:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.calendar-gantt-empty { position: sticky; left: 0; width: 100%; }
 .calendar-gantt-sheet { position: relative; min-height: 52px; }
 .calendar-gantt-header, .calendar-gantt-row { display: grid; grid-template-columns: 220px repeat(var(--gantt-days), minmax(0, 1fr)); }
 .calendar-gantt-header { height: 52px; position: sticky; top: 0; z-index: 5; background: var(--background); border-bottom: 1px solid var(--border); }

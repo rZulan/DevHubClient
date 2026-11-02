@@ -5,9 +5,9 @@ export const permissionGroups: {title: string; permissions: WorkshopPermission[]
     {title: "Invitations & teams", permissions: ["Create invites", "Manage invites", "Manage teams"]},
     {title: "Projects", permissions: ["View all projects", "Manage projects"]},
     {title: "Tracking", permissions: ["Manage tasks", "Manage bug reports", "Manage roadmap"]},
-    {title: "Design", permissions: ["Edit ERD", "Edit UI designs"]},
+    {title: "Design", permissions: ["Edit ERD", "Edit UI designs", "Edit UML diagrams"]},
     {title: "Resources", permissions: ["Manage notes", "Manage wiki"]},
-    {title: "Legacy access", permissions: ["Edit ideation"]},
+    {title: "Legacy access", permissions: ["Edit ideation", "Edit state machines"]},
 ]
 export const availablePermissions = permissionGroups.flatMap(group => group.permissions)
 export const permissionLabels: Partial<Record<WorkshopPermission, string>> = {"Edit ideation": "Legacy project editing"}
@@ -26,14 +26,16 @@ export const permissionDescriptions: Record<WorkshopPermission, string> = {
     "Manage tasks": "Customize TODO boards, manage their tasks, and create, edit, and delete project calendar events.",
     "Edit ERD": "Edit database diagrams and apply SQL or imported drafts to accessible projects.",
     "Edit UI designs": "Edit screens, layers, components, and prototype interactions in accessible projects.",
+    "Edit state machines": "Legacy state diagram permission for archived documents.",
+    "Edit UML diagrams": "Create, name, edit, and delete UML diagrams in accessible projects.",
     "Manage notes": "Create, edit, and delete notes in accessible projects.",
     "Manage wiki": "Create, edit, restore, and delete wiki pages in accessible projects.",
     "Manage bug reports": "Submit and triage bug reports, manage categories, and enable, disable, or replace the public submission link.",
     "Manage roadmap": "Update phases, ownership, deliverables, and cycle or release progress without managing project details.",
-    "Edit ideation": "Existing broad access to ERD, UI/UX, Notes, and archived Playground content. Use individual tool permissions for narrower access.",
+    "Edit ideation": "Existing broad access to ERD, UI/UX, UML diagrams, Notes, and archived Playground content. Use individual tool permissions for narrower access.",
 }
 export const impliedPermissionSources: Partial<Record<WorkshopPermission, WorkshopPermission[]>> = {
-    "Edit ERD": ["Edit ideation"], "Edit UI designs": ["Edit ideation"], "Manage notes": ["Edit ideation"],
+    "Edit ERD": ["Edit ideation"], "Edit UI designs": ["Edit ideation"], "Edit state machines": ["Edit ideation"], "Edit UML diagrams": ["Edit ideation"], "Manage notes": ["Edit ideation"],
     "Manage roadmap": ["Manage projects"], "Manage dashboard": ["Manage organization"], "Create invites": ["Manage invites"],
 }
 export function grantsWorkshopPermission(permissions: readonly WorkshopPermission[], permission: WorkshopPermission) {

@@ -1,24 +1,36 @@
-import {useEffect, useEffectEvent, useRef, useState, type CSSProperties, type PointerEvent} from "react"
+import {useEffect, useEffectEvent, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode} from "react"
 import {Expand, Grid2X2, Minus, Plus, Scan} from "lucide-react"
 import {designPaintOrder, layerUnavailable, moveDesignLayers, type DesignDocument, type DesignKind, type DesignLayer} from "./design-document"
 import {DesignShape} from "./design-shape"
 import {designShapeStyle} from "./design-style"
 import {designTools, type DesignTool} from "./design-tools"
 import {useCanvasTouch} from "./use-canvas-touch"
+import {canvasDropPoint, paletteDropHandlers, type CanvasPoint, type DesignPaletteElement} from "./canvas-palette"
+import {readCanvasView, saveCanvasView} from "./canvas-view-storage"
 
 type Point = {x: number; y: number}
 type Rect = Point & {width: number; height: number}
 type Gesture = {mode: "pan" | "move" | "resize" | "draw" | "marquee"; start: Point; world: Point; pan: Point; ids: string[]; source: DesignDocument; handle?: string; layer?: DesignLayer}
 
-export function DesignCanvas({document, selectedIds, onSelect, tool, onTool, canEdit, onChange, onCreate, fitKey, prototype, onEditText, onAction}: {
+export function DesignCanvas({document, selectedIds, onSelect, tool, onTool, canEdit, onChange, onCreate, fitKey, viewStorageKey, prototype, onEditText, onAction, onPaletteDrop, children}: {
     document: DesignDocument; selectedIds: string[]; onSelect: (ids: string[]) => void; tool: DesignTool; onTool: (tool: DesignTool) => void
     canEdit: boolean; onChange: (doc: DesignDocument) => void; onCreate: (kind: DesignKind, rect: Rect) => void; fitKey: number; prototype: boolean
     onEditText: (id: string, text: string) => void; onAction: (key: string, shift: boolean) => void
+    onPaletteDrop?: (element: DesignPaletteElement, point: CanvasPoint) => boolean; children?: ReactNode
+    viewStorageKey?: string
 }) {
     const root = useRef<HTMLDivElement>(null), gesture = useRef<Gesture | null>(null)
-    const [view, setView] = useState({zoom: .7, x: 60, y: 60}), [space, setSpace] = useState(false), [snap, setSnap] = useState(true)
+    const [savedView] = useState(() => readCanvasView(viewStorageKey))
+    const [view, setView] = useState({zoom: savedView?.zoom ?? .7, x: savedView?.pan.x ?? 60, y: savedView?.pan.y ?? 60}), [space, setSpace] = useState(false), [snap, setSnap] = useState(true)
+    useEffect(() => {saveCanvasView(viewStorageKey, {zoom: view.zoom, pan: {x: view.x, y: view.y}})}, [viewStorageKey, view])
     const [preview, setPreview] = useState<DesignDocument | null>(null), [area, setArea] = useState<Rect | null>(null), [guides, setGuides] = useState<{axis: "x" | "y"; at: number}[]>([])
     const [editing, setEditing] = useState<{id: string; text: string} | null>(null)
+    const [paletteActive, setPaletteActive] = useState(false), skipInitialFit = useRef(false)
+    useEffect(() => {
+        const clear = () => setPaletteActive(false)
+        window.addEventListener("dragend", clear); window.addEventListener("drop", clear); window.addEventListener("blur", clear)
+        return () => {window.removeEventListener("dragend", clear); window.removeEventListener("drop", clear); window.removeEventListener("blur", clear)}
+    }, [])
     const touch = useCanvasTouch(root, {zoom: view.zoom, pan: {x: view.x, y: view.y}}, next => setView({zoom: Math.max(.08, Math.min(4, next.zoom)), ...next.pan}), () => cancel())
     const shown = preview ?? document, layerIndex = new Map(shown.layers.map(l => [l.id, l])), visible = designPaintOrder(shown).filter(l => !l.hidden && !layerIndex.get(l.parentId ?? "")?.hidden)
     const selected = visible.filter(l => selectedIds.includes(l.id)), single = selected.length === 1 ? selected[0] : undefined
@@ -30,22 +42,22 @@ export function DesignCanvas({document, selectedIds, onSelect, tool, onTool, can
         setView({zoom, x: (root.current.clientWidth - (right - left) * zoom) / 2 - left * zoom, y: (root.current.clientHeight - (bottom - top) * zoom) / 2 - top * zoom - 12})
     }
     const fitLatest = useEffectEvent(() => fit())
-    useEffect(() => {fitLatest()}, [fitKey])
+    const previousFitKey = useRef(fitKey)
+    useEffect(() => {if (fitKey !== previousFitKey.current) {previousFitKey.current = fitKey; fitLatest()}}, [fitKey])
     useEffect(() => {
         const node = root.current
         if (!node) return
-        let width = node.clientWidth, height = node.clientHeight, windowWidth = window.innerWidth, windowHeight = window.innerHeight
+        let width = node.clientWidth, height = node.clientHeight
         const observer = new ResizeObserver(() => {
             const dx = (node.clientWidth - width) / 2, dy = (node.clientHeight - height) / 2
             width = node.clientWidth; height = node.clientHeight
             if (gesture.current) return
-            if (windowWidth !== window.innerWidth || windowHeight !== window.innerHeight) {windowWidth = window.innerWidth; windowHeight = window.innerHeight; fitLatest()}
-            else if (dx || dy) setView(v => ({...v, x: v.x + dx, y: v.y + dy}))
+            if (dx || dy) setView(v => ({...v, x: v.x + dx, y: v.y + dy}))
         })
         observer.observe(node); return () => observer.disconnect()
     }, [])
     const hadLayers = useRef(false)
-    useEffect(() => {if (document.layers.length && !hadLayers.current) fitLatest(); hadLayers.current = document.layers.length > 0}, [document.layers.length])
+    useEffect(() => {if (document.layers.length && !hadLayers.current && !skipInitialFit.current && !savedView) fitLatest(); hadLayers.current = document.layers.length > 0; skipInitialFit.current = false}, [document.layers.length, savedView])
     function zoom(next: number, point = {x: (root.current?.clientWidth ?? 0) / 2, y: (root.current?.clientHeight ?? 0) / 2}) {
         setView(v => {const z = Math.max(.08, Math.min(4, next)); return {zoom: z, x: point.x - (point.x - v.x) * z / v.zoom, y: point.y - (point.y - v.y) * z / v.zoom}})
     }
@@ -116,10 +128,15 @@ export function DesignCanvas({document, selectedIds, onSelect, tool, onTool, can
         cancel()
     }
     function commitText() {if (editing) {onEditText(editing.id, editing.text); setEditing(null)}}
-    return <div ref={root} className={`ui-design-canvas ${tool !== "select" && tool !== "hand" ? "drawing" : ""} ${tool === "hand" || space ? "panning" : ""}`} tabIndex={0} aria-label="Interface design canvas"
+    return <div ref={root} className={`ui-design-canvas ${tool !== "select" && tool !== "hand" ? "drawing" : ""} ${tool === "hand" || space ? "panning" : ""} ${paletteActive && canEdit ? "canvas-palette-active" : ""}`} tabIndex={0} aria-label="Interface design canvas"
         {...touch}
+        {...paletteDropHandlers("ui-editor", canEdit && !!onPaletteDrop && !gesture.current && !editing, setPaletteActive, (element, event) => {
+            if (element.tool !== "ui-editor" || !root.current) return
+            skipInitialFit.current = !!onPaletteDrop?.(element, canvasDropPoint(event, root.current.getBoundingClientRect(), {x: view.x, y: view.y}, view.zoom))
+            root.current.focus({preventScroll: true})
+        })}
         style={{"--ui-grid": `${8 * view.zoom}px`, "--ui-pan-x": `${view.x}px`, "--ui-pan-y": `${view.y}px`} as CSSProperties}
-        onPointerDown={e => start(e)} onPointerMove={move} onPointerUp={end} onPointerCancel={cancel} onLostPointerCapture={cancel} onAuxClick={e => e.preventDefault()}
+        onPointerDown={e => {if (!(e.target as HTMLElement).closest("button, input, textarea, select, a, [contenteditable=true]")) start(e)}} onPointerMove={move} onPointerUp={end} onPointerCancel={cancel} onLostPointerCapture={cancel} onAuxClick={e => e.preventDefault()}
         onKeyDown={event => {
             if ((event.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]")) return
             const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey
@@ -153,6 +170,8 @@ export function DesignCanvas({document, selectedIds, onSelect, tool, onTool, can
             {area && <div className={`ui-draw-area ${gesture.current?.mode === "draw" ? "shape" : ""}`} style={{left: area.x, top: area.y, width: area.width, height: area.height, borderWidth: 1 / view.zoom, borderRadius: tool === "ellipse" ? "50%" : 0}}/>}
             {guides.map(g => <div key={g.axis} className={`ui-snap-guide ${g.axis}`} style={g.axis === "x" ? {left: g.at, width: 1 / view.zoom} : {top: g.at, height: 1 / view.zoom}}/>)}
         </div>
+        {children}
+        {paletteActive && canEdit && <div className="canvas-palette-hint" role="status">Drop to add to design</div>}
         <div className="ui-canvas-meta"><span>{prototype ? "PROTOTYPE" : "DESIGN CANVAS"}</span><span>{visible.filter(l => l.kind === "frame").length} screens</span></div>
         <div className="ui-canvas-controls" onPointerDown={e => e.stopPropagation()}>
             <button type="button" aria-label="Toggle snapping" title="Snap to grid & objects · Alt to bypass" aria-pressed={snap} onClick={() => setSnap(v => !v)}><Grid2X2/></button><i/>

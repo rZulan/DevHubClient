@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {validToolDocument, emptyDocuments} from '../src/features/workshop/tool-documents.ts'
-import {noteTextColor, noteColors} from '../src/features/workshop/sticky-notes.ts'
+import {noteTextColor, noteColors, noteStyle} from '../src/features/workshop/sticky-notes.ts'
+import {contrastRatio} from '../src/features/workshop/appearance/color-schemes.ts'
 import {defaultNoteEmoji, noteEmoji} from '../src/features/workshop/note-emojis.ts'
 
 const note = {id: 'note-1', title: 'Next release', body: 'Review onboarding', color: '#f6e7a6', updatedAt: '2026-10-20T00:00:00.000Z'}
@@ -20,6 +21,16 @@ test('preset and custom note colors retain accessible text contrast', () => {
         }
         const values = [luminance(color), luminance(noteTextColor(color))].sort((a, b) => b - a)
         assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, color)
+    }
+})
+
+test('theme-adjusted notes preserve the chosen color and readable text in both modes', () => {
+    const colors = [...noteColors.map(preset => preset.color), '#ffffff', '#000000', '#ff0000', '#0000ff', '#777777']
+    for (const color of colors) {
+        const style = noteStyle(color)
+        assert.equal(style['--note-base-color'], color)
+        assert.ok(contrastRatio(color, style['--note-light-ink']) >= 4.5, `light ${color}`)
+        assert.ok(contrastRatio(style['--note-dark-color'], style['--note-dark-ink']) >= 4.5, `dark ${color}`)
     }
 })
 

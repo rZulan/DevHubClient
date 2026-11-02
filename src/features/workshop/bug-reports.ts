@@ -29,7 +29,7 @@ export function bugError(error: unknown, fallback = "The request could not be co
     const failure = error as {data?: {detail?: string; errors?: Record<string, string[]>}; message?: string; status?: number}
     if (failure?.status === 413) return "These attachments exceed the server's upload limit. Try smaller files."
     if (failure?.status === 429) return "Too many requests. Please wait before trying again."
-    return failure?.data?.detail ?? Object.values(failure?.data?.errors ?? {}).flat()[0] ?? failure?.message ?? fallback
+    return Object.values(failure?.data?.errors ?? {}).flat()[0] ?? failure?.data?.detail ?? failure?.message ?? fallback
 }
 export function bugFileSize(bytes: number) {return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`}
 export const bugApiBase = (import.meta.env?.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "")

@@ -14,9 +14,9 @@ export const AppFooter = memo(function AppFooter() {
             <div
                 className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-2">
-                    <Link aria-label="DevHub home" className="inline-flex items-center gap-2 font-semibold tracking-tight" to="/">
+                    <Link aria-label="Zevont home" className="inline-flex items-center gap-2 font-semibold tracking-tight" to="/">
                         <BrandMark className="size-8"/>
-                        <span>Dev<span className="text-primary">Hub</span></span>
+                        <span>Zevont</span>
                     </Link>
                     <p className="text-sm text-muted-foreground">
                         Built for developers, with React and .NET.
@@ -36,7 +36,7 @@ export const AppFooter = memo(function AppFooter() {
                         ))}
                     </nav>
                     <p className="text-xs text-muted-foreground">
-                        &copy; {new Date().getFullYear()} DevHub. All rights reserved.
+                        &copy; {new Date().getFullYear()} Zevont. All rights reserved.
                     </p>
                 </div>
             </div>

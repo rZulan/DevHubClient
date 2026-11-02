@@ -4,9 +4,10 @@ import {CaretRightIcon} from "@phosphor-icons/react/dist/csr/CaretRight"
 import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
 import {cn} from "@/lib/utils"
 import type {WorkshopNavigationItem} from "./workshop-navigation"
+import {DashboardNavigationLink} from "./dashboard-navigation-link"
 
-export function WorkshopNavigationGroup({title, items, activePath, underConstruction = false}: {
-    title: string; items: readonly WorkshopNavigationItem[]; activePath: string; underConstruction?: boolean
+export function WorkshopNavigationGroup({title, items, activePath, underConstruction = false, dashboardEditing = false}: {
+    title: string; items: readonly WorkshopNavigationItem[]; activePath: string; underConstruction?: boolean; dashboardEditing?: boolean
 }) {
     const [expanded, setExpanded] = useState(true)
     const submenuId = useId()
@@ -16,7 +17,9 @@ export function WorkshopNavigationGroup({title, items, activePath, underConstruc
             <span className="workshop-construction-label">{title}{underConstruction && <UnderConstructionIndicator/>}</span><CaretRightIcon className="workshop-nav-chevron"/>
         </button>
         <div className="workshop-nav-submenu" id={submenuId}>
-            {items.map(({label, path, underConstruction: pending}) => <NavLink key={path} to={path} className={({isActive}) => cn("workshop-nav-link", isActive && "active")}>
+            {items.map(({label, path, underConstruction: pending}) => path === "dashboard"
+                ? <DashboardNavigationLink key={path} label={label} underConstruction={pending} switchDisabled={dashboardEditing}/>
+                : <NavLink key={path} to={path} className={({isActive}) => cn("workshop-nav-link", isActive && "active")}>
                 <span className="workshop-construction-label">{label}{pending && <UnderConstructionIndicator/>}</span>
             </NavLink>)}
         </div>

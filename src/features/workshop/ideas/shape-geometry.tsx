@@ -1,6 +1,8 @@
 import type {CanvasItem} from "../shape-clipboard"
+import {UmlShapeGeometry} from "./uml-shape-geometry"
 
 export function ShapeGeometry({item}: { item: CanvasItem }) {
+    if (item.umlSymbol) return <UmlShapeGeometry item={item}/>
     const {kind, width: w, height: h, outlineWidth: stroke} = item
     const inset = stroke / 2
     const right = w - inset, bottom = h - inset

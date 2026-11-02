@@ -1,4 +1,4 @@
-import {type CSSProperties, type FormEvent, useState} from "react"
+import {type CSSProperties, type FormEvent, useId, useState} from "react"
 import {ArrowRight, Check, Crown, FolderKanban, LoaderCircle, Pencil, Plus, Trash2, Users} from "lucide-react"
 import {Link, useOutletContext} from "react-router-dom"
 import {useAppSelector} from "@/app/hooks"
@@ -12,6 +12,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Textarea} from "@/components/ui/textarea"
 import {getApiErrorMessage} from "@/features/auth/api-error"
 import {CreateTeamDialog} from "@/features/workshop/create-team-dialog"
+import {DeleteConfirmationField} from "@/features/workshop/delete-confirmation-field"
 import {directoryMemberMatches, directoryTeamMembers} from "@/features/workshop/organization-directory"
 import {DirectoryAvatar, DirectoryEmpty, DirectoryHeading, DirectoryPerson, DirectoryPersonDialog, DirectorySearch, DirectorySummary} from "@/features/workshop/organization-directory-ui"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
@@ -48,7 +49,7 @@ export function WorkshopTeamsPage() {
         <DirectoryHeading organization={organization}>{canManage && <Button onClick={() => setIsCreating(true)}><Plus/> Create team</Button>}</DirectoryHeading>
         <DirectorySummary organization={organization}/>
         <div className="directory-toolbar">
-            <div className="directory-segment" aria-label="Filter teams">
+            <div className="directory-segment directory-team-filter" aria-label="Filter teams">
                 <button type="button" aria-pressed={scope === "all"} onClick={() => setScope("all")}>All teams <span>{organization.teams.length}</span></button>
                 <button type="button" aria-pressed={scope === "mine"} onClick={() => setScope("mine")}>My teams</button>
             </div>
@@ -73,7 +74,7 @@ export function WorkshopTeamsPage() {
                 </article>
             })}
             {canManage && !query && scope === "all" && <button className="directory-create-card" type="button" onClick={() => setIsCreating(true)}><span><Plus/></span><strong>Make room for a new team</strong><small>Bring people together around a shared goal.</small><b>Create team <ArrowRight/></b></button>}
-        </div> : !directoryData.isError && <DirectoryEmpty title={organization.teams.length ? "No teams found" : "Great work starts with a team"} action={organization.teams.length ? <Button variant="outline" onClick={clearFilters}>Clear filters</Button> : canManage ? <Button onClick={() => setIsCreating(true)}><Plus/> Create your first team</Button> : undefined}>{organization.teams.length ? "Try a different team name or person, or switch to all teams." : "Group people around shared responsibilities, then connect their projects."}</DirectoryEmpty>}
+        </div> : !directoryData.isError && <DirectoryEmpty title={organization.teams.length ? "No teams found" : "No teams yet"} action={organization.teams.length ? <Button variant="outline" onClick={clearFilters}>Clear filters</Button> : canManage ? <Button onClick={() => setIsCreating(true)}><Plus/>Create team</Button> : undefined}>{organization.teams.length ? "Try a different team name or person, or switch to all teams." : "Create a team to group people around shared responsibilities and projects."}</DirectoryEmpty>}
         <CreateTeamDialog defaultLeaderId={userId} members={organization.members} onOpenChange={setIsCreating} open={isCreating} organization={organization} teams={organization.teams}/>
         {viewing && <Dialog open onOpenChange={open => {if (!open) setViewingId(null)}}><DialogContent className="workshop-modal directory-modal directory-roster">
             <WorkspaceAvatar className="directory-team-symbol" name={viewing.name} avatarUrl={viewing.avatarUrl} fallback={<Users/>}/>
@@ -88,6 +89,7 @@ export function WorkshopTeamsPage() {
 }
 
 function ManageTeamDialog({organization, team, canChangeLeader, onClose}: {organization: WorkshopOrganization; team: WorkshopTeam; canChangeLeader: boolean; onClose: () => void}) {
+    const descriptionId = useId()
     const [leaderId, setLeaderId] = useState(team.leaderId)
     const [selectedIds, setSelectedIds] = useState(() => new Set([...team.memberIds, team.leaderId]))
     const [query, setQuery] = useState("")
@@ -132,9 +134,26 @@ function ManageTeamDialog({organization, team, canChangeLeader, onClose}: {organ
         finally {setBusy(false)}
     }
 
-    return <Dialog open onOpenChange={open => {if (!open && !busy) onClose()}}><DialogContent className="workshop-modal directory-modal directory-team-editor" showCloseButton={!busy}>
-        <DialogHeader><DialogTitle>{confirmingDelete ? `Delete ${team.name}?` : `Manage ${team.name}`}</DialogTitle><DialogDescription>{confirmingDelete ? "This permanently deletes the team, its projects, and their saved data. Members keep their organization access. This cannot be undone." : "Keep ownership clear and bring the right people together."}</DialogDescription></DialogHeader>
-        {confirmingDelete ? <div className="directory-delete-confirm"><Label>Type <strong>{team.name}</strong> to confirm<Input autoFocus value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy}/></Label>{error && <p className="directory-form-error" role="alert">{error}</p>}<div className="directory-modal-actions"><Button variant="outline" disabled={busy} onClick={() => {setConfirmingDelete(false); setError("")}}>Cancel</Button><Button variant="destructive" disabled={busy || confirmation !== team.name} onClick={() => void remove()}>{busy ? <LoaderCircle className="animate-spin"/> : <Trash2/>} Delete team</Button></div></div> :
+    return <Dialog open onOpenChange={open => {if (!open && !busy) onClose()}}><DialogContent className={`workshop-modal directory-modal directory-team-editor${confirmingDelete ? " directory-team-delete" : ""}`} aria-describedby={confirmingDelete ? descriptionId : undefined} showCloseButton={!busy}>
+        {confirmingDelete ? <>
+            <div className="directory-delete-heading">
+                <span className="directory-delete-icon" aria-hidden="true"><Trash2/></span>
+                <DialogHeader>
+                    <DialogTitle>Delete {team.name}?</DialogTitle>
+                    <DialogDescription id={descriptionId}>This permanently deletes the team, its projects, and their saved data. This action cannot be undone.</DialogDescription>
+                </DialogHeader>
+            </div>
+            <form className="directory-delete-confirm" onSubmit={event => {event.preventDefault(); void remove()}}>
+                <p className="directory-delete-note">Members will keep their access to the organization.</p>
+                <DeleteConfirmationField name={team.name} value={confirmation} onChange={setConfirmation} disabled={busy}/>
+                {error && <p className="directory-form-error" role="alert">{error}</p>}
+                <div className="directory-modal-actions">
+                    <Button type="button" variant="outline" disabled={busy} onClick={() => {setConfirmingDelete(false); setConfirmation(""); setError("")}}>Cancel</Button>
+                    <Button type="submit" variant="destructive" disabled={busy || confirmation !== team.name}>{busy ? <LoaderCircle className="animate-spin"/> : <Trash2/>}{busy ? "Deleting…" : "Delete team"}</Button>
+                </div>
+            </form>
+        </> : <>
+            <DialogHeader><DialogTitle>Manage {team.name}</DialogTitle></DialogHeader>
             <form onSubmit={save}>
                 <WorkspaceAvatarEditor label="Team icon" name={team.name} avatarUrl={team.avatarUrl} disabled={busy} onSave={avatarUrl => setTeamAvatar({organizationId: organization.id, teamId: team.id, avatarUrl}).unwrap()}/>
                 <fieldset disabled={busy} className="directory-editor-fields"><Label>Team name<Input autoFocus defaultValue={team.name} minLength={2} maxLength={150} name="name" required/></Label>
@@ -146,6 +165,6 @@ function ManageTeamDialog({organization, team, canChangeLeader, onClose}: {organ
                 </fieldset>
                 {error && <p className="directory-form-error" role="alert">{error}</p>}
                 <div className="directory-modal-actions">{canChangeLeader && <Button variant="ghost" className="directory-delete-button" disabled={busy} type="button" onClick={() => {setConfirmingDelete(true); setError("")}}><Trash2/> Delete team</Button>}<Button variant="outline" type="button" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={busy} type="submit">{busy ? <LoaderCircle className="animate-spin"/> : <Check/>} Save changes</Button></div>
-            </form>}
+            </form></>}
     </DialogContent></Dialog>
 }

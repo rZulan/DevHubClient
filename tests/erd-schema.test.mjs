@@ -12,7 +12,7 @@ const composite = () => ({tables: [table('parent', [field('tenant', {primary: tr
 
 test('old drafts retain PostgreSQL output and target survives deletion and JSON round trips', () => {
     const doc = composite()
-    assert.match(erdSql(doc), /DevHub ERD · PostgreSQL/)
+    assert.match(erdSql(doc), /Zevont ERD · PostgreSQL/)
     doc.dialect = 'mysql'
     assert.equal(removeField(doc, 'child', 'amount').dialect, 'mysql')
     assert.equal(removeTable(doc, 'child').dialect, 'mysql')

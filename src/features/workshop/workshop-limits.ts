@@ -13,9 +13,10 @@ export function saveFailureDetail(error: unknown, fallback: string) {
 }
 
 export function canvasObjectCount(tool: string, document: unknown): number | null {
-    const data = document as {layers?: unknown[]}
+    const data = document as {layers?: unknown[]; diagrams?: {items: unknown[]}[]}
     return tool === "ideas" && Array.isArray(document) ? document.length
-        : tool === "ui-editor" && Array.isArray(data?.layers) ? data.layers.length : null
+        : tool === "ui-editor" && Array.isArray(data?.layers) ? data.layers.length
+        : tool === "uml" && Array.isArray(data?.diagrams) ? Math.max(0, ...data.diagrams.map(d => d.items.length)) : null
 }
 
 export function canGrowCanvas(previous: number, next: number, saved: number, maximum = workshopDefaults.canvasMaximumObjects) {

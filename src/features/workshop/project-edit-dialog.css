@@ -1,0 +1,16 @@
+.project-edit-tabs { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
+.project-edit-tab-list { display: flex; flex-shrink: 0; gap: 24px; border-bottom: 1px solid var(--border); padding: 0 28px; }
+.project-edit-tab-list > button { min-height: 42px; border-bottom: 2px solid transparent; padding: 0 2px 12px; color: var(--muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; }
+.project-edit-tab-list > button[data-state="active"] { border-bottom-color: var(--foreground); color: var(--foreground); }
+.project-edit-tab-list > button:hover { color: var(--foreground); }
+.project-edit-tab-list > button:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
+.project-edit-fields { min-width: 0; border: 0; padding: 0; }
+.project-edit-panel { min-height: 250px; outline: none; }
+.project-edit-panel[data-state="inactive"] { display: none; }
+.project-edit-dialog .project-create-footer > button:last-child { margin-left: auto; }
+
+@media (max-width: 560px) {
+    .project-edit-tab-list { justify-content: space-between; gap: 14px; padding-inline: 20px; }
+    .project-edit-tab-list > button { font-size: 12px; }
+    .project-edit-panel { min-height: 0; }
+}

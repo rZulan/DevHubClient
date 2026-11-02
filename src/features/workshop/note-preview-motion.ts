@@ -2,7 +2,7 @@ type Point = [number, number]
 const nx = .45, ny = Math.sqrt(1 - nx * nx)
 const perspective = 1000
 export const notePeelDuration = 300
-export const noteSettleDuration = 480
+export const noteSettleDuration = notePeelDuration
 export const noteHoverProgress = .13
 
 function clip(points: Point[], boundary: number, above: boolean): Point[] {

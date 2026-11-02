@@ -1,10 +1,10 @@
-// Playground is archived; keep its canvas implementation and project data for later.
-export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "state-machine", "calendar", "bug-reports", "project-wiki"] as const
+// Universal UML reuses the archived Playground canvas.
+export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "calendar", "bug-reports", "project-wiki", "uml"] as const
 export type ProjectToolId = typeof projectToolIds[number]
 export type ToolPreferences = { order: ProjectToolId[]; hidden: ProjectToolId[] }
 export const projectNavigationCategories: readonly {id: string; title: string; tools: readonly ProjectToolId[]}[] = [
     {id: "planning", title: "Tracking", tools: ["todo", "calendar", "bug-reports", "sdlc"]},
-    {id: "design", title: "Design", tools: ["erd", "ui-editor", "state-machine"]},
+    {id: "design", title: "Design", tools: ["erd", "ui-editor", "uml"]},
     {id: "knowledge", title: "Resources", tools: ["project-wiki", "notes"]},
 ]
 
