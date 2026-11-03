@@ -1,0 +1,1640 @@
+{
+  "tables": [
+    {
+      "id": "table-000",
+      "x": 4520,
+      "y": 80,
+      "columns": 12
+    },
+    {
+      "id": "table-001",
+      "x": 2640,
+      "y": 4903,
+      "columns": 8
+    },
+    {
+      "id": "table-002",
+      "x": 2300,
+      "y": 80,
+      "columns": 3
+    },
+    {
+      "id": "table-003",
+      "x": 2300,
+      "y": 4434,
+      "columns": 3
+    },
+    {
+      "id": "table-004",
+      "x": 820,
+      "y": 2356,
+      "columns": 8
+    },
+    {
+      "id": "table-005",
+      "x": 5260,
+      "y": 1418,
+      "columns": 9
+    },
+    {
+      "id": "table-006",
+      "x": 7480,
+      "y": 1469,
+      "columns": 6
+    },
+    {
+      "id": "table-007",
+      "x": 3140,
+      "y": 4726,
+      "columns": 9
+    },
+    {
+      "id": "table-008",
+      "x": 820,
+      "y": 672,
+      "columns": 25
+    },
+    {
+      "id": "table-009",
+      "x": 820,
+      "y": 1722,
+      "columns": 12
+    },
+    {
+      "id": "table-010",
+      "x": 5260,
+      "y": 80,
+      "columns": 7
+    },
+    {
+      "id": "table-011",
+      "x": 820,
+      "y": 80,
+      "columns": 7
+    },
+    {
+      "id": "table-012",
+      "x": 5260,
+      "y": 4210,
+      "columns": 10
+    },
+    {
+      "id": "table-013",
+      "x": 3780,
+      "y": 80,
+      "columns": 3
+    },
+    {
+      "id": "table-014",
+      "x": 580,
+      "y": 4726,
+      "columns": 3
+    },
+    {
+      "id": "table-015",
+      "x": 1580,
+      "y": 4823,
+      "columns": 3
+    },
+    {
+      "id": "table-016",
+      "x": 820,
+      "y": 4194,
+      "columns": 8
+    },
+    {
+      "id": "table-017",
+      "x": 1560,
+      "y": 3032,
+      "columns": 47
+    },
+    {
+      "id": "table-018",
+      "x": 6000,
+      "y": 912,
+      "columns": 17
+    },
+    {
+      "id": "table-019",
+      "x": 7480,
+      "y": 1911,
+      "columns": 9
+    },
+    {
+      "id": "table-020",
+      "x": 820,
+      "y": 2862,
+      "columns": 19
+    },
+    {
+      "id": "table-021",
+      "x": 1560,
+      "y": 80,
+      "columns": 26
+    },
+    {
+      "id": "table-022",
+      "x": 820,
+      "y": 3720,
+      "columns": 7
+    },
+    {
+      "id": "table-023",
+      "x": 5260,
+      "y": 1956,
+      "columns": 11
+    },
+    {
+      "id": "table-024",
+      "x": 1560,
+      "y": 1162,
+      "columns": 8
+    },
+    {
+      "id": "table-025",
+      "x": 1560,
+      "y": 1668,
+      "columns": 10
+    },
+    {
+      "id": "table-026",
+      "x": 2300,
+      "y": 432,
+      "columns": 11
+    },
+    {
+      "id": "table-027",
+      "x": 3780,
+      "y": 4431,
+      "columns": 3
+    },
+    {
+      "id": "table-028",
+      "x": 1560,
+      "y": 2238,
+      "columns": 17
+    },
+    {
+      "id": "table-029",
+      "x": 5260,
+      "y": 2558,
+      "columns": 22
+    },
+    {
+      "id": "table-030",
+      "x": 5260,
+      "y": 3512,
+      "columns": 14
+    },
+    {
+      "id": "table-031",
+      "x": 80,
+      "y": 4775,
+      "columns": 6
+    },
+    {
+      "id": "table-032",
+      "x": 6000,
+      "y": 2718,
+      "columns": 15
+    },
+    {
+      "id": "table-033",
+      "x": 6740,
+      "y": 1357,
+      "columns": 15
+    },
+    {
+      "id": "table-034",
+      "x": 7480,
+      "y": 2449,
+      "columns": 8
+    },
+    {
+      "id": "table-035",
+      "x": 6000,
+      "y": 3448,
+      "columns": 8
+    },
+    {
+      "id": "table-036",
+      "x": 7480,
+      "y": 2955,
+      "columns": 6
+    },
+    {
+      "id": "table-037",
+      "x": 2300,
+      "y": 2308,
+      "columns": 17
+    },
+    {
+      "id": "table-038",
+      "x": 2300,
+      "y": 3736,
+      "columns": 14
+    },
+    {
+      "id": "table-039",
+      "x": 6000,
+      "y": 2276,
+      "columns": 6
+    },
+    {
+      "id": "table-040",
+      "x": 6000,
+      "y": 1706,
+      "columns": 10
+    },
+    {
+      "id": "table-041",
+      "x": 3140,
+      "y": 5144,
+      "columns": 6
+    },
+    {
+      "id": "table-042",
+      "x": 5260,
+      "y": 656,
+      "columns": 16
+    },
+    {
+      "id": "table-043",
+      "x": 3040,
+      "y": 416,
+      "columns": 9
+    },
+    {
+      "id": "table-044",
+      "x": 2140,
+      "y": 4951,
+      "columns": 5
+    },
+    {
+      "id": "table-045",
+      "x": 2300,
+      "y": 1034,
+      "columns": 32
+    },
+    {
+      "id": "table-046",
+      "x": 3040,
+      "y": 954,
+      "columns": 24
+    },
+    {
+      "id": "table-047",
+      "x": 2300,
+      "y": 3102,
+      "columns": 12
+    },
+    {
+      "id": "table-048",
+      "x": 3040,
+      "y": 3656,
+      "columns": 17
+    },
+    {
+      "id": "table-049",
+      "x": 3040,
+      "y": 1972,
+      "columns": 22
+    },
+    {
+      "id": "table-050",
+      "x": 3040,
+      "y": 2926,
+      "columns": 15
+    },
+    {
+      "id": "table-051",
+      "x": 3780,
+      "y": 435,
+      "columns": 19
+    },
+    {
+      "id": "table-052",
+      "x": 3780,
+      "y": 1293,
+      "columns": 10
+    },
+    {
+      "id": "table-053",
+      "x": 1080,
+      "y": 4743,
+      "columns": 8
+    },
+    {
+      "id": "table-054",
+      "x": 580,
+      "y": 4952,
+      "columns": 2
+    },
+    {
+      "id": "table-055",
+      "x": 4520,
+      "y": 4146,
+      "columns": 6
+    },
+    {
+      "id": "table-056",
+      "x": 3780,
+      "y": 2977,
+      "columns": 7
+    },
+    {
+      "id": "table-057",
+      "x": 3780,
+      "y": 1863,
+      "columns": 27
+    },
+    {
+      "id": "table-058",
+      "x": 6740,
+      "y": 915,
+      "columns": 6
+    },
+    {
+      "id": "table-059",
+      "x": 3780,
+      "y": 3451,
+      "columns": 10
+    },
+    {
+      "id": "table-060",
+      "x": 3780,
+      "y": 4021,
+      "columns": 5
+    },
+    {
+      "id": "table-061",
+      "x": 6740,
+      "y": 2087,
+      "columns": 9
+    },
+    {
+      "id": "table-062",
+      "x": 6740,
+      "y": 2625,
+      "columns": 8
+    },
+    {
+      "id": "table-063",
+      "x": 4520,
+      "y": 720,
+      "columns": 11
+    },
+    {
+      "id": "table-064",
+      "x": 4520,
+      "y": 1322,
+      "columns": 6
+    },
+    {
+      "id": "table-065",
+      "x": 80,
+      "y": 1972,
+      "columns": 21
+    },
+    {
+      "id": "table-066",
+      "x": 4520,
+      "y": 1764,
+      "columns": 22
+    },
+    {
+      "id": "table-067",
+      "x": 4520,
+      "y": 2718,
+      "columns": 21
+    },
+    {
+      "id": "table-068",
+      "x": 6740,
+      "y": 3131,
+      "columns": 5
+    },
+    {
+      "id": "table-069",
+      "x": 6740,
+      "y": 3541,
+      "columns": 5
+    },
+    {
+      "id": "table-070",
+      "x": 4520,
+      "y": 3640,
+      "columns": 8
+    },
+    {
+      "id": "table-071",
+      "x": 2640,
+      "y": 4726,
+      "columns": 1
+    },
+    {
+      "id": "table-072",
+      "x": 2640,
+      "y": 5289,
+      "columns": 1
+    },
+    {
+      "id": "table-073",
+      "x": 3700,
+      "y": 4726,
+      "columns": 1
+    },
+    {
+      "id": "table-074",
+      "x": 4200,
+      "y": 4726,
+      "columns": 1
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r000",
+      "fromTable": "table-065",
+      "toTable": "table-059",
+      "fromField": "field-0",
+      "toField": "field-7",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r001",
+      "fromTable": "table-065",
+      "toTable": "table-070",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r002",
+      "fromTable": "table-057",
+      "toTable": "table-064",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r003",
+      "fromTable": "table-031",
+      "toTable": "table-054",
+      "fromField": "field-0",
+      "toField": "field-0",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r004",
+      "fromTable": "table-021",
+      "toTable": "table-022",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r005",
+      "fromTable": "table-034",
+      "toTable": "table-019",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r006",
+      "fromTable": "table-046",
+      "toTable": "table-047",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r007",
+      "fromTable": "table-057",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r008",
+      "fromTable": "table-057",
+      "toTable": "table-059",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r009",
+      "fromTable": "table-041",
+      "toTable": "table-001",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r010",
+      "fromTable": "table-067",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-18",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r011",
+      "fromTable": "table-057",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r012",
+      "fromTable": "table-065",
+      "toTable": "table-026",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r013",
+      "fromTable": "table-057",
+      "toTable": "table-045",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r014",
+      "fromTable": "table-065",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-8",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r015",
+      "fromTable": "table-050",
+      "toTable": "table-049",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r016",
+      "fromTable": "table-065",
+      "toTable": "table-025",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r017",
+      "fromTable": "table-049",
+      "toTable": "table-048",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r018",
+      "fromTable": "table-057",
+      "toTable": "table-061",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r019",
+      "fromTable": "table-017",
+      "toTable": "table-029",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r020",
+      "fromTable": "table-057",
+      "toTable": "table-065",
+      "fromField": "field-0",
+      "toField": "field-16",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r021",
+      "fromTable": "table-065",
+      "toTable": "table-043",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r022",
+      "fromTable": "table-033",
+      "toTable": "table-037",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r023",
+      "fromTable": "table-065",
+      "toTable": "table-063",
+      "fromField": "field-0",
+      "toField": "field-8",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r024",
+      "fromTable": "table-065",
+      "toTable": "table-066",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r025",
+      "fromTable": "table-065",
+      "toTable": "table-038",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r026",
+      "fromTable": "table-057",
+      "toTable": "table-033",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r027",
+      "fromTable": "table-057",
+      "toTable": "table-048",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r028",
+      "fromTable": "table-057",
+      "toTable": "table-058",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r029",
+      "fromTable": "table-040",
+      "toTable": "table-005",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r030",
+      "fromTable": "table-065",
+      "toTable": "table-048",
+      "fromField": "field-0",
+      "toField": "field-13",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r031",
+      "fromTable": "table-018",
+      "toTable": "table-023",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r032",
+      "fromTable": "table-007",
+      "toTable": "table-001",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r033",
+      "fromTable": "table-033",
+      "toTable": "table-069",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r034",
+      "fromTable": "table-044",
+      "toTable": "table-041",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r035",
+      "fromTable": "table-065",
+      "toTable": "table-047",
+      "fromField": "field-0",
+      "toField": "field-9",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r036",
+      "fromTable": "table-035",
+      "toTable": "table-033",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r037",
+      "fromTable": "table-065",
+      "toTable": "table-008",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r038",
+      "fromTable": "table-057",
+      "toTable": "table-067",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r039",
+      "fromTable": "table-065",
+      "toTable": "table-067",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r040",
+      "fromTable": "table-065",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-22",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r041",
+      "fromTable": "table-033",
+      "toTable": "table-034",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r042",
+      "fromTable": "table-017",
+      "toTable": "table-025",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r043",
+      "fromTable": "table-005",
+      "toTable": "table-006",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r044",
+      "fromTable": "table-053",
+      "toTable": "table-015",
+      "fromField": "field-0",
+      "toField": "field-0",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r045",
+      "fromTable": "table-017",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r046",
+      "fromTable": "table-040",
+      "toTable": "table-061",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r047",
+      "fromTable": "table-065",
+      "toTable": "table-028",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r048",
+      "fromTable": "table-065",
+      "toTable": "table-052",
+      "fromField": "field-0",
+      "toField": "field-5",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r049",
+      "fromTable": "table-057",
+      "toTable": "table-049",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r050",
+      "fromTable": "table-065",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r051",
+      "fromTable": "table-045",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-14",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r052",
+      "fromTable": "table-018",
+      "toTable": "table-019",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r053",
+      "fromTable": "table-066",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r054",
+      "fromTable": "table-047",
+      "toTable": "table-045",
+      "fromField": "field-0",
+      "toField": "field-16",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r055",
+      "fromTable": "table-057",
+      "toTable": "table-038",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r056",
+      "fromTable": "table-065",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-12",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r057",
+      "fromTable": "table-065",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r058",
+      "fromTable": "table-031",
+      "toTable": "table-014",
+      "fromField": "field-0",
+      "toField": "field-0",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r059",
+      "fromTable": "table-035",
+      "toTable": "table-068",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r060",
+      "fromTable": "table-065",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-43",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r061",
+      "fromTable": "table-065",
+      "toTable": "table-022",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r062",
+      "fromTable": "table-065",
+      "toTable": "table-051",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r063",
+      "fromTable": "table-033",
+      "toTable": "table-018",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r064",
+      "fromTable": "table-044",
+      "toTable": "table-001",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r065",
+      "fromTable": "table-057",
+      "toTable": "table-004",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r066",
+      "fromTable": "table-065",
+      "toTable": "table-048",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r067",
+      "fromTable": "table-048",
+      "toTable": "table-047",
+      "fromField": "field-0",
+      "toField": "field-7",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r068",
+      "fromTable": "table-041",
+      "toTable": "table-007",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r069",
+      "fromTable": "table-038",
+      "toTable": "table-039",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r070",
+      "fromTable": "table-065",
+      "toTable": "table-051",
+      "fromField": "field-0",
+      "toField": "field-10",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r071",
+      "fromTable": "table-008",
+      "toTable": "table-042",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r072",
+      "fromTable": "table-044",
+      "toTable": "table-007",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r073",
+      "fromTable": "table-018",
+      "toTable": "table-038",
+      "fromField": "field-0",
+      "toField": "field-5",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r074",
+      "fromTable": "table-065",
+      "toTable": "table-024",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r075",
+      "fromTable": "table-021",
+      "toTable": "table-023",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r076",
+      "fromTable": "table-065",
+      "toTable": "table-009",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r077",
+      "fromTable": "table-065",
+      "toTable": "table-059",
+      "fromField": "field-0",
+      "toField": "field-6",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r078",
+      "fromTable": "table-037",
+      "toTable": "table-018",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r079",
+      "fromTable": "table-065",
+      "toTable": "table-052",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r080",
+      "fromTable": "table-017",
+      "toTable": "table-009",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r081",
+      "fromTable": "table-057",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r082",
+      "fromTable": "table-017",
+      "toTable": "table-070",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r083",
+      "fromTable": "table-017",
+      "toTable": "table-030",
+      "fromField": "field-0",
+      "toField": "field-5",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r084",
+      "fromTable": "table-065",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-17",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r085",
+      "fromTable": "table-028",
+      "toTable": "table-029",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r086",
+      "fromTable": "table-065",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-17",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r087",
+      "fromTable": "table-065",
+      "toTable": "table-049",
+      "fromField": "field-0",
+      "toField": "field-14",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r088",
+      "fromTable": "table-065",
+      "toTable": "table-050",
+      "fromField": "field-0",
+      "toField": "field-12",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r089",
+      "fromTable": "table-065",
+      "toTable": "table-047",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r090",
+      "fromTable": "table-017",
+      "toTable": "table-024",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r091",
+      "fromTable": "table-065",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r092",
+      "fromTable": "table-040",
+      "toTable": "table-037",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r093",
+      "fromTable": "table-065",
+      "toTable": "table-060",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r094",
+      "fromTable": "table-017",
+      "toTable": "table-018",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r095",
+      "fromTable": "table-065",
+      "toTable": "table-009",
+      "fromField": "field-0",
+      "toField": "field-7",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r096",
+      "fromTable": "table-073",
+      "toTable": "table-074",
+      "fromField": "field-0",
+      "toField": "field-0",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r097",
+      "fromTable": "table-034",
+      "toTable": "table-006",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r098",
+      "fromTable": "table-029",
+      "toTable": "table-030",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r099",
+      "fromTable": "table-033",
+      "toTable": "table-061",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r100",
+      "fromTable": "table-065",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-9",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r101",
+      "fromTable": "table-057",
+      "toTable": "table-062",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r102",
+      "fromTable": "table-017",
+      "toTable": "table-028",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r103",
+      "fromTable": "table-065",
+      "toTable": "table-045",
+      "fromField": "field-0",
+      "toField": "field-8",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r104",
+      "fromTable": "table-033",
+      "toTable": "table-005",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r105",
+      "fromTable": "table-057",
+      "toTable": "table-060",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r106",
+      "fromTable": "table-067",
+      "toTable": "table-070",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r107",
+      "fromTable": "table-017",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r108",
+      "fromTable": "table-067",
+      "toTable": "table-004",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r109",
+      "fromTable": "table-059",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-15",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r110",
+      "fromTable": "table-065",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-18",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r111",
+      "fromTable": "table-032",
+      "toTable": "table-043",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r112",
+      "fromTable": "table-053",
+      "toTable": "table-054",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r113",
+      "fromTable": "table-065",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-6",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r114",
+      "fromTable": "table-057",
+      "toTable": "table-035",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r115",
+      "fromTable": "table-057",
+      "toTable": "table-009",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r116",
+      "fromTable": "table-065",
+      "toTable": "table-050",
+      "fromField": "field-0",
+      "toField": "field-11",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r117",
+      "fromTable": "table-065",
+      "toTable": "table-004",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r118",
+      "fromTable": "table-065",
+      "toTable": "table-045",
+      "fromField": "field-0",
+      "toField": "field-13",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r119",
+      "fromTable": "table-065",
+      "toTable": "table-049",
+      "fromField": "field-0",
+      "toField": "field-13",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r120",
+      "fromTable": "table-065",
+      "toTable": "table-056",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r121",
+      "fromTable": "table-065",
+      "toTable": "table-017",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r122",
+      "fromTable": "table-017",
+      "toTable": "table-038",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r123",
+      "fromTable": "table-033",
+      "toTable": "table-038",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r124",
+      "fromTable": "table-028",
+      "toTable": "table-030",
+      "fromField": "field-0",
+      "toField": "field-4",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r125",
+      "fromTable": "table-033",
+      "toTable": "table-040",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r126",
+      "fromTable": "table-057",
+      "toTable": "table-063",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r127",
+      "fromTable": "table-057",
+      "toTable": "table-047",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r128",
+      "fromTable": "table-057",
+      "toTable": "table-050",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r129",
+      "fromTable": "table-065",
+      "toTable": "table-063",
+      "fromField": "field-0",
+      "toField": "field-7",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r130",
+      "fromTable": "table-017",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:1"
+    },
+    {
+      "id": "r131",
+      "fromTable": "table-065",
+      "toTable": "table-037",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r132",
+      "fromTable": "table-065",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-12",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r133",
+      "fromTable": "table-040",
+      "toTable": "table-018",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r134",
+      "fromTable": "table-004",
+      "toTable": "table-005",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r135",
+      "fromTable": "table-067",
+      "toTable": "table-069",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r136",
+      "fromTable": "table-057",
+      "toTable": "table-008",
+      "fromField": "field-0",
+      "toField": "field-5",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r137",
+      "fromTable": "table-057",
+      "toTable": "table-020",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r138",
+      "fromTable": "table-065",
+      "toTable": "table-045",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r139",
+      "fromTable": "table-048",
+      "toTable": "table-046",
+      "fromField": "field-0",
+      "toField": "field-11",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r140",
+      "fromTable": "table-065",
+      "toTable": "table-049",
+      "fromField": "field-0",
+      "toField": "field-17",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r141",
+      "fromTable": "table-057",
+      "toTable": "table-037",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r142",
+      "fromTable": "table-067",
+      "toTable": "table-068",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r143",
+      "fromTable": "table-065",
+      "toTable": "table-009",
+      "fromField": "field-0",
+      "toField": "field-6",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r144",
+      "fromTable": "table-057",
+      "toTable": "table-052",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r145",
+      "fromTable": "table-065",
+      "toTable": "table-064",
+      "fromField": "field-0",
+      "toField": "field-2",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r146",
+      "fromTable": "table-033",
+      "toTable": "table-036",
+      "fromField": "field-0",
+      "toField": "field-1",
+      "cardinality": "1:N"
+    },
+    {
+      "id": "r147",
+      "fromTable": "table-065",
+      "toTable": "table-021",
+      "fromField": "field-0",
+      "toField": "field-3",
+      "cardinality": "1:N"
+    }
+  ]
+}

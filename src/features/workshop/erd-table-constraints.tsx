@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useState} from "react"
 import {Button} from "@/components/ui/button"
@@ -27,7 +28,7 @@ export function ErdTableConstraints({table, onChange}: {table: ErdTable; onChang
         <details className="erd-properties-disclosure"><summary>Add index or constraint</summary><div><label>Type<WorkshopSelect value={kind} onValueChange={selectedValue => {setKind(selectedValue); setError("")}}><option value="index">Index</option><option value="unique">Unique key (one or more columns)</option><option value="check">Check condition</option></WorkshopSelect></label>
         <label>Constraint name<input maxLength={150} value={name} onChange={event => setName(event.target.value)} placeholder={kind === "check" ? "positive_total" : "idx_table_columns"}/></label>
         {kind === "check" ? <label>SQL condition<textarea maxLength={2000} value={expression} onChange={event => setExpression(event.target.value)} placeholder="total >= 0"/></label> : <div role="group" aria-label="Index columns">{table.fields.map(field => <label className="tool-checkbox" key={field.id}><input type="checkbox" checked={fields.includes(field.id)} onChange={event => setFields(current => event.target.checked ? [...current, field.id] : current.filter(id => id !== field.id))}/>{field.name}</label>)}</div>}
-        {error && <p className="tool-inline-error" role="alert">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         <Button size="sm" variant="secondary" disabled={kind === "check" ? (table.checks?.length ?? 0) >= 200 : (table.indexes?.length ?? 0) >= 200} onClick={add}>Add {kind === "check" ? "check" : kind === "unique" ? "unique key" : "index"}</Button></div></details>
     </div>
 }

@@ -1,5 +1,6 @@
 import {tableHeight, type ErdAnchor, type ErdDocument, type ErdEdge, type ErdRelationship, type ErdTable} from "./tool-documents.ts"
 import {avoidErdObstacles} from "./erd-obstacle-route.ts"
+import {planErdRoutes} from "./erd-route-plan.ts"
 
 export type ErdPort = {x: number; y: number; edge: ErdEdge}
 type Point = {x: number; y: number}
@@ -123,11 +124,7 @@ export function routeErdRelationship(from: ErdTable, to: ErdTable, fromField: st
 }
 
 export function erdConnectionBounds(document: ErdDocument) {
-    const tables = new Map(document.tables.map(table => [table.id, table]))
-    return document.relationships.flatMap((relation, index) => {
-        const from = tables.get(relation.fromTable), to = tables.get(relation.toTable)
-        return from && to ? [routeErdRelationship(from, to, relation.fromField, relation.toField, index % 6 * 12, relation, document.tables).bounds] : []
-    })
+    return planErdRoutes(document).map(entry=>entry.route.bounds)
 }
 
 /** Reuse routes unless an endpoint or a nearby obstacle changes; selection/panning stay cheap. */

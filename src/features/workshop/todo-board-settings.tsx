@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, useState} from "react"
 import {ArrowDown, ArrowUp, Plus, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -80,7 +81,7 @@ export function TodoBoardSettings({todo, organizationId, onClose}: {
                 {removedTasks > 0 &&
                     <p className="text-sm text-muted-foreground">{removedTasks} task{removedTasks === 1 ? "" : "s"} in
                         removed columns will move to the nearest remaining column. No tasks will be deleted.</p>}
-                {error && <p role="alert" className="workshop-form-error">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                 <div className="workshop-board-settings-actions"><Button type="button" variant="ghost"
                                                                          disabled={isLoading}
                                                                          onClick={onClose}>Cancel</Button><Button

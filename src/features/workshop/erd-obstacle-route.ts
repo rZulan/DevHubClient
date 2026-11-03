@@ -1,13 +1,18 @@
 import {tableHeight, type ErdEdge, type ErdTable} from "./tool-documents.ts"
 
-type Point = {x: number; y: number}
+export type Point = {x: number; y: number}
 type Port = Point & {edge: ErdEdge}
-type Rectangle = {id: string; left: number; right: number; top: number; bottom: number}
-type Route = {source: Port; target: Port; path: string; bounds: {x: number; y: number; width: number; height: number}}
+export type Rectangle = {id: string; left: number; right: number; top: number; bottom: number}
+export type RouteSegment = {a: Point; b: Point}
+export type RoutingContext = {areas: Rectangle[]; segments: RouteSegment[]; querySegments?: (a:Point,b:Point)=>RouteSegment[]}
+export type Route = {source: Port; target: Port; path: string; bounds: {x: number; y: number; width: number; height: number}}
 const cellSize = 512, padding = 16
+export const erdRouteClearance = 40
+export const erdPortLead = 48
 const indexes = new WeakMap<readonly ErdTable[], ReturnType<typeof makeIndex>>()
-function makeIndex(tables: readonly ErdTable[]) {
-    const rectangles = tables.map(table => ({id: table.id, left: table.x - padding, right: table.x + 300 + padding, top: table.y - padding, bottom: table.y + tableHeight(table) + padding}))
+const sharedIndexes = new WeakMap<readonly ErdTable[], ReturnType<typeof makeIndex>>()
+function makeIndex(tables: readonly ErdTable[], clearance = padding) {
+    const rectangles = tables.map(table => ({id: table.id, left: table.x - clearance, right: table.x + 300 + clearance, top: table.y - clearance, bottom: table.y + tableHeight(table) + clearance}))
     const cells = new Map<string, Rectangle[]>()
     for (const rect of rectangles) for (let x = Math.floor(rect.left / cellSize); x <= Math.floor(rect.right / cellSize); x++) for (let y = Math.floor(rect.top / cellSize); y <= Math.floor(rect.bottom / cellSize); y++) {
         const key = `${x}:${y}`, list = cells.get(key)
@@ -24,13 +29,13 @@ function makeIndex(tables: readonly ErdTable[]) {
 const crosses = (a: Point, b: Point, rect: Rectangle) => a.x === b.x
     ? a.x > rect.left && a.x < rect.right && Math.max(a.y, b.y) > rect.top && Math.min(a.y, b.y) < rect.bottom
     : a.y > rect.top && a.y < rect.bottom && Math.max(a.x, b.x) > rect.left && Math.min(a.x, b.x) < rect.right
-function routePoints(path: string) {
+export function routePoints(path: string) {
     const points: Point[] = []
     for (const match of path.matchAll(/([MLHV])(-?[\d.]+)(?: (-?[\d.]+))?/g)) {
         const previous = points.at(-1)!
         points.push(match[1] === "H" ? {x: +match[2], y: previous.y} : match[1] === "V" ? {x: previous.x, y: +match[2]} : {x: +match[2], y: +match[3]})
     }
-    return points
+    return simplify(points)
 }
 function simplify(points: Point[]) {
     const result: Point[] = []
@@ -54,18 +59,56 @@ function withPoints(route: Route, input: Point[]): Route {
 }
 
 /** Keep simple routes when clear; otherwise search orthogonal gutters with any number of bends. */
-export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, tables: readonly ErdTable[], laneOffset = 0): Route {
-    if (!tables.some(table => table.id !== from.id && table.id !== to.id)) return route
-    let index = indexes.get(tables)
-    if (!index) {index = makeIndex(tables); indexes.set(tables, index)}
+export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, tables: readonly ErdTable[], laneOffset = 0, context?: RoutingContext): Route {
+    if (!context && !tables.some(table => table.id !== from.id && table.id !== to.id)) return route
+    const routeIndexes = context ? sharedIndexes : indexes
+    let index = routeIndexes.get(tables)
+    if (!index) {index = makeIndex(tables,context?erdRouteClearance:padding); routeIndexes.set(tables, index)}
     const foreign = (rect: Rectangle) => rect.id !== from.id && rect.id !== to.id
-    const original = routePoints(route.path)
-    if (!original.some((point, i) => i > 0 && [...index.query(original[i - 1], point)].some(rect => foreign(rect) && crosses(original[i - 1], point, rect)))) return route
-    const own = [...new Map([from, to].map(table => [table.id, table])).values()].map(table => ({id: table.id, left: table.x, right: table.x + 300, top: table.y, bottom: table.y + tableHeight(table)}))
-    const rectangles = [...index.rectangles.filter(foreign), ...own]
-    const clear = (a: Point, b: Point) => !own.some(rect => crosses(a, b, rect)) && ![...index.query(a, b)].some(rect => foreign(rect) && crosses(a, b, rect))
+    const areas = context?.areas ?? [], segments = context?.segments ?? []
+    const sharesTrack = (a:Point,b:Point) => (context?.querySegments?.(a,b)??segments).some(({a:c,b:d})=>{
+        if(a.x===b.x && c.x===d.x && a.x===c.x) return Math.min(Math.max(a.y,b.y),Math.max(c.y,d.y))>Math.max(Math.min(a.y,b.y),Math.min(c.y,d.y))
+        if(a.y===b.y && c.y===d.y && a.y===c.y) return Math.min(Math.max(a.x,b.x),Math.max(c.x,d.x))>Math.max(Math.min(a.x,b.x),Math.min(c.x,d.x))
+        return false
+    })
+    const congestion = (a: Point, b: Point, includeCrossings = true) => (context?.querySegments?.(a,b)??segments).reduce((sum, segment) => {
+        const {a: c, b: d} = segment, vertical = a.x === b.x, otherVertical = c.x === d.x
+        if (vertical === otherVertical) {
+            const same = vertical ? a.x === c.x : a.y === c.y
+            const overlap = vertical ? Math.min(Math.max(a.y,b.y),Math.max(c.y,d.y))-Math.max(Math.min(a.y,b.y),Math.min(c.y,d.y))
+                : Math.min(Math.max(a.x,b.x),Math.max(c.x,d.x))-Math.max(Math.min(a.x,b.x),Math.min(c.x,d.x))
+            return sum + (same && overlap > 0 ? overlap * 40 + 200 : 0)
+        }
+        if(!includeCrossings) return sum
+        const v = vertical ? {a,b} : segment, h = vertical ? segment : {a,b}
+        return sum + (v.a.x > Math.min(h.a.x,h.b.x) && v.a.x < Math.max(h.a.x,h.b.x)
+            && h.a.y > Math.min(v.a.y,v.b.y) && h.a.y < Math.max(v.a.y,v.b.y) ? 80 : 0)
+    }, 0)
+    const clearance=context?erdRouteClearance:0
+    const own = [...new Map([from, to].map(table => [table.id, table])).values()].map(table => ({id: table.id, left: table.x-clearance, right: table.x+300+clearance, top: table.y-clearance, bottom: table.y+tableHeight(table)+clearance}))
     const vectors = {left: {x: -1, y: 0}, right: {x: 1, y: 0}, top: {x: 0, y: -1}, bottom: {x: 0, y: 1}}
-    const lead = 48 + laneOffset
+    const original = routePoints(route.path)
+    const leavesPort=(a:Point,b:Point,port:Port) => a.x===port.x && a.y===port.y
+        && (vectors[port.edge].x ? a.y===b.y && (b.x-a.x)*vectors[port.edge].x>0 : a.x===b.x && (b.y-a.y)*vectors[port.edge].y>0)
+    const clipsOwn=(a:Point,b:Point,i:number) => own.some(rect=>{
+        if(i===1 && rect.id===from.id && leavesPort(a,b,route.source)) return false
+        if(i===original.length-1 && rect.id===to.id && leavesPort(b,a,route.target)) return false
+        return crosses(a,b,rect)
+    })
+    if (!original.some((point, i) => i > 0 && (areas.some(rect => crosses(original[i - 1],point,rect)) || congestion(original[i - 1],point,false) > 0
+        || context && clipsOwn(original[i-1],point,i)
+        || [...index.query(original[i - 1], point)].some(rect => foreign(rect) && crosses(original[i - 1], point, rect))))) return route
+    // Shared routing reserves this exact exit length at every endpoint. Longer
+    // pair-specific leads could overlap a track beyond the protected corridor.
+    const lead = context ? erdPortLead : 48 + laneOffset
+    // Shared routing only needs tracks near this path. Unrelated tables must not
+    // multiply the search grid for every connection in a large document.
+    const margin=lead+96, bounds=route.bounds
+    const corridor={left:bounds.x-margin,right:bounds.x+bounds.width+margin,top:bounds.y-margin,bottom:bounds.y+bounds.height+margin}
+    const candidates=context?[...index.query({x:corridor.left,y:corridor.top},{x:corridor.right,y:corridor.bottom})]
+        .filter(rect=>rect.left<corridor.right&&rect.right>corridor.left&&rect.top<corridor.bottom&&rect.bottom>corridor.top):index.rectangles
+    const rectangles = [...candidates.filter(foreign), ...own, ...areas]
+    const clear = (a: Point, b: Point) => !(context && sharesTrack(a,b)) && !areas.some(rect => crosses(a,b,rect)) && !own.some(rect => crosses(a, b, rect)) && ![...index.query(a, b)].some(rect => foreign(rect) && crosses(a, b, rect))
     const exit = (port: Port) => {
         const vector = vectors[port.edge]
         let length = lead
@@ -74,7 +117,7 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
                 : vector.x < 0 && port.y > rect.top && port.y < rect.bottom && rect.right <= port.x ? port.x - rect.right
                     : vector.y > 0 && port.x > rect.left && port.x < rect.right && rect.top >= port.y ? rect.top - port.y
                         : vector.y < 0 && port.x > rect.left && port.x < rect.right && rect.bottom <= port.y ? port.y - rect.bottom : Infinity
-            length = Math.min(length, gap / 2)
+            length = Math.max(context?erdPortLead:0,Math.min(length, gap / 2))
         }
         return {x: port.x + vector.x * length, y: port.y + vector.y * length}
     }
@@ -88,8 +131,8 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
         }
         return route
     }
-    const xs = [...new Set([start.x, end.x, ...rectangles.flatMap(rect => [rect.left - (foreign(rect) ? 0 : lead), rect.right + (foreign(rect) ? 0 : lead)])])].sort((a, b) => a - b)
-    const ys = [...new Set([start.y, end.y, ...rectangles.flatMap(rect => [rect.top - (foreign(rect) ? 0 : lead), rect.bottom + (foreign(rect) ? 0 : lead)])])].sort((a, b) => a - b)
+    const xs = [...new Set([start.x, end.x, ...segments.filter(s => s.a.x === s.b.x).flatMap(s => [s.a.x - 16,s.a.x + 16]), ...rectangles.flatMap(rect => [rect.left - (foreign(rect) ? 0 : lead), rect.right + (foreign(rect) ? 0 : lead)])])].sort((a, b) => a - b)
+    const ys = [...new Set([start.y, end.y, ...segments.filter(s => s.a.y === s.b.y).flatMap(s => [s.a.y - 16,s.a.y + 16]), ...rectangles.flatMap(rect => [rect.top - (foreign(rect) ? 0 : lead), rect.bottom + (foreign(rect) ? 0 : lead)])])].sort((a, b) => a - b)
     const first = ys.indexOf(start.y) * xs.length + xs.indexOf(start.x), last = ys.indexOf(end.y) * xs.length + xs.indexOf(end.x)
     const point = (id: number): Point => ({x: xs[id % xs.length], y: ys[Math.floor(id / xs.length)]})
     const horizontal = (edge: ErdEdge) => edge === "left" || edge === "right"
@@ -131,7 +174,7 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
             if (!clear(a, b)) continue
             const nextDirection = Number(a.x === b.x), state = next * 2 + nextDirection
             const cost = current.cost + Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + (nextDirection === direction ? 0 : 24)
-                + (next === last && nextDirection !== Number(!horizontal(route.target.edge)) ? 24 : 0)
+                + (next === last && nextDirection !== Number(!horizontal(route.target.edge)) ? 24 : 0) + congestion(a,b)
             if (cost >= (distances.get(state) ?? Infinity)) continue
             distances.set(state, cost); previous.set(state, current.state)
             push({state, cost, score: cost + Math.abs(b.x - end.x) + Math.abs(b.y - end.y)})

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useEffect, useRef, useState} from "react"
 import {Search, X} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -38,6 +39,6 @@ export function UmlConnectionSuggestions({anchor,viewport,umlType,onChoose,onClo
             </Button>)}
             {!matches.length&&<p>No matching shapes.</p>}
         </div>
-        {error&&<p role="alert" className="workshop-form-error">{error}</p>}
+        {error&&<WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
     </div>
 }

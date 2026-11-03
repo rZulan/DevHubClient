@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, useEffect, useMemo, useState} from "react"
 import {AlertTriangle, Check, Eye, LoaderCircle, Moon, Palette, Plus, Sun} from "lucide-react"
 
@@ -197,7 +198,7 @@ function EditorForm({
                     )}
                 </div>
 
-                {error && <p className="workshop-form-error">{error}</p>}
+                {error && <WorkshopToast variant="error">{error}</WorkshopToast>}
 
                 <footer className="workshop-settings-dialog-actions">
                     <Button onClick={onClose} type="button" variant="ghost">Cancel</Button>

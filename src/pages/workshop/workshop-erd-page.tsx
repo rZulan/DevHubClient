@@ -1,8 +1,9 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useCallback, useMemo, useRef, useState, type SetStateAction} from "react"
 import {useOutletContext} from "react-router-dom"
-import {Database, FileCode, ImageDown, KeyRound, LayoutGrid, Link2, Plus} from "lucide-react"
+import {Database, EyeOff, FileCode, ImageDown, KeyRound, LayoutGrid, Link2, Plus} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
@@ -27,6 +28,7 @@ import {applyErdAutoArrange, arrangeErd} from "@/features/workshop/erd-layout"
 import {createErdJunction, erdSchemaIssues, erdDisplayType} from "@/features/workshop/erd-schema"
 import {ErdTableProperties, type ErdPropertiesTab} from "@/features/workshop/erd-table-properties"
 import {exportErdPng} from "@/features/workshop/erd-image-export"
+import {useExporting} from "@/features/exports/use-export-jobs"
 import {erdRenderIndex} from "@/features/workshop/erd-render-index"
 import {ErdSchemaSidebar} from "@/features/workshop/erd-schema-sidebar"
 import {copyErdTables, insertErdTables, readErdClipboard} from "@/features/workshop/erd-clipboard"
@@ -51,6 +53,14 @@ function ErdEditor() {
     const [autoArrange, setAutoArrange] = useState(() => {
         try {return localStorage.getItem(autoArrangeKey) === "true"} catch {return false}
     })
+    const hideNotationsKey = `devhub.erd.hide-notations:${userId}:${organization.id}:${project!.id}`
+    const [hideNotations, setHideNotations] = useState(() => {
+        try {return localStorage.getItem(hideNotationsKey) === "true"} catch {return false}
+    })
+    const hideRelationshipsKey = `devhub.erd.hide-relationships:${userId}:${organization.id}:${project!.id}`
+    const [hideRelationships, setHideRelationships] = useState(() => {
+        try {return localStorage.getItem(hideRelationshipsKey) === "true"} catch {return false}
+    })
     const setDocument = useCallback((action: SetStateAction<ErdDocument>) => applyDocument(current =>
         applyErdAutoArrange(current, typeof action === "function" ? action(current) : action, autoArrange)), [applyDocument, autoArrange])
     const dialect = document.dialect ?? "postgresql"
@@ -68,13 +78,13 @@ function ErdEditor() {
     const [relationError, setRelationError] = useState("")
     const [arrangement, setArrangement] = useState(0)
     const workspace = useRef<HTMLElement>(null)
-    const [exporting, setExporting] = useState(false), [exportError, setExportError] = useState("")
-    async function exportPng() {
+    const [exportError, setExportError] = useState("")
+    const exportKey = `erd-png:${userId}:${organization.id}:${project!.id}`
+    const exporting = useExporting(exportKey)
+    function exportPng() {
         if (!workspace.current || exporting) return
-        setExporting(true); setExportError("")
-        try {await exportErdPng(document, workspace.current, "erd-diagram.png")}
-        catch (error) {setExportError(error instanceof Error ? error.message : "Could not export the diagram as PNG.")}
-        finally {setExporting(false)}
+        setExportError("")
+        void exportErdPng(document, workspace.current, "erd-diagram.png", {showNotations: !hideNotations, showRelationships: !hideRelationships, taskKey: exportKey, projectName: project!.name}).catch(() => {})
     }
     const selected = renderIndex.tables.get(selectedIds[0])
     const selectedRelation = document.relationships.find(relation => relation.id === selectedRelationId)
@@ -211,11 +221,21 @@ function ErdEditor() {
                 try {localStorage.setItem(autoArrangeKey, String(enabled))} catch { /* Keep the preference for this session when storage is unavailable. */ }
                 if (enabled) {applyDocument(arrangeErd); setArrangement(value => value + 1)}
             }}><LayoutGrid/> Auto arrange<span className="erd-auto-arrange-track" aria-hidden="true"><i/></span></Button>
+            <Button size="sm" variant={hideNotations ? "secondary" : "outline"} role="switch" aria-label="Hide notations" aria-checked={hideNotations} title="Hide cardinality symbols while keeping relationship lines visible" onClick={() => {
+                const hidden = !hideNotations
+                setHideNotations(hidden)
+                try {localStorage.setItem(hideNotationsKey, String(hidden))} catch { /* Keep the view preference for this session. */ }
+            }}><EyeOff/>Hide notations<span className="text-xs text-muted-foreground" aria-hidden="true">{hideNotations ? "On" : "Off"}</span></Button>
+            <Button size="sm" variant={hideRelationships ? "secondary" : "outline"} role="switch" aria-label="Hide relationships" aria-checked={hideRelationships} title="Hide relationship lines and cardinality symbols" onClick={() => {
+                const hidden = !hideRelationships
+                setHideRelationships(hidden)
+                try {localStorage.setItem(hideRelationshipsKey, String(hidden))} catch { /* Keep the view preference for this session. */ }
+            }}><EyeOff/>Hide relationships<span className="text-xs text-muted-foreground" aria-hidden="true">{hideRelationships ? "On" : "Off"}</span></Button>
             <ErdImportDialog canEdit={canEdit} tableCount={document.tables.length} dialect={dialect} onImport={imported => {
                 setDocument(imported); selectTables(imported.tables[0] ? [imported.tables[0].id] : []); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
             }}/>
         </ToolDocumentHeader>
-        {exportError && <div className="tool-document-error" role="alert">{exportError}</div>}
+        {exportError && <WorkshopToast variant="error" onDismiss={() => setExportError("")}>{exportError}</WorkshopToast>}
         <div className="tool-editor-body">
             <ErdSchemaSidebar document={document} canEdit={canEdit} collapsed={tablesCollapsed} onToggle={() => setTablesCollapsed(value => !value)} selectedIds={selectedIds} onSelect={id => {selectTables([id]); setFieldId(""); focusCanvas()}} onAddTable={() => {addTable(); focusCanvas()}} schemaIssues={schemaIssues} onApply={next => {
                 setDocument(next); selectTables(selectedIds.filter(id => next.tables.some(table => table.id === id))); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
@@ -236,14 +256,14 @@ function ErdEditor() {
                     return changed ? {...current, tables} : current
                 })}
                 renderNode={(node, {zoom}) => isErdTableOverview(zoom, selectedIds.includes(node.id)) ? overviewTables.get(node.id) : renderedTables.get(node.id)}
-                renderConnections={(positions, viewport) => <ErdConnections document={document} positions={positions} viewport={viewport} canEdit={canEdit} selectedId={selectedRelationId} onSelect={selectRelation} onReattach={reattach}/>}>
+                renderConnections={(positions, viewport) => <ErdConnections document={document} showNotations={!hideNotations} showRelationships={!hideRelationships} positions={positions} viewport={viewport} canEdit={canEdit} selectedId={selectedRelationId} onSelect={selectRelation} onReattach={reattach}/>}>
                 <Button size="sm" variant="secondary" disabled={!canEdit} onClick={addTable}><Plus/> Table</Button>
                 {!document.tables.length && <Button size="sm" variant="ghost" disabled={!canEdit} onClick={addExample}>Load example</Button>}
             </ToolCanvas>
             {(selected || selectedRelation) && <ErdPanel className="erd-properties-panel" side="right" title="Properties" detail={selected ? "Table & column" : "Relationship"} collapsed={propertiesCollapsed} onToggle={() => setPropertiesCollapsed(value => !value)}>
                 {selectedIds.length > 1 && <p className="tool-help">{selectedIds.length} tables selected. Editing {selected?.name}.</p>}
                 {!canEdit && <p className="tool-help">Read-only · editing is unavailable.</p>}
-                {relationError && <p className="tool-inline-error" role="alert">{relationError}</p>}
+                {relationError && <WorkshopToast variant="error" onDismiss={() => setRelationError("")}>{relationError}</WorkshopToast>}
                 {selected ? <ErdTableProperties table={selected} field={field} tab={propertiesTab} onTabChange={setPropertiesTab} canEdit={canEdit} relationshipCount={visibleRelations.length}
                     onSelectField={setFieldId} onAddColumn={() => addColumn(selected)} onUpdateField={updateField} onUpdateTable={changes => updateTable(selected.id, changes)}
                     onDeleteField={() => {if (field) setDocument(current => removeField(current, selected.id, field.id))}} onDeleteTable={() => {setDocument(current => removeTable(current, selected.id)); selectTables(selectedIds.filter(id => id !== selected.id))}}

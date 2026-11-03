@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useState} from "react"
 import {Check, Copy, EyeOff, LoaderCircle, MoreHorizontal, Pencil, Plus, Trash2} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
@@ -62,8 +63,8 @@ export function AppearanceSettingsPage() {
             <div className="workshop-settings-page">
                 <header className="workshop-settings-heading"><h2>Appearance</h2></header>
                 {isError
-                    ? <p className="workshop-form-error">Your color schemes could not be loaded. Check that the API is
-                        running and try again.</p>
+                    ? <WorkshopToast variant="error">Your color schemes could not be loaded. Check that the API is
+                        running and try again.</WorkshopToast>
                     : <div className="workshop-loading"><LoaderCircle className="animate-spin"/> Loading color schemes…
                     </div>}
             </div>
@@ -145,7 +146,7 @@ export function AppearanceSettingsPage() {
                 </div>
             </section>
 
-            {error && <p className="workshop-form-error">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
 
             <section className="workshop-appearance-section">
                 <header>

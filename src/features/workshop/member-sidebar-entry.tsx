@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, type ReactNode, useState} from "react"
 import {Pencil, ShieldCheck, UserMinus, Users} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
@@ -159,7 +160,7 @@ export function MemberSidebarEntry({organization, member, children}: {
                                                                                        defaultValue={member.nickname ?? ""}
                                                                                        maxLength={80} name="nickname"
                                                                                        placeholder={member.profileName ?? member.name}/></Label>
-                {error && <p className="workshop-form-error" role="alert">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                 <div className="flex justify-end gap-2"><Button type="button" variant="ghost"
                                                                 onClick={() => setNicknameOpen(false)}>Cancel</Button><Button
                     disabled={nicknameState.isLoading} type="submit">Save nickname</Button></div>
@@ -169,7 +170,7 @@ export function MemberSidebarEntry({organization, member, children}: {
         <Dialog open={kickOpen} onOpenChange={setKickOpen}><DialogContent className="workshop-modal sm:max-w-md">
             <DialogHeader><DialogTitle>Kick {member.name}?</DialogTitle><DialogDescription>They will immediately lose
                 access to {organization.name} and all of its teams. They can be invited again later.</DialogDescription></DialogHeader>
-            {error && <p className="workshop-form-error" role="alert">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             <div className="flex justify-end gap-2"><Button type="button" variant="ghost"
                                                             onClick={() => setKickOpen(false)}>Cancel</Button><Button
                 disabled={kickState.isLoading} type="button" variant="destructive"

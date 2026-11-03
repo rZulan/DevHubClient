@@ -106,7 +106,8 @@ test('deleting a parent keeps child content, history and links, moving only dire
     let doc = save(empty)
     doc = save(doc, {...draft, id: 'child', title: 'Setup', parentId: 'home'})
     doc = save(doc, {...draft, id: 'grandchild', title: 'Install', parentId: 'child'})
-    doc = save(doc, {...draft, id: 'leaf', title: 'Linux', parentId: 'grandchild'})
+    // A document saved before the depth limit can still be repaired by promotion.
+    doc = {...doc, pages: [...doc.pages, {...doc.pages[2], id: 'leaf', slug: 'linux', title: 'Linux', parentId: 'grandchild'}]}
     const removed = deleteWikiPage(doc, 'child')
     assert.deepEqual(removed.pages.find(page => page.id === 'grandchild'), {...doc.pages.find(page => page.id === 'grandchild'), parentId: 'home'})
     assert.equal(removed.pages.find(page => page.id === 'leaf').parentId, 'grandchild')
@@ -127,18 +128,18 @@ test('legacy flat documents remain valid; missing parents, cycles and malformed 
     assert.ok(validWikiDocument({...doc, pages: [root, child]}))
 })
 
-test('a page accepts two subpages and blocks a third through creation, movement and document validation', () => {
+test('a page accepts many direct subpages through creation, movement and validation', () => {
     let doc = save(empty)
     doc = save(doc, {...draft, id: 'a', title: 'First', parentId: 'home'})
     doc = save(doc, {...draft, id: 'b', title: 'Second', parentId: 'home'})
     doc = save(doc, {...draft, id: 'c', title: 'Top-level page'})
     assert.ok(validWikiDocument(doc))
-    assert.equal(wikiCanAddSubpage(doc.pages, 'home'), false)
-    assert.equal(wikiParentOptions(doc.pages, 'c').find(option => option.id === 'home').disabled, true)
+    assert.equal(wikiCanAddSubpage(doc.pages, 'home'), true)
+    assert.equal(wikiParentOptions(doc.pages, 'c').find(option => option.id === 'home').disabled, false)
     assert.equal(wikiParentOptions(doc.pages, 'a').find(option => option.id === 'home').disabled, false)
-    assert.throws(() => save(doc, {...draft, id: 'third', title: 'Third', parentId: 'home'}), /maximum of 2/)
-    assert.throws(() => save(doc, {...draft, id: 'c', title: 'Top-level page', parentId: 'home'}), /maximum of 2/)
-    assert.equal(validWikiDocument({...doc, pages: doc.pages.map(page => page.id === 'c' ? {...page, parentId: 'home'} : page)}), false)
+    assert.ok(validWikiDocument(save(doc, {...draft, id: 'third', title: 'Third', parentId: 'home'})))
+    assert.ok(validWikiDocument(save(doc, {...draft, id: 'c', title: 'Top-level page', parentId: 'home'})))
+    assert.equal(validWikiDocument({...doc, pages: doc.pages.map(page => page.id === 'c' ? {...page, parentId: 'home'} : page)}), true)
     const edited = save(doc, {...draft, id: 'a', title: 'First', body: 'Updated content', parentId: 'home'})
     assert.equal(edited.pages.find(page => page.id === 'a').body, 'Updated content')
     const freed = save(doc, {...draft, id: 'a', title: 'First', parentId: null})
@@ -146,7 +147,7 @@ test('a page accepts two subpages and blocks a third through creation, movement 
     assert.ok(validWikiDocument(save(freed, {...draft, id: 'c', title: 'Top-level page', parentId: 'home'})))
 })
 
-test('deleting a branch keeps children and moves overflow to the top level', () => {
+test('deleting a branch promotes all its children without a sibling limit', () => {
     let doc = save(empty)
     for (const page of [
         {id: 'parent', title: 'Parent', parentId: 'home'}, {id: 'sibling', title: 'Sibling', parentId: 'home'},
@@ -154,8 +155,34 @@ test('deleting a branch keeps children and moves overflow to the top level', () 
     ]) doc = save(doc, {...draft, ...page})
     const result = deleteWikiPage(doc, 'parent')
     assert.equal(result.pages.find(page => page.id === 'a').parentId, 'home')
-    assert.equal(result.pages.find(page => page.id === 'b').parentId, null)
+    assert.equal(result.pages.find(page => page.id === 'b').parentId, 'home')
     assert.equal(result.pages.find(page => page.id === 'b').slug, 'b')
     assert.equal(result.pages.find(page => page.id === 'b').body, draft.body)
     assert.ok(validWikiDocument(result))
+})
+
+test('two nested levels are allowed; deeper creation and moving an entire branch too deep are blocked', () => {
+    let doc = save(empty)
+    doc = save(doc, {...draft, id: 'child', title: 'Child', parentId: 'home'})
+    doc = save(doc, {...draft, id: 'grandchild', title: 'Grandchild', parentId: 'child'})
+    doc = save(doc, {...draft, id: 'other', title: 'Other'})
+    assert.ok(validWikiDocument(doc))
+    assert.equal(wikiCanAddSubpage(doc.pages, 'grandchild'), false)
+    assert.equal(wikiParentOptions(doc.pages, 'other').find(p => p.id === 'grandchild').disabled, true)
+    assert.throws(() => save(doc, {...draft, id: 'deep', title: 'Too deep', parentId: 'grandchild'}), /2 levels/)
+    assert.throws(() => save(doc, {...draft, id: 'child', title: 'Child', parentId: 'grandchild'}), /parent/)
+    assert.equal(wikiParentOptions(doc.pages, 'child').find(p => p.id === 'other').disabled, false)
+    doc = save(doc, {...draft, id: 'peer', title: 'Peer', parentId: 'other'})
+    assert.equal(wikiParentOptions(doc.pages, 'child').find(p => p.id === 'peer').disabled, true)
+    assert.throws(() => save(doc, {...draft, id: 'child', title: 'Child', parentId: 'peer'}), /2 levels/)
+    const tooDeep = {...doc, pages: [...doc.pages, {...doc.pages[0], id: 'deep', slug: 'deep', title: 'Deep', parentId: 'grandchild'}]}
+    assert.equal(validWikiDocument(tooDeep), false)
+    assert.ok(validWikiDocument(save(doc, {...draft, id: 'grandchild', title: 'Grandchild', body: 'Still editable'})))
+})
+
+test('99 direct subpages fit the existing 100-page total limit', () => {
+    const root = save(empty).pages[0]
+    const doc = {homePageId: root.id, pages: [root, ...Array.from({length: 99}, (_, i) => ({...root, id: `p${i}`, slug: `p${i}`, title: `Page ${i}`, parentId: root.id}))]}
+    assert.ok(validWikiDocument(doc))
+    assert.throws(() => save(doc, {...draft, id: 'overflow', title: 'Overflow', parentId: root.id}), /100-page/)
 })

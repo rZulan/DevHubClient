@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useMemo, useState, type FormEvent} from "react"
 import {Database, KeyRound, Link2} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -37,10 +38,10 @@ export function ErdJunctionDialog({document, relation, canEdit, onClose, onConfi
                     <div className="erd-junction-notations" aria-label="Junction relationships">
                         {preview.document!.relationships.slice(-2).map((edge, index) => <div key={edge.id}><span>{index === 0 ? left : right}</span><svg viewBox="0 -12 110 24" role="img" aria-label={`One to ${edge.rightEnd === "zero-many" ? "zero or many" : "one or many"}`}><path d="M0 0H110"/><ErdEndSymbol end="one"/><g transform="translate(110 0) scale(-1 1)"><ErdEndSymbol end={edge.rightEnd!}/></g></svg><span>{name || table.name}</span></div>)}
                     </div>
-                    <p className="erd-junction-hint">Both foreign keys form the composite primary key.</p>
-                    {relation.onDelete === "SET NULL" && <p className="erd-junction-hint">Junction keys are required, so deletion will use RESTRICT.</p>}
+                    <WorkshopToast variant="tip" title="Junction table">Both foreign keys form the composite primary key.</WorkshopToast>
+                    {relation.onDelete === "SET NULL" && <WorkshopToast variant="info">Junction keys are required, so deletion will use RESTRICT.</WorkshopToast>}
                 </>}
-                {(preview.error || error) && <p className="workshop-form-error" role="alert">{error || preview.error}</p>}
+                {(preview.error || error) && <WorkshopToast variant="error">{error || preview.error}</WorkshopToast>}
                 <DialogFooter className="erd-junction-actions"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="button" variant="outline" disabled={!canEdit} onClick={() => confirm(false)}>Keep as N:M</Button><Button type="submit" disabled={!canEdit || !!preview.error || !name.trim()}>Create junction table</Button></DialogFooter>
             </form>
         </DialogContent>

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useRef, useState, type CSSProperties, type KeyboardEvent} from "react"
 import {Textarea} from "@/components/ui/textarea"
@@ -47,7 +48,7 @@ function InlineCodeEditor({block, readOnly, onChange, onRemove}: {block: NoteCod
             </div>
             {!readOnly && <button type="button" aria-label="Remove code block" onClick={onRemove}>Remove</button>}
         </div>
-        {loadError && <p className="note-code-load-error" role="status">Highlighting options could not load. Your code is still editable.</p>}
+        {loadError && <WorkshopToast variant="info">Highlighting options could not load. Your code is still editable.</WorkshopToast>}
         <div className="note-code-input">
             <pre ref={highlighted} aria-hidden="true"><code><NoteCodeTokens tokens={tokens} source={block.source}/>{"\n"}</code></pre>
             <textarea ref={textarea} aria-label="Code source" autoFocus={!block.closed} readOnly={readOnly} value={block.source} spellCheck={false} autoCapitalize="off" autoCorrect="off" wrap="off" onKeyDown={indent}
@@ -79,6 +80,6 @@ export function NoteBodyEditor({body, onChange, readOnly}: {body: string; onChan
                     } else if (index > 0 && !segment.text && text) update(body.slice(0, segment.start) + (body[segment.start - 1] === "\n" ? "" : "\n") + text + body.slice(segment.end))
                     else update(body.slice(0, segment.start) + text + body.slice(segment.end))
                 }}/>) }
-        {atLimit && <p role="alert">Notes can contain up to 10,000 characters, including code formatting.</p>}
+        {atLimit && <WorkshopToast variant="warning">Notes can contain up to 10,000 characters, including code formatting.</WorkshopToast>}
     </div>
 }

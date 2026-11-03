@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {Children, isValidElement, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode} from "react"
 import Markdown, {type Components, type Options} from "react-markdown"
@@ -41,7 +42,7 @@ function NoteCodeBlock({children, compact = false}: {children: ReactNode; compac
         </WorkshopSelect>}</div>
             {!compact && <button type="button" aria-label="Copy code" onClick={() => void copy()} onBlur={() => setCopyStatus("Copy")}><span aria-live="polite">{copyStatus}</span></button>}
         </div>
-        {themeLoadError && <p className="note-code-load-error" role="status">Code themes could not load. Reload to try again.</p>}
+        {themeLoadError && <WorkshopToast variant="info">Code themes could not load. Reload to try again.</WorkshopToast>}
         <pre tabIndex={compact ? undefined : 0} aria-label={`${language ?? "Plain text"} code block`}><code className={language ? `language-${language}` : undefined} data-highlighter={tokens ? "shiki" : undefined}>
             <NoteCodeTokens tokens={tokens} source={source}/>
         </code></pre>

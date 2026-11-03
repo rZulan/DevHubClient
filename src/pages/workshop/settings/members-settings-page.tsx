@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useMemo, useState} from "react"
 import {Crown, Link2, LoaderCircle, MoreHorizontal, Search, ShieldCheck, UserMinus} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
@@ -100,7 +101,7 @@ export function MembersSettingsPage() {
                        placeholder="Search by name or username" value={query}/>
             </label>
 
-            {error && <p className="workshop-form-error">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
 
             <section className="workshop-settings-card flush">
                 <div className="workshop-settings-member-head" aria-hidden="true">

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useId, useRef, useState, type CSSProperties} from "react"
@@ -147,11 +148,11 @@ function SdlcRoadmap() {
         if ((event.ctrlKey || event.metaKey) && !(event.target as HTMLElement).closest("input, textarea, [contenteditable=true]") && ["z", "y"].includes(event.key.toLowerCase())) {event.preventDefault(); if (!event.repeat) historyAction(event.key.toLowerCase() === "y" || event.shiftKey)}
     }}>
         {editor.status === "loading" && <div className="sdlc-studio-notice" role="status">Loading roadmap…</div>}
-        {editor.error && <div className="tool-document-error" role="alert"><span>{editor.status === "conflict" ? "This roadmap changed in another session. Your changes have not been saved. Reloading will discard your draft." : editor.error}</span>
+        {editor.error && <WorkshopToast variant="warning"><span>{editor.status === "conflict" ? "This roadmap changed in another session. Your changes have not been saved. Reloading will discard your draft." : editor.error}</span>
             {editor.status === "conflict" ? <Button size="sm" variant="outline" onClick={editor.reload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={editor.retry}>Retry</Button>}
-        </div>}
+        </WorkshopToast>}
         <div className="sdlc-studio-bar"><div className="sdlc-view-tabs" role="tablist" aria-label="Roadmap views" onKeyDown={event => {if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {event.preventDefault(); const next = event.key === "End" || event.key === "ArrowRight"; setOverview(next); (event.currentTarget.children[next ? 1 : 0] as HTMLButtonElement).focus()}}}><button type="button" role="tab" aria-selected={!overview} aria-controls={`${viewId}-map`} onClick={() => setOverview(false)}><Map/>Map</button><button type="button" role="tab" aria-selected={overview} aria-controls={`${viewId}-overview`} onClick={() => setOverview(true)}><ListChecks/>Overview</button></div><div className="sdlc-studio-actions"><button type="button" disabled={!canEdit || !editor.canUndo} title="Undo · Ctrl+Z" aria-label="Undo roadmap change" onClick={() => historyAction()}><Undo2/></button><button type="button" disabled={!canEdit || !editor.canRedo} title="Redo · Ctrl+Shift+Z" aria-label="Redo roadmap change" onClick={() => historyAction(true)}><Redo2/></button><i/><button type="button" onClick={showCurrent} title="Inspect and locate the current phase"><LocateFixed/><span>Current phase</span></button>{compact && <button type="button" aria-label="Open phase details" aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(true)}><PanelRight/><span>Details</span></button>}</div></div>
-        {notice && <div className="sdlc-studio-notice" role="status"><span>{notice}</span><button type="button" onClick={() => setNotice("")}>Dismiss</button></div>}
+        {notice && <WorkshopToast variant="info"><span>{notice}</span><button type="button" onClick={() => setNotice("")}>Dismiss</button></WorkshopToast>}
         {archive && <SdlcArchiveNotice cycleName={cycleName} onReturn={() => viewCycle(document.cycle ?? 1)}/>}
         <div className="sdlc-layout">
             <div className="sdlc-universe" data-model={document.model} style={{"--sdlc-model-color": isIterative ? `hsl(${tornadoHue(cycle)} 72% 65%)` : model.color} as CSSProperties}>

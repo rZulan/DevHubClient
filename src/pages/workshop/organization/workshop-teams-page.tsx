@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type CSSProperties, type FormEvent, useId, useState} from "react"
 import {ArrowRight, Check, Crown, FolderKanban, LoaderCircle, Pencil, Plus, Trash2, Users} from "lucide-react"
 import {Link, useOutletContext} from "react-router-dom"
@@ -57,7 +58,7 @@ export function WorkshopTeamsPage() {
             <Select value={sort} onValueChange={setSort}><SelectTrigger aria-label="Sort teams"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="name">Name A–Z</SelectItem><SelectItem value="members">Most members</SelectItem></SelectContent></Select>
         </div>
         <div className="directory-section-caption"><h3>Team directory</h3><span role="status">{filteredTeams.length} of {organization.teams.length} teams</span></div>
-        {directoryData.isError && <div className="directory-error" role="alert">Some team or member data could not be refreshed. <Button variant="outline" size="sm" onClick={directoryData.retry}>Try again</Button></div>}
+        {directoryData.isError && <WorkshopToast variant="error">Some team or member data could not be refreshed. <Button variant="outline" size="sm" onClick={directoryData.retry}>Try again</Button></WorkshopToast>}
         {directoryData.isLoading ? <div className="directory-loading" role="status"><LoaderCircle className="animate-spin"/> Loading teams…</div> : filteredTeams.length ? <div className="directory-team-grid">
             {filteredTeams.map(team => {
                 const roster = directoryTeamMembers(organization, team)
@@ -146,7 +147,7 @@ function ManageTeamDialog({organization, team, canChangeLeader, onClose}: {organ
             <form className="directory-delete-confirm" onSubmit={event => {event.preventDefault(); void remove()}}>
                 <p className="directory-delete-note">Members will keep their access to the organization.</p>
                 <DeleteConfirmationField name={team.name} value={confirmation} onChange={setConfirmation} disabled={busy}/>
-                {error && <p className="directory-form-error" role="alert">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                 <div className="directory-modal-actions">
                     <Button type="button" variant="outline" disabled={busy} onClick={() => {setConfirmingDelete(false); setConfirmation(""); setError("")}}>Cancel</Button>
                     <Button type="submit" variant="destructive" disabled={busy || confirmation !== team.name}>{busy ? <LoaderCircle className="animate-spin"/> : <Trash2/>}{busy ? "Deleting…" : "Delete team"}</Button>
@@ -163,7 +164,7 @@ function ManageTeamDialog({organization, team, canChangeLeader, onClose}: {organ
                     <DirectorySearch label="Search members" placeholder="Find a person…" value={query} onChange={setQuery}/>
                     <div className="directory-member-picker">{roster.map(member => <Label key={member.id}><Checkbox disabled={busy || member.id === leaderId} checked={selectedIds.has(member.id)} onCheckedChange={checked => setSelectedIds(current => {const next = new Set(current); if (checked === true) next.add(member.id); else next.delete(member.id); return next})}/><DirectoryAvatar member={member} small/><span><strong>{member.name}</strong><small>@{member.username}</small></span>{member.id === leaderId && <Crown/>}</Label>)}{!roster.length && <p>No people match your search.</p>}</div>
                 </fieldset>
-                {error && <p className="directory-form-error" role="alert">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                 <div className="directory-modal-actions">{canChangeLeader && <Button variant="ghost" className="directory-delete-button" disabled={busy} type="button" onClick={() => {setConfirmingDelete(true); setError("")}}><Trash2/> Delete team</Button>}<Button variant="outline" type="button" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={busy} type="submit">{busy ? <LoaderCircle className="animate-spin"/> : <Check/>} Save changes</Button></div>
             </form></>}
     </DialogContent></Dialog>

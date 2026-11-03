@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {type CSSProperties, type DragEvent, type FormEvent, useEffect, useLayoutEffect, useRef, useState} from "react"
 import {
@@ -375,7 +376,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                     }}><Plus/>{selected ? "Add task" : "Create TODO"}</Button></div>}
             </section>
             {selected && !isError && <TodoBoardProgress tasks={selected.tasks} columns={columns} busy={busy || isFetching}/>}
-            {error && !creating && !addingTo && <p role="alert" className="workshop-form-error">{error}</p>}
+            {error && !creating && !addingTo && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             {isError && (selectedId || !todos.length) ?
                 <WorkshopEmptyState icon={CheckCircle2} title="Could not load TODOs" description="Please try again to retrieve your saved work." action={<Button onClick={() => void refetch()}>Retry</Button>}/>
                 : (!selectedId && columnCount === null) || (isFetching && (selectedId ? !selected : !todos.length)) ?
@@ -458,8 +459,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
             {!selectedId && todos.length > 0 && (isFetching || isError || hasNextPage) &&
                 <div className="workshop-todo-pagination" ref={loadMoreRef}>
                     {isFetching ? <TodoLoading label={isFetchingNextPage ? "Loading more TODOs…" : "Updating TODOs…"}/>
-                        : isError ? <><p role="alert">Could not load TODOs. Your loaded items are still available.</p>
-                                <Button variant="outline" onClick={() => void refetch()}>Retry</Button></>
+                        : isError ? <WorkshopToast variant="error">Could not load TODOs. Your loaded items are still available.
+                                <Button variant="outline" onClick={() => void refetch()}>Retry</Button></WorkshopToast>
                             : hasNextPage ?
                                 <Button variant="ghost" onClick={() => void fetchNextPage()}>Load more TODOs</Button>
                                 : null}
@@ -500,7 +501,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                            onAdd={id => setDraftAssignees(current => [...new Set([...current, id])])}
                                            onRemove={id => setDraftAssignees(current => current.filter(value => value !== id))}/>
                         </div>}
-                        {error && <p role="alert" className="workshop-form-error">{error}</p>}
+                        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                         <Button className="workshop-primary-action" disabled={busy}
                                 type="submit"><Plus/>{busy ? "Saving…" : creating ? "Create TODO & open board" : "Add task"}
                         </Button>

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, useEffect, useState} from "react"
 import {AlertTriangle, Check, FolderKanban, LoaderCircle, LogOut, ShieldCheck, Trash2, Users} from "lucide-react"
 import {useNavigate, useOutletContext} from "react-router-dom"
@@ -153,8 +154,8 @@ export function GeneralSettingsPage() {
                 </div>
             </section>
 
-            {profileQuery.isError && isPersistedOrganization && <p role="alert" className="workshop-form-error">Could not load the saved organization profile. <button type="button" onClick={() => void profileQuery.refetch()}>Retry</button></p>}
-            {error && <p role="alert" className="workshop-form-error">{error}</p>}
+            {profileQuery.isError && isPersistedOrganization && <WorkshopToast variant="error">Could not load the saved organization profile. <button type="button" onClick={() => void profileQuery.refetch()}>Retry</button></WorkshopToast>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
 
             <section className="workshop-settings-card danger">
                 <header>
@@ -177,7 +178,7 @@ export function GeneralSettingsPage() {
                 </div>
             </section>
 
-            <Dialog open={leaveOpen} onOpenChange={open => {if (!isLeaving) setLeaveOpen(open)}}><DialogContent><DialogHeader><DialogTitle>Leave {organization.name}?</DialogTitle><DialogDescription>You will lose access to this organization, its teams, and its projects. An invitation is needed to join again.</DialogDescription></DialogHeader>{error && <p role="alert" className="workshop-form-error">{error}</p>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={isLeaving} onClick={() => setLeaveOpen(false)}>Cancel</Button><Button variant="destructive" disabled={!canLeave || isLeaving} onClick={() => void leave()}>{isLeaving ? "Leaving…" : "Leave organization"}</Button></div></DialogContent></Dialog>
+            <Dialog open={leaveOpen} onOpenChange={open => {if (!isLeaving) setLeaveOpen(open)}}><DialogContent><DialogHeader><DialogTitle>Leave {organization.name}?</DialogTitle><DialogDescription>You will lose access to this organization, its teams, and its projects. An invitation is needed to join again.</DialogDescription></DialogHeader>{error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={isLeaving} onClick={() => setLeaveOpen(false)}>Cancel</Button><Button variant="destructive" disabled={!canLeave || isLeaving} onClick={() => void leave()}>{isLeaving ? "Leaving…" : "Leave organization"}</Button></div></DialogContent></Dialog>
 
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 {deleteOpen && (

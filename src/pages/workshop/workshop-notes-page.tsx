@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useEffect, useRef, useState, type FormEvent} from "react"
 import {useOutletContext} from "react-router-dom"
@@ -108,11 +109,11 @@ function NotesBoard() {
                 <Button size="sm" variant="ghost" onClick={() => recovery.discard(saved.note.id)}>Discard draft</Button>
             </div>)}
         </section>}
-        {canWrite && recovery.storageError && <p className="notes-board-error" role="alert">Draft recovery could not save to this browser. Keep this page open and save your note, or copy your writing before leaving.</p>}
-        {error && <div className="notes-board-error" role="alert"><p>{error}</p><div>
+        {canWrite && recovery.storageError && <WorkshopToast variant="error">Draft recovery could not save to this browser. Keep this page open and save your note, or copy your writing before leaving.</WorkshopToast>}
+        {error && <WorkshopToast variant="error"><p>{error}</p><div>
             {(status === "conflict" || status === "error") && <Button size="sm" variant="outline" onClick={() => downloadFile(JSON.stringify(document, null, 2), "notes-draft.json", "application/json")}><Download/>Download draft</Button>}
             {status === "conflict" ? <Button size="sm" variant="outline" onClick={editor.reload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={editor.retry}>Retry</Button>}
-        </div></div>}
+        </div></WorkshopToast>}
         {atLimit && <p className="notes-board-limit">This board has reached 1,000 notes. Delete a note to make room for a new one.</p>}
         {status === "loading" ? <div className="notes-board-loading" aria-label="Loading notes">{Array.from({length: 6}, (_, index) => <div key={index} className="animate-pulse"/>)}</div>
             : status !== "load-error" && (document.notes.length ? <div className="workshop-notes-grid">
@@ -134,7 +135,7 @@ function NotesBoard() {
                         <Button type="button" size="sm" variant={mode === "write" ? "secondary" : "ghost"} aria-pressed={mode === "write"} onClick={() => setMode("write")}><Pencil/>Write</Button>
                         <Button type="button" size="sm" variant={mode === "preview" ? "secondary" : "ghost"} aria-pressed={mode === "preview"} onClick={() => setMode("preview")}><Eye/>Preview</Button>
                     </div>
-                    {recovery.storageError && <p className="notes-draft-status" role="alert">Draft recovery unavailable. Save your note to protect your writing.</p>}
+                    {recovery.storageError && <WorkshopToast variant="error">Draft recovery unavailable. Save your note to protect your writing.</WorkshopToast>}
                     <div className="notes-editor-paper" style={noteStyle(draft.color)}>
                         {mode === "write" ? <>
                             <div className="notes-editor-title">

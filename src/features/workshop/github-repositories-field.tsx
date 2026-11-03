@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useEffect, useRef, useState} from "react"
 import {ExternalLink, LoaderCircle, Plus, RefreshCw, X} from "lucide-react"
 import {GitHubIcon as Github} from "@/features/auth/oauth-provider-icons"
@@ -110,6 +111,6 @@ function GitHubPicker({selected, onAdd, disabled}: {selected: GitHubRepository[]
                     </>}
                 </>}
             </>}
-        {failure && <p role="alert" className="github-picker-error">{failure}</p>}
+        {failure && <WorkshopToast variant="error">{failure}</WorkshopToast>}
     </div>
 }

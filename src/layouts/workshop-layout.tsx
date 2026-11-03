@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from "react"
 import {
     ArrowLeft,
@@ -127,7 +128,7 @@ const pageTitles: Record<string, string> = {
     "org-chart": "Organization chart",
     settings: "Organization settings",
 }
-const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "projects", "project-detail", "project-wiki", "bug-reports"])
+const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "projects", "project-detail", "bug-reports"])
 
 export function WorkshopLayout() {
     const {organizationId} = useParams()
@@ -673,7 +674,7 @@ export function WorkshopLayout() {
                                 {inviteExpiresAt && <p>Expires {new Date(inviteExpiresAt).toLocaleString()}.</p>}
                             </>
                         ) : null}
-                        {inviteError && <p className="workshop-form-error">{inviteError}</p>}
+                        {inviteError && <WorkshopToast variant="error" onDismiss={() => setInviteError("")}>{inviteError}</WorkshopToast>}
                     </div>
                 </DialogContent>
             </Dialog>

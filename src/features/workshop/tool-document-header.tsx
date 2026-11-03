@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {ChevronDown, Download, FileJson, LoaderCircle, Save} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
@@ -16,7 +17,7 @@ export function ToolDocumentHeader({title, projectName, status, error, canWrite,
         </DropdownMenu> : <Button size="sm" variant="ghost" title="Download document as JSON" onClick={() => downloadFile(JSON.stringify(document, null, 2), `${tool}-draft.json`, "application/json")}><Download/> Draft</Button>}
         {canWrite && <Button size="sm" variant="secondary" disabled={["loading", "load-error", "saving", "conflict"].includes(status)} onClick={onSave}><Save/> Save</Button>}
     </div></header>
-    {error && <div className="tool-document-error" role="alert"><span>{error}</span>
+    {error && <WorkshopToast variant="error"><span>{error}</span>
         {status === "conflict" ? <Button size="sm" variant="outline" onClick={onReload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={onRetry}>Retry</Button>}
-    </div>}<WorkshopCanvasNotice tool={tool} document={document}/></>
+    </WorkshopToast>}<WorkshopCanvasNotice tool={tool} document={document}/></>
 }

@@ -4,6 +4,8 @@ import {useAppDispatch} from "@/app/hooks"
 import {clearSession} from "@/features/auth/auth-slice"
 import {clearStoredRefreshToken} from "@/features/auth/auth-storage"
 import {announceBeforeSignOut} from "@/features/auth/sign-out-events"
+import {exportManager} from "@/features/exports/export-manager"
+import {workshopToastStore} from "@/features/workshop/workshop-toast-store"
 import {api, useLogoutMutation} from "@/services/api"
 
 export function useSignOut() {
@@ -16,6 +18,8 @@ export function useSignOut() {
             await announceBeforeSignOut()
             await logout().unwrap()
         } finally {
+            exportManager.clear()
+            workshopToastStore.clear()
             clearStoredRefreshToken()
             dispatch(clearSession())
             dispatch(api.util.resetApiState())

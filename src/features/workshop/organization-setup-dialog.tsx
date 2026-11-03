@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useId, useState, type FormEvent} from "react"
 import {ArrowRight, Building2, Link2, LoaderCircle, Plus} from "lucide-react"
 
@@ -63,7 +64,7 @@ export function OrganizationSetupDialog({
                         ) : (
                             <InviteCodeInput initialValue={inviteFromUrl}/>
                         )}
-                        {error && <p className="workshop-form-error" role="alert">{error}</p>}
+                        {error && <WorkshopToast variant="error">{error}</WorkshopToast>}
                         <Button className="workshop-primary-action h-11 w-full" disabled={busy} type="submit">
                             {busy ? <LoaderCircle className="animate-spin"/> : mode === "create" ? <Plus/> :
                                 <ArrowRight/>}

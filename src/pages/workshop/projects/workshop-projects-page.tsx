@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode, useId, useMemo, useState} from "react"
 import {
     Check,
@@ -336,7 +337,7 @@ export function WorkshopProjectsPage() {
                                         </ProjectField>
                                     </div>
                                 </section>
-                                {projectError && <p className="workshop-form-error project-create-error" role="alert">{projectError}</p>}
+                                {projectError && <WorkshopToast variant="error" onDismiss={() => setProjectError("")}>{projectError}</WorkshopToast>}
                             </div>
                             <div className="project-create-footer">
                                 <Button disabled={isCreating} onClick={() => setIsModalOpen(false)} type="button" variant="ghost">Cancel</Button>

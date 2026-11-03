@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {getDashboardView, setDashboardView} from "@/features/workshop/dashboard-view"
 import {type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState} from "react"
@@ -842,7 +843,7 @@ function DashboardContent({personal}: {personal: boolean}) {
                                                                          type="button">{personal ? isPublishing ? "Saving…" : "Save personal dashboard" : isPublishing ? "Publishing…" : "Publish for everyone"}</Button>
                 </div>
             </div>}
-            {publishError && <p className="workshop-dashboard-publish-error">{publishError}</p>}
+            {publishError && <WorkshopToast variant="error" onDismiss={() => setPublishError("")}>{publishError}</WorkshopToast>}
 
             {dashboardError && !isEditing ? <WorkshopEmptyState icon={LayoutDashboard} title="Could not load dashboard" description="Try again to load your saved layout." action={<Button onClick={() => void dashboardQuery.refetch()}>Retry</Button>}/> : dashboardLoading && !isEditing ? <div className="workshop-dashboard-loading">Loading dashboard…</div> : (
                 <div className="workshop-widget-sections">

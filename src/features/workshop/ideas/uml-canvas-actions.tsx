@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useRef, useState} from "react"
 import {MoreHorizontal} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -5,6 +6,8 @@ import {validUmlLibrary, type UmlDiagram} from "../uml-library"
 import type {CanvasItem} from "../shape-clipboard"
 import {arrangeUmlItems, autoLayoutUml, type UmlArrangement} from "../uml-layout"
 import {downloadUmlFile} from "./uml-download"
+import {exportManager} from "@/features/exports/export-manager"
+import {useExporting} from "@/features/exports/use-export-jobs"
 
 const arrangements: [UmlArrangement,string][] = [
     ["left","Left"], ["center","Center"], ["right","Right"],
@@ -22,12 +25,20 @@ export function UmlCanvasActions({diagram, selectedIds, canEdit, onItems}: {
     const [error,setError] = useState("")
     const file = useRef<HTMLInputElement>(null)
     const base = diagram.name.replaceAll(/[^a-zA-Z0-9_-]/g,"-") || "uml"
+    const exportKey = `uml-png:${diagram.id}`
+    const exporting = useExporting(exportKey)
 
     async function exportImage(format: "svg" | "png") {
-        const {umlSvg,exportUmlPng} = await import("./uml-export")
-        const svg = umlSvg(diagram)
-        if (format === "png") await exportUmlPng(svg,`${base}.png`)
-        else downloadUmlFile(`${base}.svg`,new Blob([svg],{type:"image/svg+xml"}))
+        if (format === "png") {
+            void exportManager.run({key: exportKey, label: "UML · PNG", detail: diagram.name}, async context => {
+                const {umlSvg, exportUmlPng} = await import("./uml-export")
+                context.signal.throwIfAborted()
+                await exportUmlPng(umlSvg(diagram), `${base}.png`, context)
+            }).catch(() => {})
+        } else {
+            const {umlSvg} = await import("./uml-export")
+            downloadUmlFile(`${base}.svg`,new Blob([umlSvg(diagram)],{type:"image/svg+xml"}))
+        }
     }
 
     function action(label:string,run:()=>void|Promise<void>,disabled=false) {
@@ -49,7 +60,7 @@ export function UmlCanvasActions({diagram, selectedIds, canEdit, onItems}: {
         }}>
             <strong>Export</strong>
             {action("Export SVG",()=>exportImage("svg"))}
-            {action("Export PNG",()=>exportImage("png"))}
+            {action("Export PNG",()=>exportImage("png"),exporting)}
             {action("Export canvas JSON",()=>downloadUmlFile(`${base}.json`,new Blob([JSON.stringify({version:1,diagram},null,2)],{type:"application/json"})))}
             {canEdit && <>
                 <strong>Canvas</strong>
@@ -58,7 +69,7 @@ export function UmlCanvasActions({diagram, selectedIds, canEdit, onItems}: {
                 <strong>Align selection</strong>
                 {arrangements.map(([mode,label])=>action(label,()=>onItems(arrangeUmlItems(diagram.items,selectedIds,mode)),selectedIds.length<(mode.startsWith("distribute")?3:2)))}
             </>}
-            {error && <p role="alert">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         </div>}
         <input hidden type="file" ref={file} accept=".json,application/json" onChange={async event=>{
             const selected=event.target.files?.[0]

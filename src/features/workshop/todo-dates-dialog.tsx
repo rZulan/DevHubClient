@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useRef, useState, type FormEvent} from "react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
@@ -20,7 +21,7 @@ export function TodoDatesDialog({todo, disabled, onClose, onSave}: {todo: Todo; 
     return <Dialog open onOpenChange={open => {if (!open && !saving.current) onClose()}}><DialogContent className="workshop-modal sm:max-w-md">
         <DialogHeader><DialogTitle>TODO dates</DialogTitle><DialogDescription>{todo.name}</DialogDescription></DialogHeader>
         <form onSubmit={event => void submit(event)}><fieldset disabled={pending || disabled} className="todo-schedule-fields"><TodoDateFields startDate={todo.startDate} targetDate={todo.targetDate}/><p className="todo-schedule-hint">Add a From date to show a range in Calendar. Clear both dates to remove this TODO from Calendar.</p></fieldset>
-            {error && <p role="alert" className="workshop-form-error">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={pending} onClick={onClose}>Cancel</Button><Button type="submit" disabled={pending || disabled}>{pending ? "Saving…" : "Save dates"}</Button></div>
         </form>
     </DialogContent></Dialog>

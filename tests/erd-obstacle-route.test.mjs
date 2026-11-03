@@ -3,9 +3,26 @@ import assert from 'node:assert/strict'
 import {routeErdRelationship, erdConnectionBounds, createErdRouteCache} from '../src/features/workshop/erd-connection.ts'
 import {erdDiagramImage} from '../src/features/workshop/erd-image-export.ts'
 import {tableHeight} from '../src/features/workshop/tool-documents.ts'
+import {planErdRoutes} from '../src/features/workshop/erd-route-plan.ts'
+import {avoidErdObstacles,routePoints,erdRouteClearance} from '../src/features/workshop/erd-obstacle-route.ts'
 
 const table = (id, x, y, count = 2) => ({id, name: id, x, y, fields: Array.from({length: count}, (_, i) => ({id: i ? `column_${i}` : 'id', name: i ? `column_${i}` : 'id', type: 'INT', length: '', primary: i === 0, nullable: false, unique: false, defaultValue: ''}))})
 const relation = {id: 'r', fromTable: 'a', toTable: 'b', fromField: 'id', toField: 'column_1', cardinality: '1:N', onDelete: 'RESTRICT'}
+
+test('shared routing cannot double back onto its own table border after leaving a port',()=>{
+    const a=table('a',0,0),b=table('b',1000,200)
+    const original={source:{x:0,y:66,edge:'left'},target:{x:1000,y:266,edge:'left'},path:'M0 66 L-48 66 L0 66 L0 -48 L952 -48 L952 266 L1000 266',bounds:{x:-60,y:-60,width:1072,height:338}}
+    const route=avoidErdObstacles(original,a,b,[a,b],0,{areas:[],segments:[]})
+    assert.notEqual(route.path,original.path)
+    const path=routePoints(route.path)
+    assert.ok(path[1].x<=-48,'leave room for the complete source notation before turning')
+    for(let i=1;i<path.length;i++) {
+        const p=path[i-1],q=path[i]
+        if(p.x===q.x && Math.min(Math.max(p.y,q.y),tableHeight(a))-Math.max(Math.min(p.y,q.y),0)>0) {
+            assert.ok(Math.abs(p.x-a.x)>=erdRouteClearance && Math.abs(p.x-a.x-300)>=erdRouteClearance)
+        }
+    }
+})
 function points(path) {
     const result = []
     for (const m of path.matchAll(/([MLHV])(-?[\d.]+)(?: (-?[\d.]+))?/g)) result.push(m[1] === 'H' ? {x:+m[2],y:result.at(-1).y} : m[1] === 'V' ? {x:result.at(-1).x,y:+m[2]} : {x:+m[2],y:+m[3]})
@@ -33,8 +50,12 @@ test('automatic connections can weave through multiple blockers with more than f
     assert.deepEqual(route.target,{x:1900,y:98,edge:'left'})
     assert.deepEqual(tables,before)
     const document = {tables,relationships:[relation]}
-    assert.deepEqual(erdConnectionBounds(document),[route.bounds])
-    assert.ok(erdDiagramImage(document).svg.includes(`d="${route.path}"`), 'PNG uses the same detour as the canvas')
+    const planned = planErdRoutes(document)[0].route
+    clear(planned,tables)
+    assert.deepEqual(planned.source,route.source)
+    assert.deepEqual(planned.target,route.target)
+    assert.deepEqual(erdConnectionBounds(document),[planned.bounds])
+    assert.ok(erdDiagramImage(document).svg.includes(`d="${planned.path}"`), 'PNG uses the same cleared detour as the canvas')
 })
 
 test('manual attachments and coincident self loops avoid unrelated tables', () => {

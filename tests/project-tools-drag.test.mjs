@@ -32,6 +32,7 @@ function navigation() {
     const exports = {}
     vm.runInNewContext(source, {exports, require: name => {
         if (name === 'react') return react
+        if (name === '@/features/workshop/workshop-toast') return {WorkshopToast: () => null}
         if (name === './project-tools') return projectTools
         if (name === '@/lib/utils') return {cn: (...parts) => parts.filter(Boolean).join(' ')}
         if (name === '@/components/under-construction-indicator') return {UnderConstructionIndicator: () => null}

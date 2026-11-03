@@ -22,7 +22,7 @@ function load(file, dependencies = {}) {
 }
 const tokens = load('note-code-highlight.tsx')
 const workshopSelect = load('workshop-select.tsx')
-const notes = load('note-markdown.tsx', {'./shiki-highlighter.ts': highlighter, './note-code-highlight.tsx': tokens, './use-note-code-highlight.ts': codeHighlight, '@/features/workshop/workshop-select': workshopSelect})
+const notes = load('note-markdown.tsx', {'./shiki-highlighter.ts': highlighter, './note-code-highlight.tsx': tokens, './use-note-code-highlight.ts': codeHighlight, '@/features/workshop/workshop-select': workshopSelect, '@/features/workshop/workshop-toast': {WorkshopToast: () => null}})
 const copyLink = load('wiki-copy-link.tsx')
 const sections = load('wiki-sections.ts')
 const images = load('wiki-images.ts')

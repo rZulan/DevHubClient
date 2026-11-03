@@ -93,6 +93,17 @@ test('layout is stable across repeated clicks, table order, and relationship ord
     assert.deepEqual(positions(arrangeErd({tables:[...document.tables].reverse(),relationships:[...document.relationships].reverse()})),positions(arranged))
 })
 
+test('each boundary reserves its own routing space instead of inheriting a busy hub gutter',()=>{
+    const children=Array.from({length:18},(_,i)=>table(`child-${String(i).padStart(2,'0')}`))
+    const document={tables:[table('hub'),...children,table('leaf')],relationships:[...children.map(t=>relation('hub',t.id)),relation(children.at(-1).id,'leaf')]}
+    const arranged=arrangeErd(document),xs=[...new Set(arranged.tables.map(t=>t.x))].sort((a,b)=>a-b)
+    const gaps=xs.slice(1).map((x,i)=>x-xs[i]-300)
+    assert.ok(gaps.every(gap=>gap>=128&&gap<=240),'retain safe endpoint room without oversized gutters')
+    assert.ok(new Set(gaps).size>1,'different boundary traffic should get different gutter widths')
+    noOverlap(arranged)
+    assert.equal(arrangeErd(arranged),arranged)
+})
+
 test('long chains fold into rows while every route avoids table bodies', () => {
     const document={tables:Array.from({length:25},(_,i)=>table(`table-${String(i).padStart(2,'0')}`,i%5+1)),relationships:Array.from({length:24},(_,i)=>relation(`table-${String(i).padStart(2,'0')}`,`table-${String(i+1).padStart(2,'0')}`))}
     const arranged=arrangeErd(document)

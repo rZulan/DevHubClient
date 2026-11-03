@@ -29,6 +29,8 @@ import {defaultTodoColumns, type TodoTask} from "@/features/workshop/todo-api"
 import {paletteTokens} from "@/features/workshop/appearance/color-schemes"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/index.css"
+import {ExportProgressPanel} from "@/features/exports/export-progress-panel"
+import {WorkshopToaster} from "@/features/workshop/workshop-toaster"
 import "@/features/workshop/todo-board.css"
 const project = {id: "preview-project", name: "Project tools preview", summary: "", status: "Planning" as const, teamIds: [], leadUserId: "current", techStack: [], repository: "", sdlc: "Waterfall", database: "", environments: [], updatedAt: ""}
 const context: WorkshopOutletContext = {
@@ -116,6 +118,8 @@ export function Fixture() {
         </section>
         <ResponsiveWorkshopPanel compact open={membersOpen} onOpenChange={setMembersOpen} title="Members" side="right"><aside className="workshop-members"><header><strong>Preview owner</strong></header></aside></ResponsiveWorkshopPanel>
         <button {...launcher} className="workshop-messages-button" aria-label="Messages preview, drag to move">Chat</button>
+        <ExportProgressPanel/>
+        <WorkshopToaster/>
     </div>
 }
 const root = createRoot(document.getElementById("root")!)

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useEffect, useRef, useState} from "react"
 import {Camera, Check, LoaderCircle, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -40,6 +41,6 @@ export function WorkspaceAvatarEditor({name, avatarUrl, label, disabled = false,
         </div>
         <input ref={input} className="workspace-avatar-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label={`Upload ${label.toLowerCase()}`} disabled={busy} onChange={event => {const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; void choose(file)}}/>
         {dirty && <div className="workspace-avatar-actions"><Button type="button" size="sm" disabled={busy} onClick={() => void save()}>{saving ? <LoaderCircle className="animate-spin"/> : <Check/>}Save icon</Button><Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => {generation.current++; setDraft(undefined); setError("")}}>Cancel icon change</Button></div>}
-        {error && <p className="workshop-form-error" role="alert">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
     </section>
 }

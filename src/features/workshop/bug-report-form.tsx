@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useEffect, useRef, useState, type FormEvent} from "react"
 import {FileUp, LoaderCircle, Paperclip, X} from "lucide-react"
@@ -48,7 +49,7 @@ export function BugReportForm({categories, initialEmail = "", onSubmit, onSucces
                 onBlur={event => validateEmail(event.currentTarget)}
                 onInvalid={event => {event.preventDefault(); validateEmail(event.currentTarget); event.currentTarget.focus()}}
                 onChange={event => {update("email", event.target.value); if (emailError) validateEmail(event.currentTarget)}}/>
-            {emailError && <p id="bug-email-error" className="bug-error" role="alert">{emailError}</p>}
+            {emailError && <WorkshopToast variant="error" onDismiss={() => setEmailError("")} id="bug-email-error">{emailError}</WorkshopToast>}
             <label htmlFor="bug-title">Report title <span>Required</span></label><Input id="bug-title" required maxLength={200} placeholder="A short description of the problem" value={values.title} onChange={event => update("title", event.target.value)}/>
             <div className="bug-form-columns"><div><label htmlFor="bug-category">Category</label><WorkshopSelect id="bug-category" value={values.categoryId} onValueChange={selectedValue => update("categoryId", selectedValue)}><option value="">Uncategorized</option>{categories.filter(category => !category.archived).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</WorkshopSelect></div><div><label htmlFor="bug-priority">Impact</label><WorkshopSelect id="bug-priority" value={values.priority} onValueChange={selectedValue => update("priority", selectedValue)}>{bugPriorities.map(priority => <option key={priority.id} value={priority.id}>{priority.label}</option>)}</WorkshopSelect></div></div>
             <label htmlFor="bug-description">What happened? <span>Required</span></label><Textarea id="bug-description" required maxLength={20000} placeholder="Describe the problem, what you expected, and what happened instead." value={values.description} onChange={event => update("description", event.target.value)}/>
@@ -61,7 +62,7 @@ export function BugReportForm({categories, initialEmail = "", onSubmit, onSucces
             </div>
             {!!files.length && <ul className="bug-file-list">{files.map((file, index) => <li key={`${file.name}:${index}`}><Paperclip/><span>{file.name}<small>{bugFileSize(file.size)}</small></span><Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${file.name}`} onClick={() => setFiles(current => current.filter((_, i) => i !== index))}><X/></Button></li>)}</ul>}
         </fieldset>
-        {error && <p role="alert" className="bug-error">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         <div className="bug-form-footer">{onCancel && <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Keep draft & close</Button>}<Button type="submit" disabled={busy || !values.email.trim() || !values.title.trim() || !values.description.trim()}>{busy ? <LoaderCircle className="animate-spin"/> : <Paperclip/>}{busy ? "Sending report…" : "Submit bug report"}</Button></div>
     </form>
 }

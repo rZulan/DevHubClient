@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent} from "react"
 import {Tabs} from "radix-ui"
 import {Check, Database, FileCode, Palette, Plus} from "lucide-react"
@@ -77,12 +78,12 @@ export function ErdSchemaSidebar({document, canEdit, collapsed, onToggle, select
                 <footer className="erd-schema-table-actions"><Button size="sm" variant="secondary" disabled={!canEdit || document.tables.length >= 500} onClick={onAddTable}><Plus/>Add Table</Button></footer>
             </Tabs.Content>
             <Tabs.Content value="sql" className="erd-schema-tab erd-schema-code">
-                {stale && <div className="erd-sql-conflict" role="alert">The diagram changed. Your SQL draft is kept. <button type="button" onClick={useDiagramSql}>Use current diagram SQL</button></div>}
-                {generated.error && !dirty && <p className="tool-inline-error" role="alert">{generated.error}</p>}
+                {stale && <WorkshopToast variant="warning">The diagram changed. Your SQL draft is kept. <button type="button" onClick={useDiagramSql}>Use current diagram SQL</button></WorkshopToast>}
+                {generated.error && !dirty && <WorkshopToast variant="error">{generated.error}</WorkshopToast>}
                 <SqlSourceEditor source={source} theme={sqlTheme} onThemeChange={changeSqlTheme} readOnly={!canEdit} onChange={change} onApply={() => apply(warnings !== null)}/>
-                {error && <p className="erd-sql-error" role="alert">{error}</p>}
-                {warnings && <details className="erd-sql-warnings" open><summary>Review SQL notes before applying</summary><ul>{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></details>}
-                {notice && <p className="erd-sql-notice" role="status">{notice}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
+                {warnings && <WorkshopToast variant="warning" title="Review SQL notes before applying" duration={Infinity}><ul>{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></WorkshopToast>}
+                {notice && <WorkshopToast variant="success" onDismiss={() => setNotice("")}>{notice}</WorkshopToast>}
                 <footer className="erd-schema-table-actions">
                     <Button size="sm" disabled={!canEdit || !dirty || stale} onClick={() => apply(warnings !== null)}><Check/>{warnings ? "Apply with notes" : "Apply SQL"}</Button>
                 </footer>
@@ -124,7 +125,7 @@ function SqlSourceEditor({source, theme, onThemeChange, readOnly, onChange, onAp
         }
     }
     return <>
-        {themeLoadError && <p className="erd-sql-notice" role="status">Editor themes could not load. Your SQL is still available.</p>}
+        {themeLoadError && <WorkshopToast variant="info">Editor themes could not load. Your SQL is still available.</WorkshopToast>}
         <div className="erd-sql-source" data-theme={palette.id} style={{background: palette.background, color: palette.foreground, colorScheme: palette.type, "--erd-sql-ink": palette.foreground, "--erd-sql-paper": palette.background} as CSSProperties}>
         <DropdownMenu>
             <DropdownMenuTrigger asChild><button type="button" className="erd-sql-theme-button" aria-label="SQL editor theme" title={`Theme: ${palette.label}`} disabled={!themes}><Palette size={16}/></button></DropdownMenuTrigger>

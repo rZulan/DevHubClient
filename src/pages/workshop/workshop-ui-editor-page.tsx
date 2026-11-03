@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useRef, useState} from "react"
 import {useOutletContext} from "react-router-dom"
@@ -17,6 +18,7 @@ import {designTools, type DesignTool} from "@/features/workshop/design-tools"
 import {DesignLayersPanel, DesignInspector} from "@/features/workshop/design-panels"
 import {DesignPlayer} from "@/features/workshop/design-player"
 import {designPng, designSvg} from "@/features/workshop/design-export"
+import {useExporting} from "@/features/exports/use-export-jobs"
 import {copyDesignLayers, designComponent, designStarter, layerUnavailable, layoutDesignFrames, moveDesignLayers, newDesignLayer, pasteDesignLayers, removeDesignLayers, reorderDesignLayer, type ComponentPreset, type DesignDocument, type DesignKind, type DesignLayer} from "@/features/workshop/design-document"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/design-editor.css"
@@ -35,7 +37,9 @@ function UiEditor() {
     const workspace = useRef<HTMLElement>(null), imageInput = useRef<HTMLInputElement>(null), imageTarget = useRef<string | undefined>(undefined), pasteCount = useRef({text: "", count: 0})
     const latest = useRef({document, canEdit}); latest.current = {document, canEdit}
     const [selectedIds, setSelectedIds] = useState<string[]>([]), [tool, setTool] = useState<DesignTool>("select"), [mode, setMode] = useState<"design" | "prototype">("design")
-    const [present, setPresent] = useState(false), [fitKey, setFitKey] = useState(0), [error, setError] = useState(""), [exporting, setExporting] = useState(false)
+    const [present, setPresent] = useState(false), [fitKey, setFitKey] = useState(0), [error, setError] = useState("")
+    const exportKey = `design-png:${userId}:${organization.id}:${project!.id}`
+    const exporting = useExporting(exportKey)
     const selected = document.layers.filter(l => selectedIds.includes(l.id)), primary = selected.length === 1 ? selected[0] : undefined
     const selectedFrame = primary?.kind === "frame" ? primary : document.layers.find(l => l.id === primary?.parentId)
     const screens = document.layers.filter(l => l.kind === "frame" && !l.hidden), ready = editor.status !== "loading", canAdd = canEdit && document.layers.length < 5000
@@ -113,7 +117,7 @@ function UiEditor() {
         else if ((key === "[" || key === "]") && primary) apply(reorderDesignLayer(document, primary.id, key === "]" ? 1 : -1))
         else if (key.startsWith("arrow")) {const amount = shift ? 10 : 1; apply(moveDesignLayers(document, selected.map(l => ({id: l.id, x: Math.max(-1e6, Math.min(1e6, l.x + (key === "arrowright" ? amount : key === "arrowleft" ? -amount : 0))), y: Math.max(-1e6, Math.min(1e6, l.y + (key === "arrowdown" ? amount : key === "arrowup" ? -amount : 0)))}))))}
     }
-    async function exportPng() {setExporting(true); setError(""); try {await designPng(document, primary?.kind === "frame" ? primary.id : undefined)} catch (failure) {setError(failure instanceof Error ? failure.message : "Could not export PNG.")} finally {setExporting(false)}}
+    function exportPng() {setError(""); void designPng(document, primary?.kind === "frame" ? primary.id : undefined, {key: exportKey, label: "UI/UX · PNG", detail: project!.name}).catch(() => {})}
     function chooseImage(id?: string) {imageTarget.current = id; imageInput.current?.click()}
     async function placeImage(file?: File) {
         if (!file || !canEdit) return
@@ -144,7 +148,7 @@ function UiEditor() {
             <DropdownMenuItem disabled={!document.layers.length} onSelect={() => void exportPng()}><ImageDown/>Export {primary?.kind === "frame" ? "screen" : "canvas"} as PNG</DropdownMenuItem>
         </>}><Button size="sm" className="ui-present-button" disabled={!screens.length} onClick={() => setPresent(true)}><Play/>Present</Button></ToolDocumentHeader>
         <input type="file" ref={imageInput} hidden accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Place design image" onChange={e => void placeImage(e.target.files?.[0])}/>
-        {error && <div className="tool-document-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
+        {error && <WorkshopToast variant="error">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></WorkshopToast>}
         <div className="tool-editor-body ui-editor-body">
             <DesignLayersPanel document={document} selectedIds={selectedIds} onSelect={select} canEdit={canEdit} onPatch={patch} onReparent={reparent} onSort={direction => {if (primary) apply(reorderDesignLayer(document, primary.id, direction))}} onComponent={component} onFrame={addFrame} onStarter={starter} onImage={() => chooseImage()}/>
             <div className="ui-canvas-area"><DesignCanvas viewStorageKey={canvasViewKey(userId, organization.id, project!.id, "ui-editor")} document={document} selectedIds={selectedIds} onSelect={setSelectedIds} tool={tool} onTool={setTool} canEdit={canEdit} onChange={apply} onCreate={create} fitKey={fitKey} prototype={mode === "prototype"} onEditText={(id, text) => patch(id, {text})} onAction={action} onPaletteDrop={dropElement}>

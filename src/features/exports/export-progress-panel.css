@@ -1,0 +1,41 @@
+.export-progress-panel {
+    position: fixed;
+    z-index: 45;
+    right: calc(max(16px, env(safe-area-inset-right)) + var(--export-panel-slide, 0px));
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--export-panel-lift, 0px));
+    width: min(340px, calc(100vw - 32px));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--popover);
+    color: var(--popover-foreground);
+    box-shadow: 0 12px 36px #0003;
+    overflow: hidden;
+    font-size: 13px;
+}
+body:has(.workshop-shell:not(.members-collapsed)) .export-progress-panel { right: calc(17rem + 16px + var(--export-panel-slide, 0px)); }
+.export-progress-panel.minimized { width: fit-content; max-width: calc(100vw - 32px); }
+.export-progress-heading { display: flex; align-items: center; gap: 9px; width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; }
+.export-progress-heading > svg { width: 16px; height: 16px; flex: none; color: var(--muted-foreground); }
+.export-progress-heading > strong { flex: 1; font-weight: 600; }
+.export-progress-heading:hover, .export-progress-cancel:hover { background: var(--accent); }
+.export-progress-heading:focus-visible, .export-progress-cancel:focus-visible { outline: 2px solid var(--ring); outline-offset: -3px; }
+.export-progress-failure-count { color: var(--destructive); font-size: 11px; }
+.export-progress-list { margin: 0; padding: 0; list-style: none; max-height: min(380px, calc(100svh - 180px)); overflow-y: auto; overscroll-behavior: contain; }
+.export-progress-list[hidden] { display: none; }
+.export-progress-item { border-top: 1px solid var(--border); padding: 14px; }
+.export-progress-item-heading { display: flex; align-items: center; gap: 9px; }
+.export-progress-item-heading > svg { flex: none; width: 16px; height: 16px; color: var(--primary); }
+.export-progress-item-heading > div { flex: 1; min-width: 0; }
+.export-progress-item-heading strong, .export-progress-item-heading small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.export-progress-item-heading strong { font-weight: 500; }
+.export-progress-item-heading small { color: var(--muted-foreground); font-size: 11px; margin-top: 2px; }
+.export-progress-cancel { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted-foreground); }
+.export-progress-cancel > svg { width: 14px; height: 14px; }
+.export-progress-track { height: 5px; margin-top: 12px; overflow: hidden; border-radius: 8px; background: var(--muted); }
+.export-progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .15s ease; }
+.export-progress-track[data-preparing="true"] > span { animation: export-progress-pulse 1.4s ease-in-out infinite; }
+.export-progress-caption { display: flex; justify-content: space-between; margin: 6px 0 0; color: var(--muted-foreground); font-size: 11px; }
+.export-progress-error { margin: 8px 0 0; color: var(--destructive); font-size: 12px; overflow-wrap: anywhere; }
+@keyframes export-progress-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .export-progress-track > span { transition: none; animation: none !important; } .export-progress-item-heading .animate-spin { animation: none; } }
+@media (max-width: 600px) { .export-progress-panel { right: calc(max(12px, env(safe-area-inset-right)) + var(--export-panel-slide, 0px)); bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--export-panel-lift, 0px)); width: min(340px, calc(100vw - 24px)); } }

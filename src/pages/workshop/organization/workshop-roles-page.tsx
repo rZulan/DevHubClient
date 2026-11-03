@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, useEffect, useMemo, useState} from "react"
 import {ArrowDown, ArrowUp, Check, Crown, LockKeyhole, Pencil, Plus, ShieldCheck, Trash2, Users,} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
@@ -117,7 +118,7 @@ export function WorkshopRolesPage() {
 
             <p className="workshop-role-drag-hint"><LockKeyhole/> The Org Owner role is always highest. Custom roles
                 follow their displayed hierarchy.</p>
-            {error && <p className="workshop-form-error">{error}</p>}
+            {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             <div className="workshop-role-list">
                 {roles.map((role) => {
                     const members = organization.members.filter((member) =>
@@ -218,7 +219,7 @@ export function WorkshopRolesPage() {
                 role={editingRole ?? undefined}
             />
 
-            <Dialog open={!!deletingRole} onOpenChange={open => {if (!open && !busy) setDeletingRole(null)}}><DialogContent><DialogHeader><DialogTitle>Delete {deletingRole?.name}?</DialogTitle><DialogDescription>This removes the role and its permissions from all assigned members. Their other roles remain. This cannot be undone.</DialogDescription></DialogHeader>{error && <p role="alert" className="workshop-form-error">{error}</p>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={busy} onClick={() => setDeletingRole(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={() => {if (deletingRole) void removeRole(deletingRole)}}>{isDeletingRole ? "Deleting…" : "Delete role"}</Button></div></DialogContent></Dialog>
+            <Dialog open={!!deletingRole} onOpenChange={open => {if (!open && !busy) setDeletingRole(null)}}><DialogContent><DialogHeader><DialogTitle>Delete {deletingRole?.name}?</DialogTitle><DialogDescription>This removes the role and its permissions from all assigned members. Their other roles remain. This cannot be undone.</DialogDescription></DialogHeader>{error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}<div className="workshop-settings-dialog-actions"><Button variant="outline" disabled={busy} onClick={() => setDeletingRole(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={() => {if (deletingRole) void removeRole(deletingRole)}}>{isDeletingRole ? "Deleting…" : "Delete role"}</Button></div></DialogContent></Dialog>
 
         </div>
     )
@@ -367,7 +368,7 @@ function RoleDialog({
                             </fieldset>
                         )}
 
-                        {saveError && <p role="alert" className="workshop-form-error">{saveError}</p>}
+                        {saveError && <WorkshopToast variant="error" onDismiss={() => setSaveError("")}>{saveError}</WorkshopToast>}
                         <div className="workshop-role-dialog-actions">
                             {onDelete && <Button disabled={busy} onClick={onDelete} type="button" variant="destructive"><Trash2/> Delete
                                 role</Button>}

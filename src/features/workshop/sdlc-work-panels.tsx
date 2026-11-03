@@ -51,5 +51,6 @@ export function SdlcCompletionDialog({phase, work, open, onClose, onConfirm}: {p
 }
 
 export function SdlcArchiveNotice({cycleName, onReturn}: {cycleName: string; onReturn: () => void}) {
-    return <div className="sdlc-archive-notice" role="status"><LockKeyhole/><span>Viewing {cycleName.toLowerCase()} history. This snapshot is read only.</span><button type="button" onClick={onReturn}>Return to current<ExternalLink/></button></div>
+    return <WorkshopToast variant="info" title="Read-only history"><span>Viewing {cycleName.toLowerCase()} history. This snapshot is read only.</span><button type="button" onClick={onReturn}>Return to current<ExternalLink/></button></WorkshopToast>
 }
+import {WorkshopToast} from "@/features/workshop/workshop-toast"

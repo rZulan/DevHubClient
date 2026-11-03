@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useId, useState, type FormEvent, type ReactNode} from "react"
 import {ChevronDown} from "lucide-react"
@@ -72,7 +73,7 @@ export function ErdRelationshipDialog({document, fromId, toId, initial, canEdit,
                 <div className="task-edit-metadata"><RelationshipEndSelect label="Left end" value={leftEnd} onChange={value => {setLeftEnd(value); setError("")}}/><RelationshipEndSelect right label="Right end" value={rightEnd} onChange={value => {setRightEnd(value); setError("")}}/></div>
                 {cardinality === "N:M" && <p className="tool-help">Saving will offer to create a junction table using both keys.</p>}
                 {(!source?.fields.length || !target?.fields.length) && <p className="tool-help">Add columns to both tables before connecting them.</p>}
-                {error && <p className="workshop-form-error" role="alert">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             </fieldset>
             <footer className="task-edit-footer"><Button type="button" variant="outline" onClick={onClose}>Cancel</Button><Button type="submit" disabled={!canEdit || !columns.fromField || !columns.toField || !initial && document.relationships.length >= 2000}>{initial ? "Save changes" : "Save relationship"}</Button></footer>
         </form>

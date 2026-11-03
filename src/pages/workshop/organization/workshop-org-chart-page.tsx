@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type CSSProperties, useState} from "react"
 import {ChevronDown, Layers, LoaderCircle, Network, Users} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
@@ -44,7 +45,7 @@ export function WorkshopOrgChartPage() {
             <DirectorySearch label="Search organization chart" placeholder="Find a person, role or team…" value={query} onChange={value => {setQuery(value); setCollapsed(new Set())}}/>
             <Select value={teamFilter} onValueChange={setTeamFilter}><SelectTrigger aria-label="Filter by team"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">All people</SelectItem>{organization.teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}<SelectItem value="unassigned">No team assigned</SelectItem></SelectContent></Select>
         </div>
-        {directoryData.isError && <div className="directory-error" role="alert">Some organization data could not be refreshed. <Button variant="outline" size="sm" onClick={directoryData.retry}>Try again</Button></div>}
+        {directoryData.isError && <WorkshopToast variant="error">Some organization data could not be refreshed. <Button variant="outline" size="sm" onClick={directoryData.retry}>Try again</Button></WorkshopToast>}
         <section className="directory-chart" aria-label={view === "roles" ? "Role hierarchy" : "Team structure"}>
             <div className="directory-chart-meta"><span><Network/>{view === "roles" ? "Role hierarchy" : "Team structure"}</span><span role="status">{visiblePeople} of {organization.members.length} people</span><Button variant="ghost" size="sm" disabled={!groups.length} onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groups.map(group => group.id)))}>{allCollapsed ? "Expand all" : "Collapse all"}</Button></div>
             {directoryData.isLoading ? <div className="directory-loading" role="status"><LoaderCircle className="animate-spin"/> Loading organization…</div> : <>

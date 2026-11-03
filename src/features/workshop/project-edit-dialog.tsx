@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useId, useState, type FormEvent} from "react"
 import {Tabs} from "radix-ui"
 import {Check, LoaderCircle, Pencil} from "lucide-react"
@@ -7,6 +8,7 @@ import {Input} from "@/components/ui/input"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {Textarea} from "@/components/ui/textarea"
 import {ProjectFormField as Field} from "./project-form-field"
+import {ProjectChipInput} from "./project-chip-input"
 import {sdlcModelIds, sdlcModels} from "./sdlc-models"
 import type {WorkshopProject} from "./workshop-types"
 import "./project-create.css"
@@ -94,9 +96,9 @@ export function ProjectEditDialog({project, busy, error, initialSection = "basic
                             </Tabs.Content>
                             <Tabs.Content value="technical" forceMount className="project-edit-panel" data-edit-section="technical">
                                 <div className="project-create-grid">
-                                    <Field id={`${id}-stack`} label="Tech stack" hint="Comma-separated" wide><Input id={`${id}-stack`} defaultValue={project.techStack.join(", ")} name="techStack" placeholder="React, TypeScript, .NET"/></Field>
-                                    <Field id={`${id}-database`} label="Database & storage" hint="Optional" wide><Input id={`${id}-database`} defaultValue={project.database === "Not specified" ? "" : project.database} maxLength={500} name="databaseDetails" placeholder="SQL Server, Redis"/></Field>
-                                    <Field id={`${id}-environments`} label="Environments" hint="Comma-separated" wide><Input id={`${id}-environments`} defaultValue={project.environments.join(", ")} name="environments" placeholder="Development, Production"/></Field>
+                                    <Field id={`${id}-stack`} label="Tech stack" hint="Comma or Enter" wide><ProjectChipInput id={`${id}-stack`} label="Tech stack" initial={project.techStack} name="techStack" placeholder="React, TypeScript, .NET" disabled={busy}/></Field>
+                                    <Field id={`${id}-database`} label="Database & storage" hint="Optional" wide><ProjectChipInput id={`${id}-database`} label="Database & storage" initial={project.database === "Not specified" ? [] : [project.database]} maxLength={500} name="databaseDetails" placeholder="SQL Server, Redis" disabled={busy}/></Field>
+                                    <Field id={`${id}-environments`} label="Environments" hint="Comma or Enter" wide><ProjectChipInput id={`${id}-environments`} label="Environments" initial={project.environments} name="environments" placeholder="Development, Production" disabled={busy}/></Field>
                                 </div>
                             </Tabs.Content>
                             <Tabs.Content value="delivery" forceMount className="project-edit-panel" data-edit-section="delivery">
@@ -123,7 +125,7 @@ export function ProjectEditDialog({project, busy, error, initialSection = "basic
                                 </div>
                             </Tabs.Content>
                         </fieldset>
-                        {(validationError || error) && <p className="workshop-form-error project-create-error" role="alert">{validationError || error}</p>}
+                        {(validationError || error) && <WorkshopToast variant="error">{validationError || error}</WorkshopToast>}
                     </div>
                 </Tabs.Root>
                 <div className="project-create-footer">

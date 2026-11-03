@@ -1,6 +1,6 @@
 import {tableHeight, type ErdDocument} from "./tool-documents.ts"
 
-const tableWidth = 300, columnGap = 200, rowGap = 80, groupGap = 140
+const tableWidth = 300, groupGap = 140
 type Space = {x: number; y: number; width: number; height: number}
 
 /** Table edits and completed drops reflow when enabled; canvas drag previews stay local. */
@@ -38,6 +38,13 @@ export function arrangeErd(document: ErdDocument): ErdDocument {
         for (let i = 0; i < ids.length; i++) for (const id of neighbors.get(ids[i])!) {
             if (remaining.delete(id)) ids.push(id)
         }
+        // Busy entities need wider gutters for separate endpoint symbols and tracks.
+        const members=new Set(ids), degree=new Map(ids.map(id=>[id,0]))
+        for(const relation of document.relationships) for(const id of [relation.fromTable,relation.toTable]) {
+            if(members.has(id)) degree.set(id,degree.get(id)!+1)
+        }
+        const extra=Math.min(240,Math.max(0,Math.max(...degree.values())-8)*8)
+        const columnGap=200+extra, rowGap=80+Math.ceil(extra/2)
         const root = [...ids].sort((a, b) => neighbors.get(b)!.size - neighbors.get(a)!.size
             || Number(incoming.has(a)) - Number(incoming.has(b)) || compare(a, b))[0]
         const depth = new Map([[root, 0]]), queue = [root], layers: string[][] = []
@@ -102,9 +109,26 @@ export function arrangeErd(document: ErdDocument): ErdDocument {
             })
             top += height + groupGap
         }
+        // A busy hub should not force its widest gutter onto every column.
+        // Keep the existing row layout, then compact each boundary independently.
+        const count=Math.min(maxColumns,expanded.length), traffic=Array<number>(Math.max(0,count-1)).fill(0)
+        const columnOf=(id:string)=>Math.round(positions.get(id)!.x/(tableWidth+columnGap))
+        for(const relation of document.relationships) {
+            if(!members.has(relation.fromTable)||!members.has(relation.toTable)) continue
+            const from=columnOf(relation.fromTable),to=columnOf(relation.toTable)
+            for(let boundary=Math.min(from,to);boundary<Math.max(from,to);boundary++) traffic[boundary]++
+        }
+        const columnXs=[0]
+        for(const links of traffic) {
+            // Two 48px endpoint exits plus at least 32px for routing between them.
+            const gap=128+Math.min(112,Math.max(0,Math.ceil(Math.sqrt(links))-2)*16)
+            columnXs.push(columnXs.at(-1)!+tableWidth+gap)
+        }
+        for(const [id,position] of positions) positions.set(id,{...position,x:columnXs[columnOf(id)]})
+        const compactSpaces=spaces.map(space=>({...space,x:columnXs[Math.round(space.x/(tableWidth+columnGap))]}))
         // Reserve the right gutter for same-column relationships and self references.
-        groups.push({positions, width: Math.min(maxColumns, expanded.length) * (tableWidth + columnGap) - columnGap + 120,
-            height: top - groupGap, key: [...ids].sort(compare)[0], spaces})
+        groups.push({positions, width: columnXs.at(-1)!+tableWidth+120,
+            height: top - groupGap, key: [...ids].sort(compare)[0], spaces:compactSpaces})
     }
     groups.sort((a, b) => b.positions.size - a.positions.size || compare(a.key, b.key))
     const area = groups.reduce((sum, group) => sum + (group.width + groupGap) * (group.height + groupGap), 0)

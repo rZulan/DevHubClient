@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type FormEvent, useEffect, useRef, useState} from "react"
 import {Crown, LoaderCircle, Plus} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -85,7 +86,7 @@ export function CreateTeamDialog({defaultLeaderId, members, onOpenChange, open, 
                     <DirectorySearch label="Search members" placeholder="Find a person…" value={query} onChange={setQuery}/>
                     <div className="directory-member-picker">{roster.map(member => <Label key={member.id}><Checkbox disabled={busy || Boolean(createdId) || member.id === leaderId} checked={member.id === leaderId || selectedIds.has(member.id)} onCheckedChange={checked => setSelectedIds(current => {const next = new Set(current); if (checked === true) next.add(member.id); else next.delete(member.id); return next})}/><DirectoryAvatar member={member} small/><span><strong>{member.name}</strong><small>@{member.username}</small></span>{member.id === leaderId && <Crown/>}</Label>)}{!roster.length && <p>No people match your search.</p>}</div>
                 </fieldset>
-                {error && <p className="directory-form-error" role="alert">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
                 <div className="directory-modal-actions"><Button variant="outline" type="button" disabled={busy} onClick={() => onOpenChange(false)}>{createdId ? "Close" : "Cancel"}</Button><Button type="submit" disabled={busy || !members.length}>{busy ? <LoaderCircle className="animate-spin"/> : <Plus/>}{createdId ? "Retry adding members" : "Create team"}</Button></div>
             </form>
         </DialogContent>}

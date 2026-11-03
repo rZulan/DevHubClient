@@ -4,7 +4,7 @@ export type WikiDocument = {pages: WikiPage[]; homePageId: string | null}
 export type WikiPageForm = Pick<WikiRevision, "id" | "title" | "body" | "message"> & {parentId?: string | null; baseVersion: string | null}
 export function wikiPageVersion(page: WikiPage | undefined) {return page ? JSON.stringify([page.title, page.body, page.updatedAt, page.history.map(revision => revision.id), ...(page.parentId ? [page.parentId] : [])]) : null}
 
-export const wikiLimits = {pages: 100, subpages: 2, title: 150, body: 100000, history: 20, document: 4000000} as const
+export const wikiLimits = {pages: 100, depth: 2, title: 150, body: 100000, history: 20, document: 4000000} as const
 
 // Slugs are assigned once. Renaming a page keeps existing links working.
 export function wikiSlug(title: string) {
@@ -39,7 +39,14 @@ export function wikiAncestors(pages: WikiPage[], id: string): WikiPage[] {
 }
 
 export function wikiCanAddSubpage(pages: WikiPage[], parentId: string, excludingId?: string) {
-    return pages.filter(page => page.parentId === parentId && page.id !== excludingId).length < wikiLimits.subpages
+    const ancestors = wikiAncestors(pages, parentId)
+    if (!pages.some(page => page.id === parentId) || parentId === excludingId || ancestors.some(page => page.id === excludingId)) return false
+    // Moving a branch must leave room for all of its descendants too.
+    const height = excludingId ? Math.max(0, ...pages.map(page => {
+        const branch = wikiAncestors(pages, page.id), index = branch.findIndex(parent => parent.id === excludingId)
+        return index < 0 ? 0 : branch.length - index
+    })) : 0
+    return ancestors.length + 1 + height <= wikiLimits.depth
 }
 
 export function wikiParentOptions(pages: WikiPage[], id: string) {
@@ -65,19 +72,14 @@ export function validWikiDocument(value: unknown): value is WikiDocument {
         ids.add(page.id as string); slugs.add(page.slug); titles.add((page.title as string).trim().toLowerCase())
     }
     const parents = new Map(value.pages.map(page => [page.id as string, page.parentId as string | null | undefined]))
-    const childCounts = new Map<string, number>()
-    for (const parent of parents.values()) {
-        if (parent == null) continue
-        const count = (childCounts.get(parent) ?? 0) + 1
-        if (count > wikiLimits.subpages) return false
-        childCounts.set(parent, count)
-    }
     for (const page of value.pages) {
         const seen = new Set<string>([page.id as string])
         let parent = parents.get(page.id as string)
         while (parent != null) {
             if (!ids.has(parent) || seen.has(parent)) return false
-            seen.add(parent); parent = parents.get(parent)
+            seen.add(parent)
+            if (seen.size > wikiLimits.depth + 1) return false
+            parent = parents.get(parent)
         }
     }
     return value.pages.length === 0 ? value.homePageId === null : typeof value.homePageId === "string" && ids.has(value.homePageId)
@@ -89,8 +91,8 @@ export function saveWikiPage(document: WikiDocument, draft: Pick<WikiRevision, "
     if (document.pages.some(page => page.id !== draft.id && page.title.toLowerCase() === title.toLowerCase())) throw new Error("A page with this title already exists. Choose a different title.")
     if (!existing && document.pages.length >= wikiLimits.pages) throw new Error("This wiki has reached its 100-page limit.")
     const parentId = draft.parentId === undefined ? existing?.parentId ?? null : draft.parentId
-    if (parentId !== null && !wikiCanAddSubpage(document.pages, parentId, draft.id)) throw new Error("A page can have a maximum of 2 direct subpages. Choose another parent or Top level.")
     if (parentId !== null && !wikiParentOptions(document.pages, draft.id).some(option => option.id === parentId)) throw new Error("Choose an existing parent page outside this page’s own branch.")
+    if (parentId !== null && !wikiCanAddSubpage(document.pages, parentId, draft.id)) throw new Error("Wiki pages can nest a maximum of 2 levels. Choose a higher parent or Top level.")
     const previous: WikiRevision | undefined = existing && {id: revisionId, title: existing.title, body: existing.body, message: existing.message, authorId: existing.authorId, updatedAt: existing.updatedAt}
     const page: WikiPage = {id: draft.id, title, body: draft.body, message: draft.message.trim(), authorId, updatedAt, parentId,
         slug: existing?.slug ?? uniqueWikiSlug(title, document.pages), history: previous ? [previous, ...existing!.history].slice(0, wikiLimits.history) : []}
@@ -101,9 +103,8 @@ export function saveWikiPage(document: WikiDocument, draft: Pick<WikiRevision, "
 
 export function deleteWikiPage(document: WikiDocument, id: string): WikiDocument {
     const deleted = document.pages.find(page => page.id === id)
-    // Preserve children and their links without overflowing the destination parent.
+    // Preserve children and their links by moving them up one level.
     const destination = deleted?.parentId ?? null
-    let available = destination ? wikiLimits.subpages - document.pages.filter(page => page.id !== id && page.parentId === destination).length : Infinity
-    const pages = document.pages.filter(page => page.id !== id).map(page => page.parentId === id ? {...page, parentId: available-- > 0 ? destination : null} : page)
+    const pages = document.pages.filter(page => page.id !== id).map(page => page.parentId === id ? {...page, parentId: destination} : page)
     return {pages, homePageId: document.homePageId === id ? pages[0]?.id ?? null : document.homePageId}
 }

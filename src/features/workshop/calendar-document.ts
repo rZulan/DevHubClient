@@ -57,6 +57,10 @@ export function calendarItems(document: CalendarDocument, todos: readonly {id: s
 export function calendarItemsOnDay(items: readonly CalendarItem[], date: string) {return items.filter(item => item.startDate <= date && item.endDate >= date)}
 
 export type CalendarWeekSegment = {item: CalendarItem; first: number; last: number; lane: number; continuesBefore: boolean; continuesAfter: boolean}
+export function calendarWeekVisibleLanes(segments: readonly CalendarWeekSegment[], limit: number) {
+    // Keep every part of a multi-day range visible, including short clipped ends.
+    return segments.reduce((lanes, segment) => segment.item.startDate !== segment.item.endDate ? Math.max(lanes, segment.lane + 1) : lanes, limit)
+}
 export function calendarWeekSegments(items: readonly CalendarItem[], weekStart: string): CalendarWeekSegment[] {
     const days = Array.from({length: 7}, (_, index) => shiftCalendarDate(weekStart, index)), end = days[6]
     const clipped = items.filter(item => item.startDate <= end && item.endDate >= weekStart).map(item => ({item, first: Math.max(0, days.findIndex(day => day >= item.startDate)), last: item.endDate >= end ? 6 : days.indexOf(item.endDate), continuesBefore: item.startDate < weekStart, continuesAfter: item.endDate > end}))

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useEffect, useId, useRef, useState, type PointerEvent} from "react"
 import {NavLink} from "react-router-dom"
 import {ChevronRight, GripVertical, Settings2} from "lucide-react"
@@ -15,7 +16,7 @@ const tools: Record<ProjectToolId, {label: string; underConstruction?: boolean}>
     uml: {label: "UML"},
     calendar: {label: "Calendar"},
     "bug-reports": {label: "Bug Reports", underConstruction: true},
-    "project-wiki": {label: "Project Wiki", underConstruction: true},
+    "project-wiki": {label: "Project Wiki"},
 }
 
 export function ProjectToolsNavigation({userId, organizationId, expanded, onToggle, category}: {
@@ -122,7 +123,7 @@ export function ProjectToolsNavigation({userId, organizationId, expanded, onTogg
                     </div>
                     <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
                     <button className="project-tools-reset" type="button" onClick={() => update(defaults())}>Restore default order and visibility</button>
-                    {storageError && <p role="alert">Settings apply for this session. Browser storage is unavailable.</p>}
+                    {storageError && <WorkshopToast variant="warning">Settings apply for this session. Browser storage is unavailable.</WorkshopToast>}
                 </Popover.Content></Popover.Portal>
             </Popover.Root>
         </div>

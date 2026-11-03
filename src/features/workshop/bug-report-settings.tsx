@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useState, type FormEvent} from "react"
 import {Check, Copy, Link2, LoaderCircle, RefreshCw, Tags} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -23,7 +24,7 @@ export function BugPortalSettings({scope}: {scope: BugScope}) {
     }
     return <section className="bug-portal" aria-label="Public reporting link">
         <div className="bug-portal-heading"><span className="bug-portal-icon"><Link2/></span><div><h3>Public reporting link</h3></div><button type="button" role="switch" aria-label="Enable public reporting link" aria-checked={portal.data?.enabled ?? false} className="bug-portal-switch" disabled={!portal.data || mutation.isLoading || portal.isFetching} onClick={() => void update(!portal.data?.enabled)}><span/></button></div>
-        {portal.isLoading ? <p className="bug-field-help" role="status">Loading public link…</p> : portal.error ? <div className="bug-error" role="alert">Could not load link settings. <Button variant="outline" size="sm" onClick={() => void portal.refetch()}>Retry</Button></div> : <>
+        {portal.isLoading ? <p className="bug-field-help" role="status">Loading public link…</p> : portal.error ? <WorkshopToast variant="error">Could not load link settings. <Button variant="outline" size="sm" onClick={() => void portal.refetch()}>Retry</Button></WorkshopToast> : <>
             <div className="bug-portal-state"><span className={portal.data?.enabled ? "enabled" : ""}/>{portal.data?.enabled ? "Accepting public reports" : "Public submissions are disabled"}{mutation.isLoading && <LoaderCircle className="animate-spin"/>}</div>
             {url && <div className="bug-portal-urls">{([{kind: "full", label: "Full link", value: url}, {kind: "short", label: "Short link", value: shortUrl}] as const).map(link => <div key={link.kind}>
                 <div className="bug-portal-link"><Input aria-label={link.label === "Full link" ? "Public bug report URL" : "Short public bug report URL"} value={link.value} placeholder={link.kind === "short" ? "Short link unavailable" : undefined} readOnly onFocus={event => event.currentTarget.select()}/>
@@ -32,7 +33,7 @@ export function BugPortalSettings({scope}: {scope: BugScope}) {
             </div>)}</div>}
             {url && <button className="bug-replace-link" type="button" disabled={mutation.isLoading} onClick={() => setRotating(true)}><RefreshCw/>Replace link</button>}
         </>}
-        {error && <p className="bug-error" role="alert">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         <Dialog open={rotating} onOpenChange={setRotating}><DialogContent><DialogHeader><DialogTitle>Replace the public link?</DialogTitle><DialogDescription>The current full and short URLs will stop accepting reports. Share the new URL with your testers. Existing reports and attachments will stay in the inbox.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setRotating(false)}>Cancel</Button><Button disabled={mutation.isLoading} onClick={() => void update(portal.data?.enabled ?? false, true)}>Replace link</Button></DialogFooter></DialogContent></Dialog>
     </section>
 }
@@ -46,7 +47,7 @@ export function BugCategoryManager({scope, categories, open, onOpenChange}: {sco
     }
     return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="bug-categories-dialog sm:max-w-lg"><DialogHeader><DialogTitle><Tags className="inline-block size-4 mr-2"/>Bug categories</DialogTitle><DialogDescription>Organize reports with project-specific categories. Archiving hides a category from new submissions and keeps existing reports intact.</DialogDescription></DialogHeader>
         <form className="bug-category-add" onSubmit={add}><Input aria-label="New category name" placeholder="e.g. Interface, Performance, Payments" maxLength={50} value={name} onChange={event => setName(event.target.value)}/><Button type="submit" disabled={mutation.isLoading || !name.trim() || categories.length >= 100}>Add category</Button></form>
-        {error && <p className="bug-error" role="alert">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         <div className="bug-category-list">{categories.length ? categories.map(category => <CategoryRow key={`${category.id}:${category.name}:${category.archived}`} scope={scope} category={category}/>) : <p className="bug-field-help">No categories yet. Reports can still be submitted as Uncategorized.</p>}</div>
         <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Done</Button></DialogFooter>
     </DialogContent></Dialog>
@@ -58,5 +59,5 @@ function CategoryRow({scope, category}: {scope: BugScope; category: BugCategory}
         try {await save({...scope, id: category.id, name: name.trim(), archived}).unwrap()}
         catch (failure) {setError(bugError(failure))}
     }
-    return <div className={`bug-category-row${category.archived ? " archived" : ""}`}><div><Input aria-label={`Category name: ${category.name}`} maxLength={50} value={name} disabled={mutation.isLoading} onChange={event => setName(event.target.value)}/>{category.archived && <small>Archived</small>}<Button variant="outline" size="sm" disabled={mutation.isLoading || !name.trim() || name.trim() === category.name} onClick={() => void update(category.archived)}>Rename</Button><Button variant="ghost" size="sm" disabled={mutation.isLoading || !name.trim()} onClick={() => void update(!category.archived)}>{category.archived ? "Restore" : "Archive"}</Button></div>{error && <p role="alert" className="bug-error">{error}</p>}</div>
+    return <div className={`bug-category-row${category.archived ? " archived" : ""}`}><div><Input aria-label={`Category name: ${category.name}`} maxLength={50} value={name} disabled={mutation.isLoading} onChange={event => setName(event.target.value)}/>{category.archived && <small>Archived</small>}<Button variant="outline" size="sm" disabled={mutation.isLoading || !name.trim() || name.trim() === category.name} onClick={() => void update(category.archived)}>Rename</Button><Button variant="ghost" size="sm" disabled={mutation.isLoading || !name.trim()} onClick={() => void update(!category.archived)}>{category.archived ? "Restore" : "Archive"}</Button></div>{error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}</div>
 }

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useState, type FormEvent} from "react"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Button} from "@/components/ui/button"
@@ -25,8 +26,8 @@ export function CalendarEventDialog({event, existing, canEdit, timeZone, onSave,
             {!draft.allDay && <div className="calendar-form-grid"><label>Start time<input type="time" required value={draft.startTime} onChange={event => update({startTime: event.target.value})}/></label><label>End time<input type="time" required value={draft.endTime} onChange={event => update({endTime: event.target.value})}/></label></div>}
             <label>Details<textarea rows={3} maxLength={5000} value={draft.description} onChange={event => update({description: event.target.value})} placeholder="Agenda, location, or a meeting link"/></label>
         </fieldset>
-        {error && <p className="calendar-inline-error" role="alert">{error}</p>}
-        {confirmDelete && <div className="calendar-delete-confirm" role="alert"><p>Delete “{event.title}” from this project calendar?</p><Button type="button" variant="outline" onClick={() => setConfirmDelete(false)}>Keep event</Button><Button type="button" variant="destructive" disabled={!canEdit} onClick={() => {if (canEdit) {const error = onDelete(); if (error) setError(error); else onClose()}}}>Confirm delete</Button></div>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
+        {confirmDelete && <WorkshopToast variant="error"><p>Delete “{event.title}” from this project calendar?</p><Button type="button" variant="outline" onClick={() => setConfirmDelete(false)}>Keep event</Button><Button type="button" variant="destructive" disabled={!canEdit} onClick={() => {if (canEdit) {const error = onDelete(); if (error) setError(error); else onClose()}}}>Confirm delete</Button></WorkshopToast>}
         <footer>{existing && canEdit && <Button type="button" variant="ghost" className="calendar-delete" onClick={() => setConfirmDelete(true)}>Delete event</Button>}<span/><Button type="button" variant="outline" onClick={onClose}>{canEdit ? "Cancel" : "Close"}</Button>{canEdit && <Button type="submit">{existing ? "Save changes" : "Add event"}</Button>}</footer>
         </form>
     </DialogContent></Dialog>

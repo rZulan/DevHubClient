@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState, type RefObject} from "react"
 import {ChevronRight, ChevronsDownUp, ChevronsUpDown, List} from "lucide-react"
-import {activeWikiHeading, type WikiHeadingNavigation, type WikiHeadingSelection} from "./wiki-active-heading"
+import {activeWikiHeading, wikiScrollTail, type WikiHeadingNavigation, type WikiHeadingSelection} from "./wiki-active-heading"
 
 type Heading = {id: string; title: string; level: number; bodyId?: string}
 type HeadingBranch = Heading & {children: HeadingBranch[]}
@@ -47,7 +47,14 @@ export function WikiTableOfContents({article, contentKey, body, id, expanded, on
         const element = article.current
         if (!element) return
         const scroller = element.closest(".wiki-main-content")
+        const reader = element.closest<HTMLElement>(".wiki-reader")
         let elements: HTMLHeadingElement[] = []
+        function updateScrollRoom() {
+            const last = elements.filter(heading => heading.getClientRects().length > 0).at(-1)
+            if (!scroller || !reader || !last) {reader?.style.removeProperty("--wiki-scroll-tail"); return}
+            const contentBottom = reader.getBoundingClientRect().bottom - parseFloat(getComputedStyle(reader).paddingBottom)
+            reader.style.setProperty("--wiki-scroll-tail", `${wikiScrollTail(last.getBoundingClientRect().top, contentBottom, scroller.clientHeight)}px`)
+        }
         function highlight() {
             const visible = elements.filter(heading => heading.getClientRects().length > 0)
                 .map(heading => ({id: heading.id, top: heading.getBoundingClientRect().top}))
@@ -71,18 +78,22 @@ export function WikiTableOfContents({article, contentKey, body, id, expanded, on
             elements = [...element!.querySelectorAll<HTMLHeadingElement>("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]")]
             onAvailableChange(elements.length > 0)
             setHeadings(elements.map(heading => ({id: heading.id, title: (heading.querySelector(".wiki-heading-text") ?? heading).textContent?.trim() || "Untitled section", level: Number(heading.tagName.slice(1)), bodyId: heading.nextElementSibling?.id})))
+            updateScrollRoom()
             highlight()
         }
         collect()
         const observer = new MutationObserver(collect)
         observer.observe(element, {childList: true, subtree: true, characterData: true})
+        const resizeObserver = new ResizeObserver(() => {updateScrollRoom(); highlight()})
+        resizeObserver.observe(element)
+        if (scroller) resizeObserver.observe(scroller)
         scroller?.addEventListener("scroll", highlight, {passive: true})
         scroller?.addEventListener("wheel", resumeScrollHighlight, {passive: true})
         scroller?.addEventListener("touchmove", resumeScrollHighlight, {passive: true})
         scroller?.addEventListener("keydown", onKeyDown)
         window.addEventListener("resize", highlight)
         return () => {
-            observer.disconnect(); scroller?.removeEventListener("scroll", highlight)
+            observer.disconnect(); resizeObserver.disconnect(); reader?.style.removeProperty("--wiki-scroll-tail"); scroller?.removeEventListener("scroll", highlight)
             scroller?.removeEventListener("wheel", resumeScrollHighlight); scroller?.removeEventListener("touchmove", resumeScrollHighlight)
             scroller?.removeEventListener("keydown", onKeyDown); window.removeEventListener("resize", highlight)
         }

@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
@@ -13,5 +14,5 @@ export function OwnershipTransferDialog({member, organizationName, onClose, onCo
         catch (failure) {setError(getApiErrorMessage(failure))}
         finally {setBusy(false)}
     }
-    return <Dialog open={!!member} onOpenChange={open => {if (!open && !busy) {setError(""); onClose()}}}><DialogContent><DialogHeader><DialogTitle>Transfer ownership to {member?.name}?</DialogTitle><DialogDescription>@{member?.username} will become the only owner of {organizationName}, with full control over access and deletion. You will remain a member with your other roles, but lose owner privileges. Only the new owner can transfer ownership back.</DialogDescription></DialogHeader>{error && <p role="alert" className="workshop-form-error">{error}</p>}<DialogFooter><Button variant="outline" disabled={busy} onClick={() => {setError(""); onClose()}}>Cancel</Button><Button disabled={busy} onClick={() => void confirm()}>{busy ? "Transferring…" : "Transfer ownership"}</Button></DialogFooter></DialogContent></Dialog>
+    return <Dialog open={!!member} onOpenChange={open => {if (!open && !busy) {setError(""); onClose()}}}><DialogContent><DialogHeader><DialogTitle>Transfer ownership to {member?.name}?</DialogTitle><DialogDescription>@{member?.username} will become the only owner of {organizationName}, with full control over access and deletion. You will remain a member with your other roles, but lose owner privileges. Only the new owner can transfer ownership back.</DialogDescription></DialogHeader>{error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}<DialogFooter><Button variant="outline" disabled={busy} onClick={() => {setError(""); onClose()}}>Cancel</Button><Button disabled={busy} onClick={() => void confirm()}>{busy ? "Transferring…" : "Transfer ownership"}</Button></DialogFooter></DialogContent></Dialog>
 }

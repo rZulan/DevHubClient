@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useId, useRef, useState, type FormEvent} from "react"
 import {ChevronDown, ClipboardList, LoaderCircle} from "lucide-react"
@@ -52,7 +53,7 @@ export function TodoTaskEditDialog({task, columns, members, disabled, onClose, o
                         onAdd={id => setAssignees(current => [...new Set([...current, id])])} onRemove={id => setAssignees(current => current.filter(value => value !== id))}/></div></div>
                 </div>
                 <TodoDateFields startDate={task.startDate} targetDate={task.targetDate}/>
-                {error && <p role="alert" className="workshop-form-error">{error}</p>}
+                {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
             </fieldset>
             <footer className="task-edit-footer"><Button variant="outline" type="button" disabled={pending} onClick={onClose}>Cancel</Button><Button type="submit" disabled={pending || disabled}>{pending && <LoaderCircle className="animate-spin"/>}{pending ? "Saving…" : "Save changes"}</Button></footer>
         </form>
@@ -71,7 +72,7 @@ export function TodoTaskDeleteDialog({task, disabled, onClose, onDelete}: {task:
     }
     return <Dialog open onOpenChange={open => {if (!open && !saving.current) onClose()}}><DialogContent className="workshop-modal sm:max-w-md">
         <DialogHeader><DialogTitle>Delete task?</DialogTitle><DialogDescription>“{task.title}” will be permanently removed for everyone on this project.</DialogDescription></DialogHeader>
-        {error && <p role="alert" className="workshop-form-error">{error}</p>}
+        {error && <WorkshopToast variant="error" onDismiss={() => setError("")}>{error}</WorkshopToast>}
         <div className="flex justify-end gap-2"><Button variant="ghost" disabled={pending} onClick={onClose}>Cancel</Button><Button variant="destructive" disabled={pending || disabled} onClick={() => void remove()}>{pending ? "Deleting…" : "Delete task"}</Button></div>
     </DialogContent></Dialog>
 }

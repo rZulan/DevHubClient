@@ -40,7 +40,7 @@ test('outside clicks and Escape dismiss suggestions without consuming the canvas
  p.listeners.get('keydown')({key:'Escape',preventDefault(){prevented=true},stopPropagation(){stopped=true}});assert.equal(p.dismissals[1],true);assert.equal(prevented,true);assert.equal(stopped,true)
 })
 
-test('stale connection errors remain in the popup and the close button only dismisses it',()=>{
- const p=popup('The connection changed.');p.find(n=>n.props.className==='uml-suggestion').props.onClick();assert.equal(p.find(n=>n.props.role==='alert').props.children,'The connection changed.')
+test('stale connection errors use an error toast and the close button only dismisses the popup',()=>{
+ const p=popup('The connection changed.');p.find(n=>n.props.className==='uml-suggestion').props.onClick();const message=p.find(n=>n.type==='WorkshopToast');assert.equal(message.props.variant,'error');assert.equal(message.props.children,'The connection changed.')
  p.find(n=>n.props['aria-label']==='Dismiss suggestions').props.onClick();assert.equal(p.dismissals[0],true)
 })

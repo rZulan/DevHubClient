@@ -1,4 +1,5 @@
 import {designPaintOrder, layerUnavailable, type DesignDocument, type DesignLayer} from "./design-document.ts"
+import {exportManager, type ExportTaskInfo} from "../exports/export-manager.ts"
 
 export function designSvg(document: DesignDocument, frameId?: string): string {
     const escape = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;")
@@ -39,15 +40,21 @@ export function designSvg(document: DesignDocument, frameId?: string): string {
     }).join("\n")
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${width} ${height}" width="${width}" height="${height}"><defs>${clips.map(c => `<clipPath id="${c.key}"><rect x="${c.layer.x}" y="${c.layer.y}" width="${c.layer.width}" height="${c.layer.height}" rx="${c.layer.radius}"/></clipPath>`).join("")}${visible.map((l, i) => `<clipPath id="text-${i}">${l.kind === "ellipse" ? `<ellipse cx="${l.width / 2}" cy="${l.height / 2}" rx="${l.width / 2}" ry="${l.height / 2}"/>` : `<rect width="${l.width}" height="${l.height}" rx="${l.radius}"/>`}</clipPath>`).join("")}<filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#18213b" flood-opacity=".1"/></filter></defs>${shapes}</svg>`
 }
-export async function designPng(document: DesignDocument, frameId?: string) {
-    const source = designSvg(document, frameId), url = URL.createObjectURL(new Blob([source], {type: "image/svg+xml"}))
-    try {
-        const image = new Image(); image.src = url; await image.decode()
-        const scale = Math.min(2, 8192 / Math.max(image.width, image.height), Math.sqrt(32e6 / (image.width * image.height)))
-        const canvas = window.document.createElement("canvas"); canvas.width = Math.ceil(image.width * scale); canvas.height = Math.ceil(image.height * scale)
-        const context = canvas.getContext("2d"); if (!context) throw new Error("Image export is unavailable in this browser.")
-        context.scale(scale, scale); context.drawImage(image, 0, 0)
-        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not create PNG.")), "image/png"))
-        const download = URL.createObjectURL(blob), link = window.document.createElement("a"); link.href = download; link.download = "interface-design.png"; link.click(); setTimeout(() => URL.revokeObjectURL(download), 1000)
-    } finally {URL.revokeObjectURL(url)}
+export async function designPng(document: DesignDocument, frameId?: string, info: ExportTaskInfo = {label: "UI/UX · PNG"}) {
+    return exportManager.run(info, async ({signal, onProgress}) => {
+        signal.throwIfAborted(); onProgress(5)
+        const source = designSvg(document, frameId), url = URL.createObjectURL(new Blob([source], {type: "image/svg+xml"}))
+        try {
+            const image = new Image(); image.src = url; await image.decode()
+            signal.throwIfAborted(); onProgress(35)
+            const scale = Math.min(2, 8192 / Math.max(image.width, image.height), Math.sqrt(32e6 / (image.width * image.height)))
+            const canvas = window.document.createElement("canvas"); canvas.width = Math.ceil(image.width * scale); canvas.height = Math.ceil(image.height * scale)
+            const context = canvas.getContext("2d"); if (!context) throw new Error("Image export is unavailable in this browser.")
+            context.scale(scale, scale); context.drawImage(image, 0, 0)
+            signal.throwIfAborted(); onProgress(70)
+            const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not create PNG.")), "image/png"))
+            signal.throwIfAborted(); onProgress(95)
+            const download = URL.createObjectURL(blob), link = window.document.createElement("a"); link.href = download; link.download = "interface-design.png"; link.click(); setTimeout(() => URL.revokeObjectURL(download), 60000)
+        } finally {URL.revokeObjectURL(url)}
+    })
 }

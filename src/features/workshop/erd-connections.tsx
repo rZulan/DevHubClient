@@ -6,26 +6,28 @@ import {combinedBounds, type Bounds} from "./canvas-view"
 import {intersectsViewport} from "./canvas-visibility"
 import type {NodePosition} from "./tool-canvas"
 import "./erd-connections.css"
+import {planErdRoutes, erdCrossingGaps} from "./erd-route-plan"
 
 export type ErdReattachment = {tableId: string; anchor: ErdAnchor}
 type End = "from" | "to"
 type Drag = {id: string; end: End; pointerId: number; start: {x: number; y: number}; moved: boolean}
 type Preview = {id: string; end: End; point: {x: number; y: number}; target?: ErdReattachment}
-export function ErdConnections({document, selectedId, canEdit = false, onSelect, onReattach, positions, viewport}: {
+export function ErdConnections({document, selectedId, showNotations = true, showRelationships = true, canEdit = false, onSelect, onReattach, positions, viewport}: {
     document: ErdDocument; selectedId?: string; canEdit?: boolean; onSelect?: (id: string) => void
     onReattach?: (id: string, end: End, target: ErdReattachment) => void
-    positions?: NodePosition[]; viewport?: Bounds
+    positions?: NodePosition[]; viewport?: Bounds; showNotations?: boolean; showRelationships?: boolean
 }) {
     const svg = useRef<SVGSVGElement>(null), drag = useRef<Drag | null>(null)
     const selectionMask = useId()
+    const crossingMask = useId()
     const [preview, setPreview] = useState<Preview>()
     const [dragging, setDragging] = useState(false)
     const routeCache = useRef<ReturnType<typeof createErdRouteCache> | null>(null)
     routeCache.current ??= createErdRouteCache()
     function cancel() {drag.current = null; setPreview(undefined); setDragging(false)}
     useEffect(() => {
-        if (!canEdit) cancel()
-    }, [canEdit])
+        if (!canEdit || !showRelationships) cancel()
+    }, [canEdit, showRelationships])
     useEffect(() => {
         if (!dragging) return
         function interrupt(event: globalThis.PointerEvent) {if (event.pointerType === "touch" && event.pointerId !== drag.current?.pointerId) cancel()}
@@ -72,11 +74,8 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
         return new Map(document.tables.map(table => [table.id, moved.has(table.id) ? {...table, x: moved.get(table.id)!.x, y: moved.get(table.id)!.y} : table]))
     }, [document.tables, positions])
     const routingTables = useMemo(() => [...tables.values()], [tables])
-    const baseConnections = useMemo(() => document.relationships.flatMap((relation, index) => {
-        const from = tables.get(relation.fromTable), to = tables.get(relation.toTable)
-        if (!from || !to) return []
-        return [{relation, from, to, laneOffset: index % 6 * 12, route: routeCache.current!(from, to, relation, index % 6 * 12, routingTables)}]
-    }), [document.relationships, tables, routingTables])
+    const baseConnections = useMemo(() => planErdRoutes({tables:routingTables,relationships:document.relationships},routeCache.current!), [document.relationships, routingTables])
+    const connectionIndexes = useMemo(()=>new Map(baseConnections.map((entry,index)=>[entry.relation.id,index])),[baseConnections])
     const connections = baseConnections.map(connection => {
         const {relation, from, to, laneOffset} = connection
         let {route} = connection
@@ -89,13 +88,19 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
         return {relation, from, to, route}
     })
     const bounds = combinedBounds(connections.map(connection => connection.route.bounds))
+    const crossings = useMemo(()=>erdCrossingGaps(baseConnections),[baseConnections])
     const selectedConnection = connections.find(connection => connection.relation.id === selectedId)
+    if (!showRelationships) return null
     return <svg ref={svg} className="erd-connections" data-connection-dragging={dragging} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)}
         viewBox={`${bounds.x} ${bounds.y} ${Math.max(1, bounds.width)} ${Math.max(1, bounds.height)}`} style={{left: bounds.x, top: bounds.y}} aria-label="Table relationships">
+        <defs>{baseConnections.map(({relation},index)=>crossings.has(relation.id) && <mask key={relation.id} id={`${crossingMask}-${index}`} maskUnits="userSpaceOnUse" x={bounds.x} y={bounds.y} width={Math.max(1,bounds.width)} height={Math.max(1,bounds.height)} style={{maskType:"luminance"}}>
+            <rect x={bounds.x} y={bounds.y} width={Math.max(1,bounds.width)} height={Math.max(1,bounds.height)} fill="white"/>
+            {crossings.get(relation.id)!.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="5" fill="black"/>)}
+        </mask>)}</defs>
         {selectedConnection && <defs><mask id={selectionMask} maskUnits="userSpaceOnUse" x={bounds.x} y={bounds.y} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)} style={{maskType: "luminance"}} aria-hidden="true">
             <rect x={bounds.x} y={bounds.y} width={Math.max(1, bounds.width)} height={Math.max(1, bounds.height)} fill="white"/>
             <path d={selectedConnection.route.path} fill="none" stroke="black" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-            {(["from", "to"] as const).map(end => {
+            {showNotations && (["from", "to"] as const).map(end => {
                 const port = selectedConnection.route[end === "from" ? "source" : "target"]
                 const ends = relationshipEnds(selectedConnection.relation)
                 return <g key={end} className="erd-selection-cutout" transform={`translate(${port.x} ${port.y}) rotate(${erdPortAngles[port.edge]})`}>
@@ -112,7 +117,7 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
                 onPointerDown={event => event.stopPropagation()} onClick={() => onSelect?.(relation.id)}
                 onKeyDown={event => {if ((event.target as Element).classList.contains("erd-relationship-hit") && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); event.stopPropagation(); onSelect?.(relation.id)}}}>
                 <path className="erd-relationship-hit" d={route.path} vectorEffect="non-scaling-stroke" role="button" tabIndex={0} aria-pressed={selected} aria-label={`Select relationship ${name}`}/>
-                <path className="erd-connection-line" d={route.path} fill="none"/>
+                <path className="erd-connection-line" d={route.path} fill="none" mask={!selected && crossings.has(relation.id) ? `url(#${crossingMask}-${connectionIndexes.get(relation.id)})` : undefined}/>
                 {(["from", "to"] as const).map(end => {
                     const port = route[end === "from" ? "source" : "target"]
                     return <g key={end} className="erd-endpoint" role="button" tabIndex={0} aria-pressed={selected}
@@ -129,7 +134,7 @@ export function ErdConnections({document, selectedId, canEdit = false, onSelect,
                             if (edge && canEdit) {event.preventDefault(); event.stopPropagation(); onReattach?.(relation.id, end, {tableId: end === "from" ? from.id : to.id, anchor: {edge, offset: .5}})}
                         }}>
                         <title>{selected && canEdit ? "Drag the circle to a table edge to reattach. Arrow keys choose an edge." : "Select relationship"}</title>
-                        <ErdEndSymbol end={end === "from" ? ends.leftEnd : ends.rightEnd}/>
+                        {showNotations && <ErdEndSymbol end={end === "from" ? ends.leftEnd : ends.rightEnd}/>}
                         <rect className="erd-endpoint-hit" x="-5" y="-17" width="42" height="34" rx="5"/>
                         {selected && canEdit && <>
                             <circle className="erd-endpoint-drag" cx="17" r="14"/>

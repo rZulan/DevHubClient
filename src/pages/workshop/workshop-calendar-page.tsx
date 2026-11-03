@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
 import {useState} from "react"
 import {useNavigate, useOutletContext} from "react-router-dom"
@@ -41,13 +42,13 @@ function CalendarContent() {
     }
     return <div className="calendar-workspace">
         {editor.status === "loading" && <p className="calendar-data-notice" role="status">Loading calendar…</p>}
-        {editor.error && <div className="tool-document-error" role="alert"><span>{editor.error}</span>
+        {editor.error && <WorkshopToast variant="error"><span>{editor.error}</span>
             <Button size="sm" variant="outline" onClick={() => downloadFile(JSON.stringify(editor.document, null, 2), "calendar-draft.json", "application/json")}>Download draft</Button>
             {editor.status === "conflict" ? <Button size="sm" variant="outline" onClick={editor.reload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={editor.retry}>Retry</Button>}
-        </div>}
+        </WorkshopToast>}
         {isPersistedOrganization && todos.isLoading && <p className="calendar-data-notice" role="status">Loading TODO deadlines…</p>}
-        {isPersistedOrganization && todos.isError && <div className="calendar-data-notice" role="alert">TODO deadlines could not be loaded.<Button size="sm" variant="ghost" onClick={() => void todos.refetch()}>Retry</Button></div>}
-        {editor.document.events.length >= 2000 && <p className="calendar-data-notice">This calendar has reached its 2,000-event limit.</p>}
+        {isPersistedOrganization && todos.isError && <WorkshopToast variant="error">TODO deadlines could not be loaded.<Button size="sm" variant="ghost" onClick={() => void todos.refetch()}>Retry</Button></WorkshopToast>}
+        {editor.document.events.length >= 2000 && <WorkshopToast variant="warning">This calendar has reached its 2,000-event limit.</WorkshopToast>}
         <ProjectCalendar key={editor.document.timeZone} items={calendarItems(editor.document, todos.currentData ?? [])} timeZone={editor.document.timeZone} canEdit={editor.canEdit && editor.document.events.length < 2000} onAdd={newEvent} onOpen={item => {
             if (item.todoId) {navigate({pathname: `/workshop/${organization.id}/todo`, search: new URLSearchParams({project: project!.id, todoProject: project!.id, todo: item.todoId, ...(item.taskId ? {task: item.taskId} : {})}).toString()}); return}
             const event = editor.document.events.find(event => event.id === item.id)

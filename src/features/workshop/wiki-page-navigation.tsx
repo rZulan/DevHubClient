@@ -36,7 +36,7 @@ export function WikiPageNavigation({pages, homePageId, currentId, projectId, que
                     <div className="wiki-page-row">
                         {children ? <button type="button" className="wiki-page-branch" disabled={!!search} title={search ? "Matching branches stay expanded during search" : undefined} aria-label={`${expanded ? "Collapse" : "Expand"} ${page.title} pages`} aria-expanded={expanded} aria-controls={listId} onClick={() => setCollapsed(current => {const next = new Set(current); if (next.has(page.id)) next.delete(page.id); else next.add(page.id); return next})}><ChevronRight/></button> : <span className="wiki-page-leaf"/>}
                         <Link to={wikiPageHref(location.search, projectId, page.slug)} onClick={onNavigate} aria-current={currentId === page.id ? "page" : undefined}>{page.id === homePageId ? <Home/> : <FileText/>}<span>{page.title}</span></Link>
-                        {canAdd && <button type="button" className="wiki-page-add" disabled={!wikiCanAddSubpage(pages, page.id)} aria-label={`Add subpage to ${page.title}`} title={wikiCanAddSubpage(pages, page.id) ? "Add subpage" : "Maximum of 2 subpages reached"} onClick={() => onAdd(page.id)}><Plus/></button>}
+                        {canAdd && <button type="button" className="wiki-page-add" disabled={!wikiCanAddSubpage(pages, page.id)} aria-label={`Add subpage to ${page.title}`} title={wikiCanAddSubpage(pages, page.id) ? "Add subpage" : "Maximum of 2 nesting levels reached"} onClick={() => onAdd(page.id)}><Plus/></button>}
                     </div>
                     {children && <ol id={listId} hidden={!expanded}>{branch(page.id)}</ol>}
                 </li>

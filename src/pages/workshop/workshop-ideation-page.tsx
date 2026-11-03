@@ -1,3 +1,4 @@
+import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject} from "@/features/workshop/workshop-empty-state"
 import {type ShapePreset} from "@/features/workshop/shape-catalog"
 import {canvasGridBackground} from "@/features/workshop/canvas-view"
@@ -777,8 +778,7 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
             </div>
             <div className="workshop-ideas-limit-notice" onPointerDown={event => event.stopPropagation()}><WorkshopCanvasNotice tool="ideas" document={items}/></div>
             {(["error", "load-error", "conflict"].includes(saveStatus) || saveError) &&
-                <div className="workshop-ideas-save-notice" role="alert"
-                     onPointerDown={(event) => event.stopPropagation()}>
+                <WorkshopToast variant="error" onPointerDown={(event) => event.stopPropagation()}>
                     <span>{saveStatus === "saving" ? "Retrying save… Your draft is kept locally." : saveStatus === "conflict" ? "Another session changed this canvas. Your draft is kept locally. Reloading replaces it with the saved version." : saveStatus === "load-error" ? "The canvas could not be loaded. Editing is disabled until it loads." : saveError}</span>
                     {saveStatus === "conflict" ? <Button size="sm" type="button" onClick={() => {
                             if (window.confirm("Replace your local draft with the latest saved canvas?")) {
@@ -788,7 +788,7 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
                         }}>Reload saved version</Button> :
                         <Button disabled={saveStatus === "saving"} size="sm" type="button"
                                 onClick={retry}>{saveStatus === "saving" ? "Retrying…" : "Retry"}</Button>}
-                </div>}
+                </WorkshopToast>}
 
             <CanvasToolbar
                 canEdit={canEditIdeation}

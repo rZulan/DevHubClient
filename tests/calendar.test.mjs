@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {calendarDate, calendarEventError, calendarItems, calendarItemsOnDay, calendarMonthDays, calendarToday, calendarWeekSegments, shiftCalendarDate, shiftCalendarMonth, validCalendarDate, validCalendarDocument} from '../src/features/workshop/calendar-document.ts'
+import {calendarDate, calendarEventError, calendarItems, calendarItemsOnDay, calendarMonthDays, calendarToday, calendarWeekSegments, calendarWeekVisibleLanes, shiftCalendarDate, shiftCalendarMonth, validCalendarDate, validCalendarDocument} from '../src/features/workshop/calendar-document.ts'
 import {todoDateError, readTodoDates} from '../src/features/workshop/todo-schedule.ts'
 
 const event = {id:'event',title:'Release review',description:'Review',kind:'meeting',startDate:'2026-10-28',endDate:'2026-10-28',allDay:false,startTime:'09:00',endTime:'10:00'}
@@ -56,6 +56,40 @@ test('overlapping ranges never share a lane, while separated ranges reuse it', (
     assert.equal(segments.find(s=>s.item.id==='a').lane,segments.find(s=>s.item.id==='c').lane)
     assert.ok(segments.some(s=>s.lane>=3),'busy weeks retain hidden entries for the overflow counts and agenda')
     assert.deepEqual(calendarWeekSegments([...ranges].reverse(),'2026-10-26'),segments,'ordering is deterministic')
+})
+
+test('busy weeks keep the full Oct 29–Nov 6 range visible while single-day entries can overflow', () => {
+    const range = {...event, id:'milestone', kind:'milestone', startDate:'2026-10-29', endDate:'2026-11-06'}
+    const items = [
+        {...event, id:'todo', kind:'todo', startDate:'2026-10-22', endDate:'2026-10-30'}, range,
+        {...event, id:'single-a', startDate:'2026-10-29', endDate:'2026-10-29'},
+        {...event, id:'single-b', startDate:'2026-10-29', endDate:'2026-10-29'},
+    ]
+    const firstWeek = calendarWeekSegments(items, '2026-10-26')
+    const firstLimit = calendarWeekVisibleLanes(firstWeek, 1)
+    assert.equal(firstLimit, 2, 'grow the busy week beyond its single-row capacity')
+    assert.deepEqual(firstWeek.filter(segment => segment.lane < firstLimit).map(segment => segment.item.id), ['todo', 'milestone'])
+    const start = firstWeek.find(segment => segment.item.id === range.id)
+    assert.deepEqual([start.first, start.last, start.continuesBefore, start.continuesAfter], [3, 6, false, true])
+    assert.equal(firstWeek.filter(segment => segment.lane >= firstLimit && segment.first <= 3 && segment.last >= 3).length, 2, 'single-day overflow counts remain available')
+    const nextWeek = calendarWeekSegments(items, '2026-11-02')
+    assert.ok(nextWeek[0].lane < calendarWeekVisibleLanes(nextWeek, 1))
+    assert.deepEqual([nextWeek[0].first, nextWeek[0].last, nextWeek[0].continuesBefore, nextWeek[0].continuesAfter], [0, 4, true, false])
+    assert.equal(calendarWeekVisibleLanes(firstWeek.filter(segment => segment.item.id !== range.id), 1), 1, 'filtering the range removes the extra space')
+})
+
+test('multi-day ranges remain visible when only one endpoint day is in the week', () => {
+    const items = [
+        {...event, id:'busy', startDate:'2026-10-26', endDate:'2026-10-26'},
+        {...event, id:'ending', startDate:'2026-10-25', endDate:'2026-10-26'},
+        {...event, id:'starting', startDate:'2026-11-01', endDate:'2026-11-02'},
+    ]
+    const segments = calendarWeekSegments(items, '2026-10-26'), limit = calendarWeekVisibleLanes(segments, 1)
+    for (const segment of segments.filter(segment => segment.item.id !== 'busy')) {
+        assert.equal(segment.first, segment.last)
+        assert.ok(segment.lane < limit)
+    }
+    assert.equal(calendarWeekVisibleLanes([], 3), 3)
 })
 
 test('TODO schedule validates optional From, target-only, clearing and reversed ranges', () => {

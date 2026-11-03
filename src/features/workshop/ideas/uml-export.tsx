@@ -6,6 +6,7 @@ import type {UmlDiagram} from "../uml-library"
 import {umlElementCompartments} from "../uml-elements"
 import {UmlShapeGeometry} from "./uml-shape-geometry"
 import {UmlConnectionsLayer} from "./uml-connections-layer"
+import type {ExportTaskContext} from "@/features/exports/export-manager"
 
 export function umlSvg(diagram:UmlDiagram){
     const items=visibleUmlItems(diagram.items),bounds=items.length?combinedBounds(items):{x:0,y:0,width:640,height:400},padding=50,w=bounds.width+padding*2,h=bounds.height+padding*2
@@ -17,7 +18,19 @@ export function umlSvg(diagram:UmlDiagram){
     return markup.replaceAll("var(--background)","#151212").replaceAll("var(--foreground)","#f5f5f5")
 }
 
-export async function exportUmlPng(svg:string,name:string){
+export async function exportUmlPng(svg:string,name:string,context?:ExportTaskContext){
+    context?.signal.throwIfAborted();context?.onProgress(10)
     const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}))
-    try{const img=new Image();await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(new Error("Could not render diagram image"));img.src=url});const scale=Math.min(2,8192/img.width,8192/img.height,Math.sqrt(16_000_000/(img.width*img.height))),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));const ctx=canvas.getContext("2d");if(!ctx)throw new Error("Image export unavailable");ctx.drawImage(img,0,0,canvas.width,canvas.height);const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Image export failed")),"image/png"));downloadUmlFile(name,blob)}finally{URL.revokeObjectURL(url)}
+    try {
+        const img=new Image()
+        await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(new Error("Could not render diagram image"));img.src=url})
+        context?.signal.throwIfAborted();context?.onProgress(35)
+        const scale=Math.min(2,8192/img.width,8192/img.height,Math.sqrt(16_000_000/(img.width*img.height))),canvas=document.createElement("canvas")
+        canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale))
+        const ctx=canvas.getContext("2d");if(!ctx)throw new Error("Image export unavailable")
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);context?.onProgress(70)
+        const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Image export failed")),"image/png"))
+        context?.signal.throwIfAborted();context?.onProgress(95)
+        downloadUmlFile(name,blob)
+    }finally{URL.revokeObjectURL(url)}
 }

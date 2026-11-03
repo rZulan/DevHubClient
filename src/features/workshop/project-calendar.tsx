@@ -5,7 +5,7 @@ import {WorkshopEmptyState} from "./workshop-empty-state"
 import {CalendarMonthPicker} from "./calendar-month-picker"
 import {CalendarSchedulePreview} from "./calendar-schedule-preview"
 import {CalendarGantt} from "./calendar-gantt"
-import {calendarEventKinds, calendarItemsOnDay, calendarKindLabels, calendarMonthDays, calendarToday, calendarWeekSegments, shiftCalendarDate, shiftCalendarMonth, type CalendarItem} from "./calendar-document"
+import {calendarEventKinds, calendarItemsOnDay, calendarKindLabels, calendarMonthDays, calendarToday, calendarWeekSegments, calendarWeekVisibleLanes, shiftCalendarDate, shiftCalendarMonth, type CalendarItem} from "./calendar-document"
 import "./project-calendar.css"
 
 type CalendarView = "month" | "week" | "agenda" | "gantt"
@@ -43,13 +43,23 @@ export function ProjectCalendar({items, timeZone, canEdit, onAdd, onOpen}: {
     const shownItems = filtered.filter(item => item.startDate <= lastDay && item.endDate >= periodStart)
     const selectedItems = calendarItemsOnDay(filtered, selected).sort((a, b) => Number(a.completed ?? false) - Number(b.completed ?? false) || Number(b.allDay) - Number(a.allDay) || a.startTime.localeCompare(b.startTime) || a.title.localeCompare(b.title))
     const weeks = view === "week" ? 1 : Math.ceil((monthDays.indexOf(monthEnd) + 1) / 7), laneLimit = view === "week" ? 8 : monthLanes
+    const calendarWeeks = Array.from({length: weeks}, (_, week) => {
+        const dates = Array.from({length: 7}, (_, index) => shiftCalendarDate(firstDay, week * 7 + index))
+        const segments = calendarWeekSegments(filtered, dates[0]), visibleLanes = calendarWeekVisibleLanes(segments, laneLimit)
+        return {dates, segments, visibleLanes, minHeight: Math.max(68, 46 + visibleLanes * 24)}
+    })
     const agendaDates = [...new Set(shownItems.map(item => item.startDate < monthStart ? monthStart : item.startDate))]
     const isFiltered = search || visibleKinds.size !== kinds.length
     useEffect(() => {
-        if (!grid.current || view !== "month") return
-        const observer = new ResizeObserver(([entry]) => setMonthLanes(Math.min(4, Math.max(1, Math.floor(((entry.contentRect.height - 34) / weeks - 46) / 24)))))
-        observer.observe(grid.current)
-        return () => observer.disconnect()
+        if (view !== "month") return
+        // Match the CSS viewport height, not the expanded grid height: busy weeks
+        // must not keep increasing the baseline lane count through resize feedback.
+        const resize = () => {
+            const height = Math.min(740, Math.max(350, window.innerHeight - 370))
+            setMonthLanes(Math.min(4, Math.max(1, Math.floor(((height - 34) / weeks - 46) / 24))))
+        }
+        resize(); window.addEventListener("resize", resize)
+        return () => window.removeEventListener("resize", resize)
     }, [view, weeks])
 
     function resetFilters() {setQuery(""); setVisibleKinds(new Set(kinds))}
@@ -87,13 +97,13 @@ export function ProjectCalendar({items, timeZone, canEdit, onAdd, onOpen}: {
         <div className="calendar-filter-bar"><div className="calendar-type-filters" role="group" aria-label="Show on calendar"><span className="calendar-filter-label">Show</span><div className="calendar-type-options">{kinds.map(kind => <label className="calendar-type-option" key={kind} data-kind={kind} data-checked={visibleKinds.has(kind)}><input type="checkbox" aria-label={pluralKind(kind)} checked={visibleKinds.has(kind)} onChange={() => setVisibleKinds(current => {const next = new Set(current); if (next.has(kind)) next.delete(kind); else next.add(kind); return next})}/><span>{pluralKind(kind)}</span><span className="calendar-type-count" aria-hidden="true">{periodItems.filter(item => item.kind === kind).length}</span></label>)}</div><button type="button" className="calendar-show-all" disabled={visibleKinds.size === kinds.length} onClick={() => setVisibleKinds(new Set(kinds))}>Show all</button></div><div className="calendar-search"><Search aria-hidden="true"/><input type="search" aria-label="Search schedule" placeholder="Search schedule…" value={query} onChange={event => setQuery(event.target.value)}/>{query && <button type="button" aria-label="Clear search" onClick={() => setQuery("")}><X/></button>}</div></div>
 
         <div className="calendar-layout"><div className="calendar-main-panel">
-            {view === "gantt" ? <CalendarGantt items={shownItems} start={monthStart} end={monthEnd} today={today} selected={selected} timeZone={timeZone} onSelect={setSelected} onOpen={onOpen} empty={emptyState()}/> : view !== "agenda" ? <div className="calendar-month-grid" role="grid" aria-label={view === "week" ? `Week of ${shortDate(firstDay)}` : dateLabel(selected, {month: "long", year: "numeric"})} ref={grid} style={view === "month" ? {gridTemplateRows: `34px repeat(${weeks}, minmax(0, 1fr))`, minHeight: 34 + weeks * 68} : undefined}>
+            {view === "gantt" ? <CalendarGantt items={shownItems} start={monthStart} end={monthEnd} today={today} selected={selected} timeZone={timeZone} onSelect={setSelected} onOpen={onOpen} empty={emptyState()}/> : view !== "agenda" ? <div className="calendar-month-grid" role="grid" aria-label={view === "week" ? `Week of ${shortDate(firstDay)}` : dateLabel(selected, {month: "long", year: "numeric"})} ref={grid} style={view === "month" ? {gridTemplateRows: `34px ${calendarWeeks.map(week => `minmax(${week.minHeight}px, 1fr)`).join(" ")}`, minHeight: 34 + calendarWeeks.reduce((height, week) => height + week.minHeight, 0)} : undefined}>
                 <div className="calendar-weekdays" role="row">{Array.from({length: 7}, (_, index) => <span role="columnheader" data-weekend={index > 4} key={index}>{dateLabel(shiftCalendarDate("2026-01-05", index), {weekday: "short"})}</span>)}</div>
-                {Array.from({length: weeks}, (_, week) => {
-                    const dates = Array.from({length: 7}, (_, index) => shiftCalendarDate(firstDay, week * 7 + index)), segments = calendarWeekSegments(filtered, dates[0]), shown = segments.filter(segment => segment.lane < laneLimit)
-                    const lanes = Math.min(laneLimit, Math.max(view === "week" ? 4 : 1, ...segments.map(segment => segment.lane + 1)))
+                {calendarWeeks.map(({dates, segments, visibleLanes}) => {
+                    const shown = segments.filter(segment => segment.lane < visibleLanes)
+                    const lanes = Math.min(visibleLanes, Math.max(view === "week" ? 4 : 1, ...segments.map(segment => segment.lane + 1)))
                     return <div className="calendar-week" role="row" key={dates[0]} style={view === "week" ? {minHeight: 38 + lanes * 29 + 24} : undefined}>{dates.map((date, day) => {
-                        const entries = calendarItemsOnDay(filtered, date), hidden = segments.filter(segment => segment.lane >= laneLimit && segment.first <= day && segment.last >= day).length
+                        const entries = calendarItemsOnDay(filtered, date), hidden = segments.filter(segment => segment.lane >= visibleLanes && segment.first <= day && segment.last >= day).length
                         return <div className="calendar-day" data-date={date} data-outside={view === "month" && !date.startsWith(month)} data-weekend={day > 4} data-today={date === today} role="gridcell" aria-selected={date === selected} key={date}><button type="button" className="calendar-day-select" tabIndex={date === selected ? 0 : -1} aria-label={dateLabel(date, {weekday: "long", year: "numeric", month: "long", day: "numeric"})} aria-current={date === today ? "date" : undefined} onClick={() => setSelected(date)} onKeyDown={event => keyDay(event, date)}><span>{Number(date.slice(-2))}</span>{date === today && <em className="calendar-today-label">Today</em>}<small>{entries.length > 0 && entries.length}</small></button>{hidden > 0 && <button type="button" className="calendar-more" aria-label={`${hidden} more ${hidden === 1 ? "item" : "items"} on ${date}`} onClick={() => revealDay(date)}>+{hidden} more</button>}</div>
                     })}<div className="calendar-week-bars" role="presentation">{shown.map(({item, first, last, lane, continuesBefore, continuesAfter}) => <CalendarSchedulePreview item={item} timeZone={timeZone} today={today} key={item.id}><button type="button" className="calendar-range-bar" data-kind={item.kind} data-completed={item.completed} data-before={continuesBefore} data-after={continuesAfter} style={{gridColumn: `${first + 1} / ${last + 2}`, gridRow: lane + 1}} aria-label={`${item.title}, ${calendarKindLabels[item.kind]}${item.parentTitle ? ` in ${item.parentTitle}` : ""}, ${item.startDate} to ${item.endDate}${item.completed ? ", completed" : ""}${continuesBefore ? ", continues from previous week" : ""}${continuesAfter ? ", continues next week" : ""}`} onClick={() => onOpen(item)}>{continuesBefore && <span aria-hidden="true">‹</span>}<span className="calendar-bar-title">{!item.allDay && <small>{item.startTime} </small>}{item.title}</span>{continuesAfter && <span aria-hidden="true">›</span>}</button></CalendarSchedulePreview>)}</div></div>
                 })}
