@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "dev:admin": "vite --config sites/admin/vite.config.ts",
+    "build:admin": "tsc -p sites/admin/tsconfig.json && vite build --config sites/admin/vite.config.ts",
+    "build:docs": "node sites/docs/build.mjs",
     "dev:local": "vite --host --mode development",
     "dev:production": "vite --host --mode production",
     "build:local": "tsc -b && vite build --mode development"
