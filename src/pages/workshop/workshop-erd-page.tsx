@@ -1,4 +1,5 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
+import {workshopToast} from "@/features/workshop/workshop-toast-store"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {useCallback, useMemo, useRef, useState, type SetStateAction} from "react"
@@ -15,7 +16,7 @@ import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {erdDialects, erdDialectLabels, downloadFile, erdSql, newField, removeField, removeTable, tableHeight, cardinalityForEnds, relationshipEnds, type ErdDocument, type ErdDialect, type ErdField, type ErdRelationship, type ErdTable} from "@/features/workshop/tool-documents"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
-import {ErdImportDialog} from "@/features/workshop/erd-import-dialog"
+import {ErdImportDialog, type ErdImportDialogHandle} from "@/features/workshop/erd-import-dialog"
 import {ErdRelationshipProperties} from "@/features/workshop/erd-relationship-properties"
 import "@/features/workshop/erd-properties.css"
 import {ErdConnections, type ErdReattachment} from "@/features/workshop/erd-connections"
@@ -78,6 +79,7 @@ function ErdEditor() {
     const [relationError, setRelationError] = useState("")
     const [arrangement, setArrangement] = useState(0)
     const workspace = useRef<HTMLElement>(null)
+    const importDialog = useRef<ErdImportDialogHandle>(null)
     const [exportError, setExportError] = useState("")
     const exportKey = `erd-png:${userId}:${organization.id}:${project!.id}`
     const exporting = useExporting(exportKey)
@@ -231,8 +233,9 @@ function ErdEditor() {
                 setHideRelationships(hidden)
                 try {localStorage.setItem(hideRelationshipsKey, String(hidden))} catch { /* Keep the view preference for this session. */ }
             }}><EyeOff/>Hide relationships<span className="text-xs text-muted-foreground" aria-hidden="true">{hideRelationships ? "On" : "Off"}</span></Button>
-            <ErdImportDialog canEdit={canEdit} tableCount={document.tables.length} dialect={dialect} onImport={imported => {
-                setDocument(imported); selectTables(imported.tables[0] ? [imported.tables[0].id] : []); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
+            <ErdImportDialog ref={importDialog} canEdit={canEdit} tableCount={document.tables.length} dialect={dialect} onImport={imported => {
+                applyDocument(arrangeErd(imported)); selectTables(imported.tables[0] ? [imported.tables[0].id] : []); setFieldId(""); setConnecting(null); setReattaching(null); setRelationError("")
+                setArrangement(value => value + 1)
             }}/>
         </ToolDocumentHeader>
         {exportError && <WorkshopToast variant="error" onDismiss={() => setExportError("")}>{exportError}</WorkshopToast>}
@@ -242,7 +245,11 @@ function ErdEditor() {
                 if (next.tables.some(table => !renderIndex.tables.has(table.id))) setArrangement(value => value + 1)
             }}/>
             <ToolCanvas viewStorageKey={canvasViewKey(userId, organization.id, project!.id, "erd")} nodes={canvasNodes} cullNodes deferMoves selectedIds={selectedIds} onSelect={selectTables} {...editor} onDelete={deleteSelected} contentBounds={connectionBounds} fitViewKey={arrangement}
-                emptyState={<WorkshopEmptyState className="workshop-empty-state-canvas pointer-events-none" icon={Database} title="No tables yet" description={canWrite ? "Add a table or import a schema from the toolbar to get started." : "Tables shared by your team will appear here."}/>}
+                fileDrop={{hint: "Drop a .sql or .json file to import", onDrop: files => {
+                    if (files.length !== 1) {workshopToast.error("Drop one .sql or .json file at a time."); return}
+                    importDialog.current?.openFile(files[0])
+                }}}
+                emptyState={<WorkshopEmptyState className="workshop-empty-state-canvas pointer-events-none" icon={Database} title="No tables yet" description={canWrite ? "Add a table or drop a .sql or .json file here to get started." : "Tables shared by your team will appear here."}/>}
                 onCopy={() => copyErdTables(document, selectedIds)} onPaste={pasteTables} onDuplicate={offset => {if (canEdit) pasteTables(copyErdTables(document, selectedIds), offset)}}
                 onConnect={document.relationships.length >= 2000 ? undefined : (fromId, toId) => {if (canEdit) setConnecting({fromId, toId})}}
                 onMove={positions => setDocument(current => {
@@ -260,11 +267,11 @@ function ErdEditor() {
                 <Button size="sm" variant="secondary" disabled={!canEdit} onClick={addTable}><Plus/> Table</Button>
                 {!document.tables.length && <Button size="sm" variant="ghost" disabled={!canEdit} onClick={addExample}>Load example</Button>}
             </ToolCanvas>
-            {(selected || selectedRelation) && <ErdPanel className="erd-properties-panel" side="right" title="Properties" detail={selected ? "Table & column" : "Relationship"} collapsed={propertiesCollapsed} onToggle={() => setPropertiesCollapsed(value => !value)}>
+            {(selected || selectedRelation) && <ErdPanel className="erd-properties-panel" side="right" title="Properties" detail={selected ? undefined : "Relationship"} collapsed={propertiesCollapsed} onToggle={() => setPropertiesCollapsed(value => !value)}>
                 {selectedIds.length > 1 && <p className="tool-help">{selectedIds.length} tables selected. Editing {selected?.name}.</p>}
                 {!canEdit && <p className="tool-help">Read-only · editing is unavailable.</p>}
                 {relationError && <WorkshopToast variant="error" onDismiss={() => setRelationError("")}>{relationError}</WorkshopToast>}
-                {selected ? <ErdTableProperties table={selected} field={field} tab={propertiesTab} onTabChange={setPropertiesTab} canEdit={canEdit} relationshipCount={visibleRelations.length}
+                {selected ? <ErdTableProperties table={selected} field={field} tab={propertiesTab} onTabChange={setPropertiesTab} canEdit={canEdit}
                     onSelectField={setFieldId} onAddColumn={() => addColumn(selected)} onUpdateField={updateField} onUpdateTable={changes => updateTable(selected.id, changes)}
                     onDeleteField={() => {if (field) setDocument(current => removeField(current, selected.id, field.id))}} onDeleteTable={() => {setDocument(current => removeTable(current, selected.id)); selectTables(selectedIds.filter(id => id !== selected.id))}}
                     relationships={<fieldset>

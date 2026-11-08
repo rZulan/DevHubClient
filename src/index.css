@@ -12058,12 +12058,11 @@
     .erd-import-warning p { font-size: 13px; line-height: 1.7; }
     .erd-import-warning strong { display: block; margin-bottom: 3px; }
     .erd-import-file { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
-    .erd-import-file input { border: 1px solid var(--border); padding: 9px; border-radius: 6px; background: var(--secondary); font-size: 14px; }
-    .erd-import-file input::file-selector-button { border: 0; background: var(--background); color: var(--foreground); padding: 5px 8px; margin-right: 8px; border-radius: 4px; cursor: pointer; }
+    .erd-import-file-picker { display: flex; align-items: center; gap: 8px; min-width: 0; border: 1px solid var(--border); padding: 9px; border-radius: 6px; background: var(--secondary); font-size: 14px; }
     .erd-import-reading { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted-foreground); }
     .erd-import-reading svg { width: 14px; height: 14px; }
     .erd-import-preview { border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; overflow-wrap: anywhere; max-height: 200px; overflow: auto; }
-    .erd-import-preview p { margin: 6px 0 10px; color: var(--muted-foreground); }
+    .erd-import-preview p { color: var(--muted-foreground); }
     .erd-import-preview ul { margin: 8px 0 0 15px; list-style: disc; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; }
 }
 @layer components {
@@ -12137,11 +12136,10 @@
 .erd-connection-side { display: grid; gap: 18px; }
 .erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label { display: flex; flex-direction: column; gap: 9px; min-width: 0; font-size: 13px; color: var(--foreground); }
 .erd-relationship-dialog .task-edit-fields > .task-edit-metadata > label > :is(select, [data-workshop-select]) { width: 100%; height: 42px; padding: 10px 12px; border: 1px solid var(--input); border-radius: 9px; background: var(--background); color: var(--foreground); font-size: 14px; }
-.tool-connect-handle { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border: 3px solid var(--popover); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 65%, var(--border)); cursor: crosshair; touch-action: none; z-index: 4; opacity: .6; }
-.tool-connect-handle.left { left: -8px; }
-.tool-connect-handle.right { right: -8px; }
-.tool-node:hover > .tool-connect-handle, .tool-node.selected > .tool-connect-handle, .tool-connect-handle:focus-visible { opacity: 1; }
-.tool-connect-handle:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.tool-connect-handle { position: absolute; top: 9px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; color: var(--primary); cursor: grab; touch-action: none; }
+.tool-connect-handle > svg { width: 16px; height: 16px; }
+.tool-connect-handle:hover, .tool-connect-handle:focus-visible { background: color-mix(in oklab, var(--primary) 14%, transparent); }
+.tool-connect-handle:focus-visible { outline: 2px solid var(--primary); }
 .tool-node.connection-target { outline: 2px solid var(--primary); outline-offset: 5px; }
 .tool-connection-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 3; }
 .tool-connection-preview path { fill: none; stroke: var(--primary); stroke-width: 2; stroke-dasharray: 5 4; }
@@ -12425,7 +12423,7 @@
     .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
     .workshop-task h3 { padding-right: 30px; }
     .workshop-task-edge { opacity: 1; }
-    .tool-connect-handle::after, .tool-resize-handle::after { content: ""; position: absolute; inset: -12px; }
+.tool-resize-handle::after { content: ""; position: absolute; inset: -12px; }
     .workshop-zoom-control button { min-width: 36px; min-height: 36px; }
 }
 

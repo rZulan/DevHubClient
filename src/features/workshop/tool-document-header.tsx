@@ -1,14 +1,20 @@
+import {useId, useState} from "react"
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
-import {ChevronDown, Download, FileJson, LoaderCircle, Save} from "lucide-react"
+import {ChevronDown, ChevronUp, Download, FileJson, LoaderCircle, Save} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {downloadFile, type DocumentTool, type ToolDocumentMap} from "./tool-documents"
 import {WorkshopCanvasNotice} from "./workshop-limit-notices"
+import "./tool-document-header.css"
 export function ToolDocumentHeader({title, projectName, status, error, canWrite, persisted, onSave, onRetry, onReload, tool, document, children, exportItems, exporting = false}: {
     title: string; projectName: string; status: string; error: string; canWrite: boolean; persisted: boolean; onSave: () => void; onRetry: () => void; onReload: () => void
     tool: DocumentTool; document: ToolDocumentMap[DocumentTool]; children?: React.ReactNode; exportItems?: React.ReactNode; exporting?: boolean
 }) {
-    return <><header className="project-tool-header"><div><strong>{title}</strong><small>{projectName}</small></div><div className="project-tool-header-actions">
+    const [collapsed, setCollapsed] = useState(false)
+    const headerId = useId()
+    const toggleLabel = `${collapsed ? "Expand" : "Collapse"} ${title} header`
+    return <><div className="project-tool-header-shell" data-collapsed={collapsed}>
+    <header id={headerId} className="project-tool-header" hidden={collapsed}><div><strong>{title}</strong><small>{projectName}</small></div><div className="project-tool-header-actions">
         <span role="status" className={`tool-save-status ${status}`}>{status === "loading" || status === "saving" ? <LoaderCircle className="animate-spin"/> : null}
             {!canWrite ? "View only" : status === "saved" ? persisted ? "All changes saved" : "Saved in this browser" : status === "unsaved" ? "Unsaved changes" : status === "load-error" ? "Could not load" : status === "conflict" ? "Save conflict" : status === "error" ? "Save failed" : status === "loading" ? "Loading…" : "Saving…"}</span>
         {children}
@@ -17,6 +23,8 @@ export function ToolDocumentHeader({title, projectName, status, error, canWrite,
         </DropdownMenu> : <Button size="sm" variant="ghost" title="Download document as JSON" onClick={() => downloadFile(JSON.stringify(document, null, 2), `${tool}-draft.json`, "application/json")}><Download/> Draft</Button>}
         {canWrite && <Button size="sm" variant="secondary" disabled={["loading", "load-error", "saving", "conflict"].includes(status)} onClick={onSave}><Save/> Save</Button>}
     </div></header>
+    <button type="button" className="project-tool-header-toggle" aria-label={toggleLabel} title={toggleLabel} aria-expanded={!collapsed} aria-controls={headerId} onClick={() => setCollapsed(value => !value)}><ChevronUp aria-hidden="true"/></button>
+    </div>
     {error && <WorkshopToast variant="error"><span>{error}</span>
         {status === "conflict" ? <Button size="sm" variant="outline" onClick={onReload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={onRetry}>Retry</Button>}
     </WorkshopToast>}<WorkshopCanvasNotice tool={tool} document={document}/></>

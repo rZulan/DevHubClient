@@ -34,10 +34,8 @@
 .workshop-drawer .erd-properties-panel.tool-inspector label { font-size: 12px; }
 .workshop-drawer .erd-properties-panel input:not([type="checkbox"]):not([type="range"]), .workshop-drawer .erd-properties-panel :is(select, [data-workshop-select]) { min-height: 40px; }
 
-.erd-properties-context { display: flex; align-items: center; gap: 10px; min-width: 0; padding-bottom: 6px; }
-.erd-properties-context > div { min-width: 0; }
+.erd-properties-context { min-width: 0; padding-bottom: 6px; }
 .erd-properties-context strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
-.erd-properties-context small { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 11px; }
 .erd-properties-tabs { display: flex; padding: 3px; gap: 2px; background: var(--secondary); border-radius: 8px; }
 .erd-properties-tabs > button { display: flex; flex: 1; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 36px; border-radius: 6px; color: var(--muted-foreground); cursor: pointer; font-size: 11px; }
 .erd-properties-tabs > button[aria-selected="true"] { background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px #0001; font-weight: 600; }

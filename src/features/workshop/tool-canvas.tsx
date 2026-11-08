@@ -1,5 +1,5 @@
 import {useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode, type PointerEvent, type MouseEvent} from "react"
-import {Hand, MousePointer2, Redo2, Undo2} from "lucide-react"
+import {Hand, Link2, MousePointer2, Redo2, Undo2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {ZoomControls} from "./ideas/canvas-controls"
 import {canvasGridBackground, combinedBounds, fitBounds, zoomAt, type Bounds} from "./canvas-view"
@@ -10,22 +10,24 @@ import {readCanvasView, saveCanvasView} from "./canvas-view-storage"
 
 export type ToolCanvasNode = Bounds & {id: string; name?: string; locked?: boolean}
 export type NodePosition = {id: string; x: number; y: number; width: number; height: number}
-type ConnectionDraft = {from: {x: number; y: number}; to: {x: number; y: number}; side: number; targetId?: string}
+type ConnectionDraft = {from: {x: number; y: number}; to: {x: number; y: number}; targetId?: string}
 function ConnectionPreview({connection, zoom}: {connection: ConnectionDraft; zoom: number}) {
     const left = Math.min(connection.from.x, connection.to.x) - 100, top = Math.min(connection.from.y, connection.to.y) - 8 / zoom
     const width = Math.abs(connection.from.x - connection.to.x) + 200, height = Math.abs(connection.from.y - connection.to.y) + 16 / zoom
+    const side = connection.to.x < connection.from.x ? -1 : 1
     return <svg className="tool-connection-preview" width={width} height={height} viewBox={`${left} ${top} ${width} ${height}`} style={{left, top}} aria-hidden="true">
-        <path d={`M${connection.from.x} ${connection.from.y} C${connection.from.x + 80 * connection.side} ${connection.from.y}, ${connection.to.x - 80 * connection.side} ${connection.to.y}, ${connection.to.x} ${connection.to.y}`} vectorEffect="non-scaling-stroke"/>
+        <path d={`M${connection.from.x} ${connection.from.y} C${connection.from.x + 80 * side} ${connection.from.y}, ${connection.to.x - 80 * side} ${connection.to.y}, ${connection.to.x} ${connection.to.y}`} vectorEffect="non-scaling-stroke"/>
         <circle cx={connection.to.x} cy={connection.to.y} r={4 / zoom}/>
     </svg>
 }
 export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, renderNode, connections, canEdit, beginTransaction, endTransaction,
-    undo, redo, canUndo, canRedo, onDelete, onDuplicate, onCopy, onPaste, children, emptyState, contentBounds, onConnect, fitViewKey, viewStorageKey, cullNodes = false, deferMoves = false, renderConnections, connectionHint = "Drag to another table to create a relationship", label = "Design canvas"}: {
+    undo, redo, canUndo, canRedo, onDelete, onDuplicate, onCopy, onPaste, fileDrop, children, emptyState, contentBounds, onConnect, fitViewKey, viewStorageKey, cullNodes = false, deferMoves = false, renderConnections, connectionHint = "Click to connect or drag to another table", label = "Design canvas"}: {
     nodes: ToolCanvasNode[]; selectedIds: string[]; onSelect: (ids: string[]) => void
     onMove: (positions: NodePosition[]) => void; onResize?: (id: string, width: number, height: number) => void
     renderNode: (node: ToolCanvasNode, view: {zoom: number}) => ReactNode; connections?: ReactNode; canEdit: boolean
     beginTransaction: () => void; endTransaction: () => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean
     onDelete: () => void; onDuplicate?: (offset: number) => void; onCopy?: () => string; onPaste?: (text: string, offset: number) => boolean; children?: ReactNode
+    fileDrop?: {hint: string; onDrop: (files: FileList) => void}
     contentBounds?: Bounds[]
     emptyState?: ReactNode
     fitViewKey?: number
@@ -41,6 +43,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     useEffect(() => {saveCanvasView(viewStorageKey, {zoom, pan})}, [viewStorageKey, zoom, pan])
     const [hand, setHand] = useState(false), [space, setSpace] = useState(false), [snapping, setSnapping] = useState(true)
     const [panning, setPanning] = useState(false)
+    const [fileDragging, setFileDragging] = useState(false)
     const suppressPanClick = useRef(false)
     const [marquee, setMarquee] = useState<Bounds>()
     const [connection, setConnection] = useState<ConnectionDraft>()
@@ -157,15 +160,17 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         if (!panning && !node && !event.shiftKey) onSelect([])
         if (!panning && node) beginTransaction()
     }
-    function startConnection(event: PointerEvent, node: ToolCanvasNode, side: -1 | 1) {
+    function startConnection(event: PointerEvent<HTMLButtonElement>, node: ToolCanvasNode) {
+        if (event.defaultPrevented || gesture.current || event.button !== 0 || !canEdit || !onConnect || !root.current) return
         event.stopPropagation(); event.preventDefault()
-        if (event.button !== 0 || !canEdit || !onConnect || !root.current) return
+        cancelWheel()
         root.current.focus({preventScroll: true}); root.current.setPointerCapture(event.pointerId)
-        const point = {x: node.x + (side === 1 ? node.width : 0), y: node.y + node.height / 2}
+        const button = event.currentTarget.getBoundingClientRect()
+        const point = worldPoint({clientX: button.left + button.width / 2, clientY: button.top + button.height / 2})
         gesture.current = {mode: "connect", x: event.clientX, y: event.clientY, pan, nodes: [], id: node.id, base: [], moved: false}
-        setConnection({from: point, to: point, side})
+        setConnection({from: point, to: point})
     }
-    function worldPoint(event: PointerEvent) {
+    function worldPoint(event: Pick<PointerEvent, "clientX" | "clientY">) {
         const rect = root.current!.getBoundingClientRect()
         return {x: (event.clientX - rect.left - pan.x) / zoom, y: (event.clientY - rect.top - pan.y) / zoom}
     }
@@ -173,11 +178,15 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         const drag = gesture.current
         if (!drag) return
         const dx = (event.clientX - drag.x) / zoom, dy = (event.clientY - drag.y) / zoom
-        drag.moved ||= Math.abs(dx) + Math.abs(dy) > 2
         if (drag.mode === "connect" && drag.id && root.current) {
+            drag.moved ||= Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 4
+            if (!drag.moved) return
             const point = worldPoint(event), target = connectionTargetAt(nodes, point, drag.id, 6 / zoom)
             setConnection(current => current && {...current, to: target ? {x: target.x + (point.x >= target.x + target.width / 2 ? target.width : 0), y: target.y + target.height / 2} : point, targetId: target?.id})
-        } else if (drag.mode === "pan") setPan({x: drag.pan.x + dx * zoom, y: drag.pan.y + dy * zoom})
+            return
+        }
+        drag.moved ||= Math.abs(dx) + Math.abs(dy) > 2
+        if (drag.mode === "pan") setPan({x: drag.pan.x + dx * zoom, y: drag.pan.y + dy * zoom})
         else if (drag.mode === "move" && drag.moved) {
             const first = drag.nodes[0]
             if (!first) return
@@ -208,7 +217,11 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         }
         if (drag?.mode === "move" || drag?.mode === "resize") endTransaction()
         gesture.current = undefined; setPanning(false); setMarquee(undefined); setConnection(undefined)
-        if (event?.type === "pointerup" && drag?.mode === "connect" && drag.id && drag.moved && canEdit && root.current && nodes.some(node => node.id === drag.id)) {
+        if (event?.type === "pointerup" && drag?.mode === "connect" && drag.id && canEdit && root.current && nodes.some(node => node.id === drag.id)) {
+            if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) {
+                onConnect?.(drag.id, "")
+                return
+            }
             const target = connectionTargetAt(nodes, worldPoint(event), drag.id, 6 / zoom)
             if (target) onConnect?.(drag.id, target.id)
         }
@@ -228,6 +241,23 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
                 style={{"--canvas-pan-x": `${pan.x}px`, "--canvas-pan-y": `${pan.y}px`, "--canvas-zoom": zoom, ...canvasGridBackground(zoom, pan)} as CSSProperties}
                 onPointerDown={event => {if (!(event.target as HTMLElement).closest("button, input, textarea, select, a, [contenteditable=true]")) start(event)}} onPointerMove={move} onPointerUp={end} onPointerCancel={() => end()} onLostPointerCapture={() => end()}
                 onAuxClick={event => {if (event.button === 1) event.preventDefault()}}
+                onDragOver={fileDrop && (event => {
+                    if (!event.dataTransfer.types.includes("Files")) return
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = canEdit ? "copy" : "none"
+                    setFileDragging(canEdit)
+                })}
+                onDragLeave={fileDrop && (event => {
+                    const target = event.relatedTarget
+                    if (!target || !(target instanceof Node) || !event.currentTarget.contains(target)) setFileDragging(false)
+                })}
+                onDrop={fileDrop && (event => {
+                    setFileDragging(false)
+                    if (!event.dataTransfer.types.includes("Files")) return
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (canEdit) fileDrop.onDrop(event.dataTransfer.files)
+                })}
                 onCopy={event => {
                     if ((event.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]") || gesture.current) return
                     const text = onCopy?.()
@@ -283,15 +313,15 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
             {displayNodes.filter(node => !cullNodes || selectedIds.includes(node.id) || intersectsViewport(node, viewport)).map(node => <div key={node.id} className={`tool-node ${selectedIds.includes(node.id) ? "selected" : ""} ${node.locked ? "locked" : ""} ${connection?.targetId === node.id ? "connection-target" : ""}`}
                 style={{left: node.x, top: node.y, width: node.width, height: node.height}} onPointerDown={event => start(event, node)}>
                 {renderNode(node, {zoom})}
-                {onConnect && canEdit && ([-1, 1] as const).map(side => <button key={side} type="button" className={`tool-connect-handle ${side === -1 ? "left" : "right"}`}
-                    aria-label={`Connect ${node.name ?? "table"} from ${side === -1 ? "left" : "right"} edge`} title={connectionHint}
-                    onPointerDown={event => startConnection(event, node, side)} onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); event.stopPropagation(); onConnect(node.id, "")}}}/>)}
+                {onConnect && canEdit && <button type="button" className="tool-connect-handle" aria-label={`Connect ${node.name ?? "table"}`} title={connectionHint}
+                    onPointerDown={event => startConnection(event, node)} onClick={event => {if (event.detail === 0) onConnect(node.id, "")}}><Link2 aria-hidden="true"/></button>}
                 {canEdit && onResize && !node.locked && selectedIds.includes(node.id) && <button type="button" aria-label="Resize selected layer" className="tool-resize-handle" onPointerDown={event => start(event, node, true)}/>}
             </div>)}
-            {connection && <ConnectionPreview connection={connection} zoom={zoom}/>}
+            {connection && gesture.current?.moved && <ConnectionPreview connection={connection} zoom={zoom}/>}
             {marquee && <div className="tool-marquee" style={{left: marquee.x, top: marquee.y, width: marquee.width, height: marquee.height}}/>}
         </div>
         {nodes.length === 0 && emptyState}
+        {fileDrop && canEdit && fileDragging && <div aria-hidden="true" className="pointer-events-none absolute inset-2 z-20 grid place-items-center rounded-lg border-2 border-dashed border-primary bg-background/90 p-6 text-center text-sm font-semibold text-foreground">{fileDrop.hint}</div>}
         <ZoomControls zoom={zoom} onZoom={changeZoom} onFit={fit}/>
     </div>
 }

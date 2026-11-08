@@ -1,4 +1,6 @@
 .erd-table-card { position: relative; width: 100%; height: 100%; }
+.tool-node:has(> .tool-connect-handle) .erd-table > header { padding-right: 48px; }
+.tool-node:has(> .tool-connect-handle) .erd-table > header > small { flex-shrink: 0; }
 .erd-workspace .tool-node { z-index: 3; }
 .erd-workspace .erd-connections, .erd-workspace .erd-connections:has(.erd-relationship.selected) { z-index: 1; }
 .erd-table-overview > .erd-table { box-shadow: none; }

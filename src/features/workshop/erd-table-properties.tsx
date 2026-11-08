@@ -7,16 +7,16 @@ import {ErdColumnNavigator} from "./erd-column-navigator"
 
 export type ErdPropertiesTab = "columns" | "table" | "relationships"
 
-export function ErdTableProperties({table, field, tab, onTabChange, canEdit, relationshipCount, relationships, onSelectField, onAddColumn, onUpdateField, onUpdateTable, onDeleteField, onDeleteTable}: {
+export function ErdTableProperties({table, field, tab, onTabChange, canEdit, relationships, onSelectField, onAddColumn, onUpdateField, onUpdateTable, onDeleteField, onDeleteTable}: {
     table: ErdTable; field?: ErdField; tab: ErdPropertiesTab; onTabChange: (tab: ErdPropertiesTab) => void; canEdit: boolean;
-    relationshipCount: number; relationships: ReactNode; onSelectField: (id: string) => void; onAddColumn: () => void;
+    relationships: ReactNode; onSelectField: (id: string) => void; onAddColumn: () => void;
     onUpdateField: (changes: Partial<ErdField>) => void; onUpdateTable: (changes: Partial<ErdTable>) => void;
     onDeleteField: () => void; onDeleteTable: () => void;
 }) {
     const id = useId()
     const tabs = [{id: "columns", label: "Columns"}, {id: "table", label: "Table"}, {id: "relationships", label: "Relations"}] as const
     return <>
-        <div className="erd-properties-context"><div><strong>{table.name}</strong><small>{table.fields.length} columns · {relationshipCount} relationships</small></div></div>
+        <div className="erd-properties-context"><strong>{table.name}</strong></div>
         <div className="erd-properties-tabs" role="tablist" aria-label="Table properties">
             {tabs.map(({id: value, label}, index) => <button type="button" role="tab" key={value} id={`${id}-${value}`} aria-selected={tab === value} aria-controls={`${id}-content`} tabIndex={tab === value ? 0 : -1} onClick={() => onTabChange(value)} onKeyDown={event => {
                 const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1

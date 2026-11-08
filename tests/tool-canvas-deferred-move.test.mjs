@@ -46,7 +46,7 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
         return require(name)
     }})
     const root = {clientWidth: 1000, clientHeight: 800, focus() {}, addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, querySelector: () => null, getBoundingClientRect: () => ({left: 0, top: 0})}
-    const event = (x, type = 'pointermove') => ({type, button: 0, pointerId: 1, clientX: x, clientY: 100, preventDefault() {}, stopPropagation() {}})
+    const event = (x, type = 'pointermove', y = 100) => ({type, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {}, stopPropagation() {}})
     function all(node, result = []) {
         if (Array.isArray(node)) node.forEach(child => all(child, result))
         else if (node?.props) {result.push(node); all(node.props.children, result)}
@@ -63,12 +63,13 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
     }
     return {
         render,
+        connectButtons() {return all(render()).filter(node => node.props.className === 'tool-connect-handle')},
         unmount() {cleanups.forEach(cleanup => cleanup?.())},
         resize(width, height) {root.clientWidth = width; root.clientHeight = height; observers.forEach(observer => observer.callback()); render()},
         fit() {all(render()).find(node => node.props.onFit).props.onFit(); render()},
         start() {all(render()).find(node => node.props.className?.startsWith('tool-node ')).props.onPointerDown(event(100, 'pointerdown'))},
-        move(x) {render().props.onPointerMove(event(x))},
-        release(x) {render().props.onPointerUp(event(x, 'pointerup'))},
+        move(x, y) {render().props.onPointerMove(event(x, 'pointermove', y))},
+        release(x, y) {render().props.onPointerUp(event(x, 'pointerup', y))},
         cancel() {render().props.onPointerCancel()},
         capture(options = {}) {
             const event = {...eventForPan(options), defaultPrevented: false, stopped: false, preventDefault() {this.defaultPrevented = true}, stopPropagation() {this.stopped = true}}
@@ -113,6 +114,28 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
 function eventForPan({button = 0, control = false} = {}) {
     return {type: 'pointerdown', button, pointerId: 1, pointerType: 'mouse', clientX: 100, clientY: 100, target: {closest: () => control ? {} : null}}
 }
+
+test('each table has one header control for clicking, keyboard activation, and dragging to connect', () => {
+    const connections = []
+    const nodes = [{id: 'source', name: 'Source', x: 0, y: 0, width: 300, height: 100}, {id: 'target', name: 'Target', x: 400, y: 0, width: 300, height: 100}]
+    const props = {nodes, onConnect: (from, to) => connections.push([from, to])}
+    const c = canvas(true, props)
+    const buttons = c.connectButtons()
+    assert.deepEqual(buttons.map(button => button.props['aria-label']), ['Connect Source', 'Connect Target'])
+    assert.equal(canvas(true, {...props, canEdit: false}).connectButtons().length, 0)
+    const start = () => c.connectButtons()[0].props.onPointerDown({button: 0, pointerId: 1, clientX: 285, clientY: 120,
+        currentTarget: {getBoundingClientRect: () => ({left: 272, top: 106, width: 26, height: 26})}, preventDefault() {}, stopPropagation() {}})
+    start()
+    c.release(286, 120)
+    buttons[0].props.onClick({detail: 0})
+    start()
+    c.move(425, 120)
+    c.release(425, 120)
+    start()
+    c.move(350, 120)
+    c.release(350, 120)
+    assert.deepEqual(connections, [['source', ''], ['source', ''], ['source', 'target']])
+})
 
 test('middle-mouse panning captures child gestures, shows dragging state, and never changes the document', () => {
     const c = canvas()
@@ -250,6 +273,37 @@ test('read-only canvas permits copying and selecting but blocks cut, paste and d
     c.key('d', {ctrlKey: true}); c.key('Delete'); c.key('a', {ctrlKey: true})
     assert.deepEqual(actions, [])
     assert.deepEqual(c.selection(), ['table'])
+})
+
+test('canvas file drops pass local files through only when editing is enabled', () => {
+    const imports = [], hint = 'Drop an ERD file'
+    const fileDrop = {hint, onDrop: files => imports.push(files[0])}
+    const editable = canvas(true, {fileDrop, nodes: []}), readonly = canvas(true, {fileDrop, canEdit: false})
+    const showsHint = c => c.render().props.children.some(child => child?.props?.children === hint)
+    const event = (types, files = []) => ({dataTransfer: {types, files}, prevented: false, preventDefault() {this.prevented = true}, stopPropagation() {}})
+    const textDrag = event(['text/plain'])
+    editable.render().props.onDragOver(textDrag)
+    editable.render().props.onDrop(textDrag)
+    assert.equal(textDrag.prevented, false)
+    const hover = event(['Files'])
+    editable.render().props.onDragOver(hover)
+    assert.equal(hover.dataTransfer.dropEffect, 'copy')
+    assert.equal(showsHint(editable), true)
+    editable.render().props.onDragLeave({relatedTarget: null})
+    assert.equal(showsHint(editable), false)
+    for (const name of ['schema.sql', 'draft.json']) {
+        const file = new File([], name), drop = event(['Files'], [file])
+        editable.render().props.onDrop(drop)
+        assert.equal(drop.prevented, true)
+        assert.equal(imports.at(-1), file)
+    }
+    readonly.render().props.onDragOver(hover)
+    assert.equal(hover.dataTransfer.dropEffect, 'none')
+    assert.equal(showsHint(readonly), false)
+    const blocked = event(['Files'], [new File([], 'readonly.sql')])
+    readonly.render().props.onDrop(blocked)
+    assert.equal(blocked.prevented, true)
+    assert.equal(imports.length, 2)
 })
 
 test('ERD restores zoom and pan across tool switches, delayed loading and explicit fit requests', t => {
