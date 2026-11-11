@@ -15,7 +15,7 @@ import {advanceSdlc, advanceSdlcRelease, maxSdlcHistory, nextSdlcPhase, sdlcPhas
 import {sdlcCompletion, sdlcPhaseState, sdlcReadiness} from "@/features/workshop/sdlc-work"
 import {SdlcArchiveNotice, SdlcCompletionDialog, SdlcOverview, SdlcPhaseWorkPanel} from "@/features/workshop/sdlc-work-panels"
 import {roadmapSize} from "@/features/workshop/sdlc-camera"
-import {sdlcAdvanceLabel, sdlcLinks, sdlcQuality, sdlcRework} from "@/features/workshop/sdlc-flow"
+import {sdlcAdvanceLabel, sdlcLinks, sdlcRework} from "@/features/workshop/sdlc-flow"
 import {useSdlcCamera} from "@/features/workshop/use-sdlc-camera"
 import {SdlcConstellationIllustration} from "@/features/workshop/sdlc-constellation-illustration"
 import {SdlcStarfield} from "@/features/workshop/sdlc-starfield"
@@ -217,8 +217,6 @@ function SdlcRoadmap() {
                 <p className="sdlc-phase-description">{phase.description}</p>
                 <SdlcPhaseWorkPanel phase={phase} work={detailWork?.[phase.id]} members={organization.members} canEdit={canEdit} archived={readOnlyPhase} done={detailDone(selected)} onChange={changes => {if (!readOnlyPhase) setDocument(value => updateSdlcWork(value, document.model, phase.id, changes, releaseView))}} begin={editor.beginTransaction} end={editor.endTransaction}/>
                 <label className="sdlc-notes-field">Phase notes<textarea aria-label="Phase notes" disabled={!canEdit || readOnlyPhase} rows={5} maxLength={10000} placeholder="Record milestones, decisions and progress…" value={detailNotes[phase.id] ?? ""} onFocus={editor.beginTransaction} onBlur={editor.endTransaction} onChange={event => {if (!readOnlyPhase) setDocument(value => updateSdlcNote(value, document.model, phase.id, event.target.value, releaseView))}}/></label>
-                <details className="sdlc-quality-details" key={`${document.model}:${phase.id}`}><summary>Quality & validation guidance</summary><section className="sdlc-quality-activity" aria-label="Quality activity"><strong>{document.model === "v-model" && selected < 4 ? "Review & test preparation" : "Quality activity"}</strong><p>{sdlcQuality(document.model, phase)}</p></section>{pairedPhase >= 0 && <div className="sdlc-validation-pair"><small>{selected < 4 ? "Validated by" : "Verifies"}</small><button type="button" onClick={() => select(pairedPhase)}>{phases[pairedPhase].title}<ArrowRight/></button></div>}</details>
-                <p className="tool-help">{model.summary} {model.cycle ? "Each new cycle keeps the previous cycle's notes in history." : "Setting a phase marks earlier phases complete. You can return to an earlier phase at any time."}</p>
                 <div className="sdlc-phase-list">{detailPhases.map((item, index) => <button type="button" key={item.id} className={selected === index ? "active" : ""} onClick={() => select(index)}><span>{detailDone(index) ? <Check/> : item.optional ? "◇" : item.ongoing ? "↻" : releaseView ? index + 1 : phaseNumber(index)}</span>{item.title}{item.optional && <small>Optional</small>}{index === detailCurrent && !detailCompleted && <i/>}</button>)}</div>
             </aside>
             <footer className="sdlc-phase-actions">{phaseActions()}</footer>

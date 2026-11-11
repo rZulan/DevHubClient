@@ -5630,6 +5630,7 @@
         width: 100%;
         min-height: 0;
         height: 100%;
+        border: 0;
     }
 
     .workshop-personal-todo > [data-slot="card"] {
@@ -6036,29 +6037,30 @@
 
     .workshop-widget-section {
         position: relative;
+        container-type: inline-size;
     }
 
     .workshop-widget-section + .workshop-widget-section {
-        margin-top: 1.25rem;
+        margin-top: var(--dashboard-widget-gap, 1.25rem);
     }
 
     .workshop-widget-grid {
         display: grid;
         align-items: stretch;
-        gap: 1.25rem;
+        gap: var(--dashboard-widget-gap, 1.25rem) min(var(--dashboard-widget-gap, 1.25rem), 4cqw);
         grid-auto-flow: row dense;
         grid-auto-rows: 5rem;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-columns: repeat(20, minmax(0, 1fr));
     }
 
     .workshop-add-section-rail {
         position: absolute;
         z-index: 4;
-        top: -1.25rem;
+        top: calc(-1 * var(--dashboard-widget-gap, 1.25rem));
         left: 0;
         display: flex;
         width: 100%;
-        height: 1.25rem;
+        height: var(--dashboard-widget-gap, 1.25rem);
         align-items: center;
         justify-content: center;
         border: 0;
@@ -6116,7 +6118,7 @@
         display: flex;
         width: 100%;
         min-height: 5.625rem;
-        margin-top: 1.25rem;
+        margin-top: var(--dashboard-widget-gap, 1.25rem);
         align-items: center;
         justify-content: center;
         flex-direction: column;
@@ -7329,6 +7331,10 @@
 
         .workshop-form-grid.three > label:first-child {
             grid-column: 1 / -1;
+        }
+
+        .workshop-widget-grid {
+            grid-template-columns: minmax(0, 1fr);
         }
 
         .workshop-widget {
@@ -12001,11 +12007,6 @@
     .sdlc-phase-inspector { width: 280px; }
     .sdlc-phase-number { display: grid; place-items: center; width: 38px; height: 38px; background: color-mix(in oklab, var(--primary) 13%, var(--background)); color: var(--primary); border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
     .sdlc-phase-description { font-size: 13px; line-height: 1.8; color: var(--muted-foreground); margin-bottom: 22px; }
-    .sdlc-validation-pair { margin: -4px 0 22px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; }
-    .sdlc-validation-pair > small { color: var(--muted-foreground); font-size: 11px; }
-    .sdlc-validation-pair > button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding-top: 6px; text-align: left; cursor: pointer; font-size: 12px; }
-    .sdlc-validation-pair svg { width: 13px; height: 13px; }
-    .sdlc-validation-pair button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
     .sdlc-deliverables { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 24px; }
     .sdlc-deliverables li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted-foreground); line-height: 1.5; }
     .sdlc-deliverables svg { width: 13px; height: 13px; color: var(--primary); flex-shrink: 0; }
@@ -12354,7 +12355,7 @@
     .workshop-board-column > header strong { font-size: 14px; }
     .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
     .workshop-board, .workshop-board.workshop-todo-board { grid-template-columns: repeat(var(--todo-column-count, 3), minmax(min(78vw, 300px), 1fr)); }
-    .workshop-widget-grid { gap: 16px; }
+    .workshop-widget-grid { gap: var(--dashboard-widget-gap, 16px); }
     .workshop-widget { min-width: 0; }
     .workshop-project-detail-actions, .workshop-dashboard-heading-actions { flex-wrap: wrap; }
     .workshop-team-summary, .workshop-stat-grid { gap: 10px; }

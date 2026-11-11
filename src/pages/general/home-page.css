@@ -1,4 +1,4 @@
-.devhub-landing { --landing-lilac: #7453ab; }
+.devhub-landing { --landing-lilac: #7453ab; --landing-detail-border: color-mix(in srgb, var(--border) 55%, transparent); }
 .dark .devhub-landing { --landing-lilac: #c6b5f5; }
 .landing-hero { display: grid; grid-template-columns: .9fr 1.15fr; align-items: center; gap: 28px; min-height: 484px; }
 .landing-hero-copy { position: relative; z-index: 2; }
@@ -15,13 +15,13 @@
 .landing-button:hover { transform: translateY(-2px); box-shadow: 0 8px 22px #00000018; }
 .landing-button:focus-visible, .landing-showcase-copy > a:focus-visible { outline: 2px solid var(--ring); outline-offset: 5px; }
 .landing-workshop-scene { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; width: 100%; height: 360px; padding: 12px; }
-.landing-app-window { position: relative; width: 100%; max-width: 500px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--foreground) 22%, var(--border)); border-radius: 12px; background: var(--card); color: var(--card-foreground); box-shadow: 0 25px 60px #00000028; }
-.landing-window-bar { display: flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-bottom: 1px solid var(--border); }
+.landing-app-window { position: relative; width: 100%; max-width: 500px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--card-foreground); box-shadow: 0 25px 60px #00000028; }
+.landing-window-bar { display: flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-bottom: 1px solid var(--landing-detail-border); }
 .landing-window-bar > span { width: 5px; height: 5px; border-radius: 50%; background: var(--muted-foreground); opacity: .45; }
 .landing-window-bar > small { margin-left: 8px; color: var(--muted-foreground); font-size: 8px; }
 .landing-window-bar > svg { width: 10px; height: 10px; margin-left: auto; opacity: .5; }
 .landing-app-layout { display: flex; min-height: 244px; }
-.landing-app-sidebar { display: flex; flex: 0 0 104px; min-width: 0; flex-direction: column; gap: 5px; padding: 12px 8px; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--foreground) 3%, var(--card)); }
+.landing-app-sidebar { display: flex; flex: 0 0 104px; min-width: 0; flex-direction: column; gap: 5px; padding: 12px 8px; background: color-mix(in srgb, var(--foreground) 3%, var(--card)); }
 .landing-app-sidebar > strong { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 10px; font-weight: 600; }
 .landing-app-sidebar > strong > span { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 5px; background: #dbd0f4; color: #4d3e70; }
 .landing-app-sidebar > span { display: flex; align-items: center; gap: 6px; padding: 6px; color: var(--muted-foreground); font-size: 8px; }
@@ -39,14 +39,14 @@
 .landing-app-heading strong { font-family: var(--workshop-font-heading); font-size: 16px; font-weight: 700; letter-spacing: -.03em; }
 .landing-app-heading > svg { width: 13px; height: 13px; color: var(--muted-foreground); }
 .landing-todo-board { --landing-todo-gap: 7px; --landing-todo-padding: 6px; --landing-task-gap: calc(var(--landing-todo-padding) + var(--landing-todo-padding) + 2px + var(--landing-todo-gap)); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--landing-todo-gap); }
-.landing-todo-column { min-width: 0; min-height: 162px; padding: var(--landing-todo-padding); border: 1px solid var(--border); border-radius: 5px; background: color-mix(in srgb, var(--foreground) 3%, var(--card)); }
+.landing-todo-column { min-width: 0; min-height: 162px; padding: var(--landing-todo-padding); border: 1px solid transparent; border-radius: 5px; background: color-mix(in srgb, var(--foreground) 3%, var(--card)); }
 .landing-todo-column > header { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
 .landing-todo-column > header > i { width: 4px; height: 4px; flex-shrink: 0; border-radius: 50%; background: #a78bfa; }
 .landing-todo-column[data-state="progress"] > header > i { background: #e7b568; }
 .landing-todo-column[data-state="done"] > header > i { background: #7cab8a; }
 .landing-todo-column > header > strong { font-size: 7px; font-weight: 550; }
 .landing-todo-column > header > small { margin-left: auto; color: var(--muted-foreground); font-size: 6px; }
-.landing-todo-card { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; padding: 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); }
+.landing-todo-card { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; padding: 7px; border: 1px solid var(--landing-detail-border); border-radius: 4px; background: var(--card); }
 .landing-todo-card > span { align-self: flex-start; padding: 2px 4px; border-radius: 3px; background: #a78bfa1c; color: var(--landing-lilac); font-size: 5px; }
 .landing-todo-card > strong { overflow-wrap: anywhere; font-size: 8px; font-weight: 550; line-height: 1.4; }
 .landing-todo-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 3px; padding-top: 3px; }
@@ -64,7 +64,7 @@
 .landing-floating-people { position: absolute; right: 0; top: 20px; display: flex; transform: rotate(7deg); }
 .landing-floating-people > img { width: 39px; height: 39px; margin-left: -10px; object-fit: cover; border: 3px solid var(--background); border-radius: 50%; }
 .landing-showcases { display: grid; gap: 100px; margin-top: 120px; }
-.landing-showcase { display: grid; grid-template-columns: 1.25fr 1fr; align-items: center; gap: 34px; min-height: 450px; padding: 30px; border: 1px solid var(--border); border-radius: 32px; background: color-mix(in srgb, var(--card) 72%, transparent); backdrop-filter: blur(12px); }
+.landing-showcase { display: grid; grid-template-columns: 1.25fr 1fr; align-items: center; gap: 34px; min-height: 450px; padding: 30px; border-radius: 32px; background: color-mix(in srgb, var(--card) 72%, transparent); backdrop-filter: blur(12px); }
 .landing-showcase-visual { position: relative; min-width: 0; }
 .landing-showcase-copy { min-width: 0; padding: 8px 6px; }
 .landing-section-label { display: block; margin-bottom: 18px; color: var(--muted-foreground); font-size: 11px; font-weight: 550; }
@@ -89,7 +89,7 @@
 .landing-tool-note > footer > svg { width: 11px; height: 11px; }
 .landing-schema-lines { position: absolute; inset: 0; width: 100%; height: 100%; stroke: #a78bfa; stroke-width: 1.7px; stroke-linejoin: round; }
 .landing-schema-lines > circle { fill: var(--card); }
-.landing-schema-table { position: absolute; right: 0; width: 164px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--foreground) 22%, var(--border)); border-radius: 8px; background: var(--card); color: var(--foreground); font-family: var(--workshop-font-code); font-size: 10px; box-shadow: 0 10px 25px #00000015; }
+.landing-schema-table { position: absolute; right: 0; width: 164px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--foreground); font-family: var(--workshop-font-code); font-size: 10px; box-shadow: 0 10px 25px #00000015; }
 .landing-schema-project { top: 38px; transform: rotate(4deg); }
 .landing-schema-task { bottom: 38px; transform: rotate(4deg); }
 .landing-schema-table > strong { display: flex; align-items: center; gap: 7px; padding: 12px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, #a78bfa 12%, var(--card)); font-weight: 500; }
@@ -100,7 +100,7 @@
 .landing-schema-table small { color: var(--muted-foreground); font-size: 8px; }
 .landing-sql-tag { position: absolute; left: 38%; bottom: -6px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--muted-foreground); font-size: 9px; transform: rotate(3deg); }
 .landing-sql-tag > svg { width: 12px; height: 12px; color: var(--landing-lilac); }
-.landing-discovery-scene { position: relative; display: grid; place-items: center; width: 100%; height: 360px; overflow: hidden; border: 1px solid #c4b5fd22; border-radius: 24px; background: #121321; color: #e8e5f7; }
+.landing-discovery-scene { position: relative; display: grid; place-items: center; width: 100%; height: 360px; overflow: hidden; border-radius: 24px; background: #121321; color: #e8e5f7; }
 .landing-discovery-orbit { position: absolute; width: 390px; height: 185px; border: 1px solid #a78bfa40; border-radius: 50%; transform: rotate(-27deg); }
 .landing-discovery-orbit-two { width: 290px; height: 315px; border-style: dashed; transform: rotate(25deg); opacity: .5; }
 .landing-space-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #d9d1f9; opacity: .55; }

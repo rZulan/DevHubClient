@@ -19,15 +19,15 @@ export const AppHeader = memo(function AppHeader() {
 
     return (
         <header className="border-b bg-background/95 backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-3 sm:px-4">
                 <Link aria-label="Zevont home" className="flex items-center gap-2 font-semibold tracking-tight" to="/">
                     <BrandMark className="size-9"/>
-                    <span>Zevont</span>
+                    <span className="hidden min-[360px]:inline">Zevont</span>
                 </Link>
-                <div className="flex items-center gap-2">
-                    <nav aria-label="Main navigation" className="hidden items-center gap-1 sm:flex">
+                <div className="flex items-center gap-1 sm:gap-2">
+                    <nav aria-label="Main navigation" className="flex items-center gap-1">
                         {navItems.filter((item) => !item.requiresUser || user).map((item) => (
-                            <Button asChild key={item.to} size="sm" variant="ghost">
+                            <Button asChild className="hidden sm:inline-flex" key={item.to} size="sm" variant="ghost">
                                 <NavLink
                                     className={({isActive}) =>
                                         cn(isActive && "bg-muted text-foreground")
@@ -39,18 +39,21 @@ export const AppHeader = memo(function AppHeader() {
                                 </NavLink>
                             </Button>
                         ))}
+                        <Button asChild size="sm" variant="ghost">
+                            <a href="https://docs.dev-hub.site/">Docs</a>
+                        </Button>
                     </nav>
                     {user ? (
                         <UserMenu user={user}/>
                     ) : (
                         <>
-                            <ThemeToggle/>
                             <Button asChild size="sm" variant="ghost">
                                 <Link to="/login">Log in</Link>
                             </Button>
                             <Button asChild size="sm">
                                 <Link to="/register">Get started</Link>
                             </Button>
+                            <ThemeToggle/>
                         </>
                     )}
                 </div>

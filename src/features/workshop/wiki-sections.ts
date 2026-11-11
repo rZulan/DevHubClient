@@ -1,8 +1,8 @@
 import type {Element, Root, RootContent} from "hast"
 
-function headingText(node: RootContent): string {
+export function wikiHeadingText(node: RootContent): string {
     if (node.type === "text") return node.value
-    return node.type === "element" ? node.children.map(headingText).join("") : ""
+    return node.type === "element" ? node.children.map(wikiHeadingText).join("") : ""
 }
 
 /** Give headings stable anchors, then group each heading with its content and subsections. */
@@ -13,7 +13,7 @@ export function rehypeWikiSections({collapsedSections, prefix = "wiki-section"}:
             for (const node of nodes) {
                 if (node.type !== "element") continue
                 if (/^h[1-6]$/.test(node.tagName)) {
-                    const base = headingText(node).toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-") || "section"
+                    const base = wikiHeadingText(node).toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-") || "section"
                     let count = counts.get(base) ?? 0
                     let anchor = String(node.properties.id ?? `${base}${count ? `-${count}` : ""}`)
                     while (used.has(anchor)) {count++; anchor = `${base}-${count}`}

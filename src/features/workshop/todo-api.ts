@@ -1,4 +1,5 @@
 import {api} from "@/services/api"
+import type {FetchBaseQueryError, QueryReturnValue} from "@reduxjs/toolkit/query"
 
 export type TodoTask = {
     id: string;
@@ -11,6 +12,7 @@ export type TodoTask = {
     assigneeIds: string[]
     startDate?: string | null;
     targetDate?: string | null;
+    finishedAtUtc?: string | null;
 }
 export type TodoColumn = { id: string; name: string }
 export const defaultTodoColumns: TodoColumn[] = [{id: "pending", name: "Pending"}, {
@@ -25,6 +27,7 @@ export type Todo = {
     targetDate: string | null;
     startDate?: string | null;
     createdAtUtc: string;
+    finishedAtUtc?: string | null;
     tasks: TodoTask[];
     columns: TodoColumn[];
     boardRevision: number
@@ -33,6 +36,17 @@ type Scope = { organizationId: string; projectId: string }
 export type TodoDates = {startDate: string | null; targetDate: string | null}
 export type TodoTaskDetails = {title: string; description: string; status: string; assigneeIds: string[]} & TodoDates
 const path = ({organizationId, projectId}: Scope) => `/organizations/${organizationId}/projects/${projectId}/todos`
+type TodoPageResult = QueryReturnValue<unknown, FetchBaseQueryError>
+async function readTodos(scope: Scope, read: (url: string) => TodoPageResult | PromiseLike<TodoPageResult>) {
+    const items: Todo[] = []
+    for (let page = 0; ; page++) {
+        const result = await read(`${path(scope)}/pages?page=${page}&pageSize=50`)
+        if (result.error) return {error: result.error}
+        const batch = result.data as {items: Todo[]; hasMore: boolean}
+        items.push(...batch.items)
+        if (!batch.hasMore) return {data: items}
+    }
+}
 export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndpoints({
     endpoints: (builder) => ({
         updateTodoDates: builder.mutation<Todo, Scope & TodoDates & {todoId: string; boardRevision: number}>({
@@ -64,17 +78,22 @@ export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndp
             providesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
         listTodos: builder.query<Todo[], Scope>({
-            async queryFn(scope, _api, _options, baseQuery) {
-                const items: Todo[] = []
-                for (let page = 0; ; page++) {
-                    const result = await baseQuery(`${path(scope)}/pages?page=${page}&pageSize=50`)
-                    if (result.error) return {error: result.error}
-                    const batch = result.data as {items: Todo[]; hasMore: boolean}
-                    items.push(...batch.items)
-                    if (!batch.hasMore) return {data: items}
-                }
-            },
+            queryFn: (scope, _api, _options, baseQuery) => readTodos(scope, baseQuery),
             providesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
+        }),
+        listDashboardTodos: builder.query<Todo[], {organizationId: string; projectIds: string[]}>({
+            async queryFn({organizationId, projectIds}, _api, _options, baseQuery) {
+                const items: Todo[] = []
+                for (let offset = 0; offset < projectIds.length; offset += 4) {
+                    const batch = await Promise.all(projectIds.slice(offset, offset + 4).map(projectId => readTodos({organizationId, projectId}, baseQuery)))
+                    for (const result of batch) {
+                        if (result.error) return {error: result.error}
+                        items.push(...result.data)
+                    }
+                }
+                return {data: items}
+            },
+            providesTags: (_data, _error, {organizationId, projectIds}) => projectIds.map(projectId => ({type: "Todos", id: path({organizationId, projectId})})),
         }),
         createTodo: builder.mutation<Todo, Scope & TodoDates & { name: string; description: string }>({
             query: ({name, description, targetDate, startDate, ...scope}) => ({
@@ -155,6 +174,7 @@ export const {
     useTodoPagesInfiniteQuery,
     useGetTodoQuery,
     useListTodosQuery,
+    useListDashboardTodosQuery,
     useCreateTodoMutation,
     useCreateTodoTaskMutation,
     useMoveTodoTaskMutation,

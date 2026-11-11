@@ -260,6 +260,13 @@ export type SaveProjectInput = {
     targetDate?: string
 }
 
+export type DashboardQuickLink = "teams" | "org-chart" | "sdlc" | "todo" | "calendar" | "bug-reports" | "erd" | "ui-editor" | "uml" | "project-wiki" | "project"
+export type DashboardImageFrame = "top" | "top-inset" | "left" | "right" | "left-inset" | "right-inset" | "full"
+export type DashboardGraph = "tasks" | "todos" | "bugs" | "bug-status" | "todo-activity" | "task-activity"
+export type DashboardInfo = "org-todos" | "team-todos" | "personal-todos" | "org-tasks" | "team-tasks" | "personal-tasks" | "schedule" | "org-teams" | "org-members" | "team-members"
+export type DashboardNewWidgetType = `link-${DashboardQuickLink}-${"card" | "chip"}` | `text-rows-${1 | 2 | 3}`
+    | `image-${DashboardImageFrame}` | `graph-${DashboardGraph}` | `info-${DashboardInfo}`
+
 export type DashboardWidgetType =
     | "welcome"
     | "quick-actions"
@@ -274,10 +281,18 @@ export type DashboardWidgetType =
     | "project-overview"
     | "team-distribution"
     | "text"
+    | "image-rounded"
+    | DashboardNewWidgetType
 
 export type DashboardWidgetSize = "full" | "two-thirds" | "half" | "third" | "sixth"
-export type DashboardWidgetWidth = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4
-export type DashboardWidgetHeight = 0.5 | 1 | 1.5 | 2
+export type DashboardWidgetWidth = 0.5 | 1 | 1.25 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5
+export type DashboardWidgetHeight = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4
+export type DashboardWidgetThemeColor = "primary" | "secondary" | "accent" | "muted" | "background" | "card" | "popover" | "sidebar"
+export type DashboardWidgetAppearance = {
+    radius?: number | null
+    color?: DashboardWidgetThemeColor | `#${string}` | null
+    opacity?: number | null
+}
 
 export type DashboardWidget = {
     id: string
@@ -289,14 +304,17 @@ export type DashboardWidget = {
     width?: DashboardWidgetWidth
     height?: DashboardWidgetHeight
     content?: string | null
+    appearance?: DashboardWidgetAppearance | null
 }
 
 export type OrganizationDashboard = {
     widgets: DashboardWidget[]
     publishedAtUtc?: string | null
+    widgetGap?: number | null
 }
 
 export type PersonalDashboard = {
     widgets: DashboardWidget[]
     savedAtUtc?: string | null
+    widgetGap?: number | null
 }

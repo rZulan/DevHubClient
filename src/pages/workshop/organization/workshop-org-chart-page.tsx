@@ -1,6 +1,6 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {type CSSProperties, useState} from "react"
-import {ChevronDown, Layers, LoaderCircle, Network, Users} from "lucide-react"
+import {ChevronDown, Layers, LoaderCircle, Users} from "lucide-react"
 import {useOutletContext} from "react-router-dom"
 import {Button} from "@/components/ui/button"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
@@ -32,8 +32,6 @@ export function WorkshopOrgChartPage() {
         (teamFilter === "all" || (teamFilter === "unassigned" ? !directoryMemberTeams(organization, member.id).length : directoryMemberTeams(organization, member.id).some(team => team.id === teamFilter))) &&
         (!search || group.name.toLowerCase().includes(search) || directoryMemberMatches(member, search) || directoryMemberTeams(organization, member.id).some(team => team.name.toLowerCase().includes(search))))
     })).filter(group => group.members.length)
-    const visiblePeople = new Set(groups.flatMap(group => group.members.map(member => member.id))).size
-    const allCollapsed = groups.length > 0 && groups.every(group => collapsed.has(group.id))
 
     return <div className="workshop-page organization-directory directory-chart-page">
         <DirectoryHeading organization={organization} chart/>
@@ -47,7 +45,6 @@ export function WorkshopOrgChartPage() {
         </div>
         {directoryData.isError && <WorkshopToast variant="error">Some organization data could not be refreshed. <Button variant="outline" size="sm" onClick={directoryData.retry}>Try again</Button></WorkshopToast>}
         <section className="directory-chart" aria-label={view === "roles" ? "Role hierarchy" : "Team structure"}>
-            <div className="directory-chart-meta"><span><Network/>{view === "roles" ? "Role hierarchy" : "Team structure"}</span><span role="status">{visiblePeople} of {organization.members.length} people</span><Button variant="ghost" size="sm" disabled={!groups.length} onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groups.map(group => group.id)))}>{allCollapsed ? "Expand all" : "Collapse all"}</Button></div>
             {directoryData.isLoading ? <div className="directory-loading" role="status"><LoaderCircle className="animate-spin"/> Loading organization…</div> : <>
                 <div className="directory-chart-root"><WorkspaceAvatar name={organization.name} avatarUrl={organization.avatarUrl} kind="organization"/><div><small>Organization</small><h3>{organization.name}</h3><p>{organization.members.length} people <i/> {stats.teams} teams</p></div></div>
                 {groups.length ? <div className="directory-chart-branches">{groups.map((group, index) => {
@@ -55,7 +52,7 @@ export function WorkshopOrgChartPage() {
                     return <section className="directory-chart-branch" key={group.id} style={{"--directory-color": group.color} as CSSProperties}>
                         <button className="directory-branch-heading" type="button" aria-expanded={!isCollapsed} aria-controls={`directory-group-${group.id}`} onClick={() => setCollapsed(current => {const next = new Set(current); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next})}>
                             {view === "roles" ? <span className="directory-branch-symbol">{String(index + 1).padStart(2, "0")}</span> : <WorkspaceAvatar className="directory-branch-symbol" name={group.name} avatarUrl={organization.teams.find(team => team.id === group.id)?.avatarUrl} fallback={<Users/>}/>}
-                            <span><small>{view === "roles" ? "Role" : "Team"}</small><h4>{group.name}</h4></span>
+                            <span>{view === "teams" && <small>Team</small>}<h4>{group.name}</h4></span>
                             <span className="directory-branch-count">{group.members.length} {group.members.length === 1 ? "person" : "people"}</span><ChevronDown className={isCollapsed ? "is-collapsed" : ""}/>
                         </button>
                         {!isCollapsed && <div className="directory-branch-people" id={`directory-group-${group.id}`}>{group.members.map(member => <DirectoryPerson key={member.id} member={member} organization={organization} leader={"leaderId" in group && member.id === group.leaderId} onClick={() => setPerson(member)}/>)}</div>}

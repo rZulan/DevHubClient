@@ -1,64 +1,44 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {getDashboardView, setDashboardView} from "@/features/workshop/dashboard-view"
-import {type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState} from "react"
+import {type CSSProperties, type DragEvent, type PointerEvent, useEffect, useMemo, useRef, useState} from "react"
 import {
-    ArrowRight,
-    BarChart3,
-    CheckCircle2,
-    Circle,
-    Clock3,
-    History,
     LayoutDashboard,
-    StickyNote,
-    ListTodo,
     Plus,
     RotateCcw,
     Settings2,
-    TextCursorInput,
-    UserRoundCheck,
-    Users,
     X,
 } from "lucide-react"
-import {Link, useOutletContext, useSearchParams} from "react-router-dom"
+import {useOutletContext, useSearchParams} from "react-router-dom"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Card, CardContent, CardHeader} from "@/components/ui/card"
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
-import {Textarea} from "@/components/ui/textarea"
-import {CreateTeamDialog} from "@/features/workshop/create-team-dialog"
 import {getApiErrorMessage} from "@/features/auth/api-error"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import type {
     DashboardWidget,
     DashboardWidgetHeight,
+    DashboardNewWidgetType,
+    DashboardQuickLink,
     DashboardWidgetSize,
-    DashboardWidgetType,
     DashboardWidgetWidth,
-    WorkshopMember,
-    WorkshopTask,
-    WorkshopTeam,
 } from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {createClientId} from "@/lib/create-client-id"
 import {cn} from "@/lib/utils"
-import {DashboardQuickAction} from "@/features/workshop/dashboard-quick-action"
+import {dashboardWidgetByType, type DashboardCatalogItem} from "@/features/workshop/dashboard-widget-catalog"
+import {DashboardWidgetPicker, dashboardWidgetDragMime, useDashboardPaletteWindow} from "@/features/workshop/dashboard-widget-picker"
+import {DashboardWidgetAppearanceControl, dashboardWidgetAppearanceStyle, normalizeDashboardImageFrame} from "@/features/workshop/dashboard-widget-appearance"
+import {DashboardDataWidget} from "@/features/workshop/dashboard-data-widget"
+import {DashboardMemberPresence} from "@/features/workshop/dashboard-member-presence"
+import {DashboardImageWidget, DashboardTextWidget, dashboardWidgetStarterContent} from "@/features/workshop/dashboard-widget-settings"
+import {DashboardWidgetLink} from "@/features/workshop/dashboard-widget-link"
+import type {DashboardDataContext} from "@/features/workshop/dashboard-placeholders"
+import type {DashboardTextRow} from "@/features/workshop/dashboard-text-format"
+import "@/features/workshop/dashboard-widgets.css"
 import {api, useGetOrganizationDashboardQuery, usePublishOrganizationDashboardMutation, useGetPersonalDashboardQuery, useSavePersonalDashboardMutation} from "@/services/api"
 
-type WidgetCategory = "Quick Actions" | "Graphs" | "Info" | "Text"
-type WidgetCatalogItem = {
-    type: DashboardWidgetType
-    category: WidgetCategory
-    title: string
-    description: string
-    defaultWidth: DashboardWidgetWidth
-    defaultHeight: DashboardWidgetHeight
-    minWidth: DashboardWidgetWidth
-    minHeight: DashboardWidgetHeight
-    icon: typeof LayoutDashboard
-}
 type WidgetInsertTarget = {
     index: number;
     maxColumns: number;
@@ -79,12 +59,30 @@ type WidgetLayout = {
     placements: Map<string, WidgetPlacement>
     slots: WidgetPlacement[]
 }
+type WidgetMoveGesture = {
+    id: string
+    pointerId: number
+    x: number
+    y: number
+    active: boolean
+    columnStep: number
+    rowStep: number
+}
 
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const widgetCategories: WidgetCategory[] = ["Quick Actions", "Graphs", "Info", "Text"]
-const gridColumns = 8
-const widthOrder: DashboardWidgetWidth[] = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
-const heightOrder: DashboardWidgetHeight[] = [0.5, 1, 1.5, 2]
+const columnsPerUnit = 4
+const defaultWidgetGap = 20
+const minWidgetGap = 8
+const maxWidgetGap = 24
+const columnsPerResizeStep = columnsPerUnit / 2
+const gridColumns = 5 * columnsPerUnit
+const maxWidgetColumns = 4 * columnsPerUnit
+const rowsPerHeightUnit = 2
+const maxGridRow = 120
+const maxHeightRows = 2 * rowsPerHeightUnit
+const maxImageHeight = 4
+const maxImageHeightRows = maxImageHeight * rowsPerHeightUnit
+const widthOrder: DashboardWidgetWidth[] = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 const legacyWidths: Record<DashboardWidgetSize, DashboardWidgetWidth> = {
     sixth: 0.5,
     third: 1,
@@ -94,8 +92,25 @@ const legacyWidths: Record<DashboardWidgetSize, DashboardWidgetWidth> = {
 }
 
 function widgetWidth(widget: DashboardWidget): DashboardWidgetWidth {
+    const template = dashboardWidgetByType.get(widget.type)
+    if (template?.fixed) return template.defaultWidth
     const width = widget.width ?? (widget.size ? legacyWidths[widget.size] : 4)
-    return Math.max(width, widgetMinimums[widget.type].width) as DashboardWidgetWidth
+    return Math.max(width, template?.minWidth ?? .5) as DashboardWidgetWidth
+}
+
+function olderQuickLinkCard(widget: DashboardWidget) {
+    return widget.type.startsWith("link-") && widget.type.endsWith("-card") && widget.width !== 1.25
+}
+
+function needsFixedWidgetReflow(widget: DashboardWidget) {
+    if (widget.type === "info-org-members") return widget.height === .5
+    return widget.type.startsWith("graph-") && widget.width != null && widget.width !== widgetWidth(widget)
+}
+
+function savedColumn(widget: DashboardWidget) {
+    if (widget.column == null || !Number.isFinite(widget.column)) return
+    const position = olderQuickLinkCard(widget) && widget.width === 4 / 3 ? Math.round(widget.column * 9 / 8) : widget.column
+    return Math.round(position * columnsPerResizeStep)
 }
 
 function legacySizeForWidth(width: DashboardWidgetWidth): DashboardWidgetSize {
@@ -107,22 +122,154 @@ function legacySizeForWidth(width: DashboardWidgetWidth): DashboardWidgetSize {
 }
 
 function widgetHeight(widget: DashboardWidget): DashboardWidgetHeight {
-    const height = widget.height && heightOrder.includes(widget.height) ? widget.height : 1
-    return Math.max(height, widgetMinimums[widget.type].height) as DashboardWidgetHeight
+    const template = dashboardWidgetByType.get(widget.type)
+    if (template?.fixed) return template.defaultHeight
+    const savedHeight = widget.height ?? 1
+    // Round previously saved quarter heights up so the widget keeps enough room for its content.
+    const maxHeight = template?.category === "Image Containers" ? maxImageHeight : 2
+    const height = Number.isInteger(savedHeight * 4) && savedHeight >= .25 && savedHeight <= maxHeight
+        ? Math.ceil(savedHeight * rowsPerHeightUnit) / rowsPerHeightUnit : 1
+    return Math.max(height, template?.minHeight ?? .5) as DashboardWidgetHeight
+}
+
+function isWidgetAreaFree(cells: WidgetLayout['cells'], placement: WidgetPlacement, ignoreId?: string) {
+    const {column, row, width, heightRows} = placement
+    if (column < 0 || column + width > gridColumns || row < 0 || row > maxGridRow) return false
+    for (let y = row; y < row + heightRows; y++) {
+        for (let x = column; x < column + width; x++) {
+            const occupant = cells[y]?.[x]
+            if (occupant && occupant !== ignoreId) return false
+        }
+    }
+    return true
+}
+
+function closestPlacementOverGap(cells: WidgetLayout['cells'], source: WidgetPlacement, gap: WidgetPlacement,
+                                 projected: WidgetPlacement, widgetId: string) {
+    // The widget can straddle the gap and its previous footprint. Its full bounds must still be free.
+    const firstColumn = Math.max(0, gap.column - source.width + 1)
+    const lastColumn = Math.min(gridColumns - source.width, gap.column + gap.width - 1)
+    const firstRow = Math.max(0, gap.row - source.heightRows + 1)
+    const lastRow = Math.min(cells.length - source.heightRows, gap.row + gap.heightRows - 1)
+    let closest: WidgetPlacement | undefined
+    let distance = Infinity
+    for (let row = firstRow; row <= lastRow; row++) {
+        for (let column = firstColumn; column <= lastColumn; column++) {
+            const candidate = {...source, column, row}
+            const candidateDistance = (column - projected.column) ** 2 + (row - projected.row) ** 2
+            if (candidateDistance >= distance || !isWidgetAreaFree(cells, candidate, widgetId)) continue
+            closest = candidate
+            distance = candidateDistance
+        }
+    }
+    return closest
+}
+
+function rowsOverlap(a: WidgetPlacement, b: WidgetPlacement) {
+    return a.row < b.row + b.heightRows && b.row < a.row + a.heightRows
+}
+
+function pushWidgetsRight(placements: WidgetLayout['placements'], id: string, original: WidgetPlacement, resized: WidgetPlacement) {
+    const shifted = new Map<string, WidgetPlacement>()
+    const neighbors = [...placements].filter(([key]) => key !== id).sort(([, a], [, b]) => a.column - b.column)
+    for (const [key, neighbor] of neighbors) {
+        let column = neighbor.column
+        if (column >= original.column + original.width && rowsOverlap(resized, neighbor)) {
+            column = Math.max(column, resized.column + resized.width)
+        }
+        // Keep the original left-to-right order in every row the neighbor spans.
+        for (const prior of shifted.values()) {
+            if (rowsOverlap(prior, neighbor)) column = Math.max(column, prior.column + prior.width)
+        }
+        if (column + neighbor.width > gridColumns) return undefined
+        if (column !== neighbor.column) shifted.set(key, {...neighbor, column})
+    }
+    return shifted
+}
+
+function resizeWidgetPlacements(layout: WidgetLayout, id: string, start: WidgetPlacement,
+                               template: DashboardCatalogItem, corner: string, dx: number, dy: number) {
+    const fromLeft = corner.includes('w')
+    const fromTop = corner.includes('n')
+    const minWidth = template.minWidth * columnsPerUnit
+    const minHeight = template.minHeight * rowsPerHeightUnit
+    const image = template.category === "Image Containers"
+    const heightLimit = image ? maxImageHeightRows : maxHeightRows
+    const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+    const limit = Math.min(image ? gridColumns : maxWidgetColumns, fromLeft ? start.column + start.width : gridColumns - start.column)
+    const maxWidth = Math.floor(limit / columnsPerResizeStep) * columnsPerResizeStep
+    const width = fromLeft ? clamp(start.width - dx, minWidth, maxWidth)
+        : corner.includes('e') ? clamp(start.width + dx, minWidth, maxWidth) : start.width
+    const heightRows = fromTop ? clamp(start.heightRows - dy, Math.max(minHeight, start.row + start.heightRows - maxGridRow), Math.min(heightLimit, start.row + start.heightRows))
+        : corner.includes('s') ? clamp(start.heightRows + dy, minHeight, heightLimit) : start.heightRows
+
+    // Apply any shrink before testing growth so a corner can clear a nearby widget.
+    let nextWidth = Math.min(width, start.width)
+    let nextHeight = Math.min(heightRows, start.heightRows)
+    const rectangle = (columns: number, rows: number): WidgetPlacement => ({
+        column: fromLeft ? start.column + start.width - columns : start.column,
+        row: fromTop ? start.row + start.heightRows - rows : start.row,
+        width: columns, heightRows: rows,
+    })
+    let shifted = new Map<string, WidgetPlacement>()
+    while (nextWidth < width) {
+        const wider = rectangle(nextWidth + columnsPerResizeStep, nextHeight)
+        if (fromLeft) {
+            if (!isWidgetAreaFree(layout.cells, wider, id)) break
+        } else {
+            const neighbors = pushWidgetsRight(layout.placements, id, start, wider)
+            if (!neighbors) break
+            shifted = neighbors
+        }
+        nextWidth = wider.width
+    }
+    const placements = new Map([...layout.placements, ...shifted])
+    while (nextHeight < heightRows) {
+        const taller = rectangle(nextWidth, nextHeight + 1)
+        const blocked = [...placements].some(([key, neighbor]) => key !== id && rowsOverlap(taller, neighbor)
+            && taller.column < neighbor.column + neighbor.width && neighbor.column < taller.column + taller.width)
+        if (blocked) break
+        nextHeight++
+    }
+    placements.set(id, rectangle(nextWidth, nextHeight))
+    return placements
+}
+
+function gridStep(grid: HTMLElement) {
+    const styles = getComputedStyle(grid)
+    const gap = parseFloat(styles.columnGap) || 0
+    return {
+        columnStep: (grid.clientWidth + gap) / gridColumns,
+        rowStep: (parseFloat(styles.gridAutoRows) || 80) + (parseFloat(styles.rowGap) || 0),
+    }
 }
 
 function buildWidgetLayout(widgets: DashboardWidget[]): WidgetLayout {
     const cells: Array<Array<string | undefined>> = []
     const placements = new Map<string, WidgetPlacement>()
+    const olderCardPositions = new Set(widgets.filter(olderQuickLinkCard).map(widget => `${widget.row}:${savedColumn(widget)}`))
+    const formerCardWidth = 1.5 * columnsPerUnit
 
-    for (const widget of [...widgets].sort((a, b) => Number(b.row != null) - Number(a.row != null))) {
-        const width = widgetWidth(widget) * 2
-        const heightRows = widgetHeight(widget) * 2
+    for (const widget of [...widgets].sort((a, b) => Number(b.row != null) - Number(a.row != null) || Number(needsFixedWidgetReflow(a)) - Number(needsFixedWidgetReflow(b)))) {
+        const width = widgetWidth(widget) * columnsPerUnit
+        const heightRows = widgetHeight(widget) * rowsPerHeightUnit
         let placement: WidgetPlacement | undefined
-        if (widget.column != null && widget.row != null && widget.column >= 0 && widget.column + width <= gridColumns && widget.row >= 0 && widget.row <= 120) {
-            const available = Array.from({length: heightRows}, (_, dy) => widget.row! + dy)
-                .every((row) => Array.from({length: width}, (_, dx) => widget.column! + dx).every((column) => !cells[row]?.[column]))
-            if (available) placement = {column: widget.column, row: widget.row, width, heightRows}
+        let column = savedColumn(widget)
+        if (column != null && widget.row != null && Number.isInteger(widget.row * 2)) {
+            // Tighten existing runs of cards so the extra card can fit beside them.
+            if (olderQuickLinkCard(widget)) {
+                for (let previous = column - formerCardWidth; olderCardPositions.has(`${widget.row}:${previous}`); previous -= formerCardWidth) {
+                    column -= formerCardWidth - width
+                }
+            }
+            const saved = {column, row: Math.round(widget.row), width, heightRows}
+            if (Number.isInteger(column) && isWidgetAreaFree(cells, saved)) placement = saved
+            if (!placement && needsFixedWidgetReflow(widget)) {
+                // Preserve unchanged anchors and keep a resized widget on its row if it still fits.
+                const candidates = Array.from({length: gridColumns - width + 1}, (_, index) => ({...saved, column: index}))
+                candidates.sort((a, b) => Math.abs(a.column - saved.column) - Math.abs(b.column - saved.column))
+                placement = candidates.find(candidate => isWidgetAreaFree(cells, candidate))
+            }
         }
 
         for (let row = 0; !placement; row += 1) {
@@ -156,7 +303,7 @@ function buildWidgetLayout(widgets: DashboardWidget[]): WidgetLayout {
             let width = 0
             while (column + width < gridColumns && !visited[row]?.[column + width]) width += 1
             let heightRows = 1
-            while (row + heightRows < cells.length && heightRows < 4 && Array.from({length: width}, (_, dx) => column + dx).every((x) => !visited[row + heightRows]?.[x])) heightRows += 1
+            while (row + heightRows < cells.length && heightRows < maxImageHeightRows && Array.from({length: width}, (_, dx) => column + dx).every((x) => !visited[row + heightRows]?.[x])) heightRows += 1
             slots.push({column, row, width, heightRows})
             for (let y = row; y < row + heightRows; y += 1) {
                 visited[y] ??= []
@@ -216,275 +363,101 @@ function buildWidgetSections(widgets: DashboardWidget[]) {
     }))
 }
 
+function firstAvailableWidgetSpace(widgets: DashboardWidget[], item: DashboardCatalogItem): WidgetInsertTarget | undefined {
+    const width = item.defaultWidth * columnsPerUnit
+    const heightRows = item.defaultHeight * rowsPerHeightUnit
+    for (const section of buildWidgetSections(widgets)) {
+        const {cells} = section.layout
+        for (let row = 0; row < cells.length; row++) {
+            for (let column = 0; column <= gridColumns - width; column++) {
+                if (isWidgetAreaFree(cells, {column, row, width, heightRows})) {
+                    return {sectionId: section.id, index: section.widgets.at(-1)!.index + 1, column, row,
+                        maxColumns: width, maxHeight: item.defaultHeight}
+                }
+            }
+        }
+    }
+}
+
 // Keep the visible positions when a widget moves into a gap; dense packing must not refill its old space.
 function captureWidgetPositions(widgets: DashboardWidget[]) {
     return buildWidgetSections(widgets).flatMap((section) => section.widgets.map(({widget}) => {
         const placement = section.layout.placements.get(widget.id)!
-        return {...widget, column: placement.column, row: placement.row}
+        return {...widget, column: placement.column / columnsPerResizeStep, row: placement.row}
     }))
 }
 
 function fitWidgetWidth(width: DashboardWidgetWidth, maxColumns: number, minWidth: DashboardWidgetWidth) {
-    const allowedWidths = widthOrder.filter((candidate) => candidate >= minWidth && candidate * 2 <= maxColumns)
+    if (width * columnsPerUnit <= maxColumns) return width
+    const allowedWidths = widthOrder.filter(candidate => candidate >= minWidth && candidate * columnsPerUnit <= maxColumns)
     if (allowedWidths.length === 0) return undefined
-    if (allowedWidths.includes(width)) return width
     return [...allowedWidths].reverse().find((candidate) => candidate <= width) ?? allowedWidths[0]
 }
 
 function widthLabelForColumns(columns: number) {
-    return `${columns / 2}W`
+    return `${columns / columnsPerUnit}W`
 }
-
-const widgetCatalog: WidgetCatalogItem[] = [
-    {
-        type: "quick-action-project",
-        category: "Quick Actions",
-        title: "Create new project",
-        description: "Open projects and start defining a new project.",
-        defaultWidth: 1,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: Plus
-    },
-    {
-        type: "quick-action-tasks",
-        category: "Quick Actions",
-        title: "Open task board",
-        description: "Review work assigned across the current project.",
-        defaultWidth: 1,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: ListTodo
-    },
-    {
-        type: "quick-action-idea",
-        category: "Quick Actions",
-        title: "Open notes",
-        description: "Capture thoughts and reminders on colorful sticky notes.",
-        defaultWidth: 1,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: StickyNote
-    },
-    {
-        type: "quick-action-team",
-        category: "Quick Actions",
-        title: "Create or view teams",
-        description: "Create a team or open the teams workspace.",
-        defaultWidth: 1,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: Users
-    },
-    {
-        type: "project-stats",
-        category: "Graphs",
-        title: "Project pulse",
-        description: "Task totals and an activity trend graph.",
-        defaultWidth: 4,
-        defaultHeight: 1,
-        minWidth: 2,
-        minHeight: 1,
-        icon: BarChart3
-    },
-    {
-        type: "team-distribution",
-        category: "Graphs",
-        title: "Team distribution",
-        description: "Compare member counts across teams.",
-        defaultWidth: 2,
-        defaultHeight: 1,
-        minWidth: 1.5,
-        minHeight: 1,
-        icon: Users
-    },
-    {
-        type: "welcome",
-        category: "Info",
-        title: "Welcome banner",
-        description: "A personalized greeting and project summary.",
-        defaultWidth: 4,
-        defaultHeight: 1,
-        minWidth: 1.5,
-        minHeight: 1,
-        icon: UserRoundCheck
-    },
-    {
-        type: "assigned-tasks",
-        category: "Info",
-        title: "Your TODO",
-        description: "Tasks assigned to the person viewing the dashboard.",
-        defaultWidth: 4,
-        defaultHeight: 1,
-        minWidth: 2,
-        minHeight: 1,
-        icon: ListTodo
-    },
-    {
-        type: "recent-activity",
-        category: "Info",
-        title: "Recent activity",
-        description: "A timeline of recent organization work.",
-        defaultWidth: 2,
-        defaultHeight: 2,
-        minWidth: 1.5,
-        minHeight: 1.5,
-        icon: History
-    },
-    {
-        type: "online-members",
-        category: "Info",
-        title: "Online members",
-        description: "People who are currently available.",
-        defaultWidth: 2,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: Users
-    },
-    {
-        type: "project-overview",
-        category: "Info",
-        title: "Project overview",
-        description: "Current project, team, and task totals.",
-        defaultWidth: 1,
-        defaultHeight: 1,
-        minWidth: 1,
-        minHeight: 1,
-        icon: LayoutDashboard
-    },
-    {
-        type: "text",
-        category: "Text",
-        title: "Custom text",
-        description: "Add a heading, label, note, or dynamic text.",
-        defaultWidth: 2,
-        defaultHeight: 0.5,
-        minWidth: 0.5,
-        minHeight: 0.5,
-        icon: TextCursorInput
-    },
-]
-
-const widgetMinimums = {
-    ...Object.fromEntries(widgetCatalog.map((item) => [item.type, {width: item.minWidth, height: item.minHeight}])),
-    "quick-actions": {width: 2, height: 1.5},
-} as Record<DashboardWidgetType, { width: DashboardWidgetWidth; height: DashboardWidgetHeight }>
 
 function normalizeWidget(widget: DashboardWidget): DashboardWidget {
     const width = widgetWidth(widget)
     return {...widget, width, height: widgetHeight(widget), size: legacySizeForWidth(width)}
 }
 
-function expandLegacyQuickActions(widgets: DashboardWidget[]) {
-    return widgets.flatMap((widget): DashboardWidget[] => widget.type === "quick-actions"
-        ? [
-            {
-                id: `${widget.id}-project`,
-                type: "quick-action-project",
-                sectionId: widget.sectionId,
-                size: "third",
-                width: 1,
-                height: 1
-            },
-            {
-                id: `${widget.id}-tasks`,
-                type: "quick-action-tasks",
-                sectionId: widget.sectionId,
-                size: "third",
-                width: 1,
-                height: 1
-            },
-            {
-                id: `${widget.id}-idea`,
-                type: "quick-action-idea",
-                sectionId: widget.sectionId,
-                size: "third",
-                width: 1,
-                height: 1
-            },
-            {
-                id: `${widget.id}-team`,
-                type: "quick-action-team",
-                sectionId: widget.sectionId,
-                size: "third",
-                width: 1,
-                height: 1
-            },
-        ]
-        : [widget])
+function starterWidget(type: DashboardNewWidgetType, sectionId: string, left: number, options: {
+    id?: string; width?: DashboardWidgetWidth; rows?: DashboardTextRow[]
+} = {}): DashboardWidget {
+    const template = dashboardWidgetByType.get(type)!
+    const width = options.width ?? template.defaultWidth
+    return {
+        id: `default-${options.id ?? type}`, type, sectionId, column: left * columnsPerUnit / columnsPerResizeStep, row: 0,
+        size: legacySizeForWidth(width), width, height: template.defaultHeight,
+        content: options.rows && JSON.stringify({rows: options.rows}),
+    }
 }
 
-const defaultDashboardWidgets: DashboardWidget[] = [
-    {id: "default-welcome", type: "welcome", sectionId: "default-welcome-section", size: "full", width: 4, height: 1},
-    {
-        id: "default-create-project",
-        type: "quick-action-project",
-        sectionId: "default-actions-section",
-        size: "third",
-        width: 1,
-        height: 1
-    },
-    {
-        id: "default-task-board",
-        type: "quick-action-tasks",
-        sectionId: "default-actions-section",
-        size: "third",
-        width: 1,
-        height: 1
-    },
-    {
-        id: "default-start-idea",
-        type: "quick-action-idea",
-        sectionId: "default-actions-section",
-        size: "third",
-        width: 1,
-        height: 1
-    },
-    {
-        id: "default-create-team",
-        type: "quick-action-team",
-        sectionId: "default-actions-section",
-        size: "third",
-        width: 1,
-        height: 1
-    },
-    {
-        id: "default-assigned-tasks",
-        type: "assigned-tasks",
-        sectionId: "default-tasks-section",
-        size: "full",
-        width: 4,
-        height: 1
-    },
-    {
-        id: "default-project-stats",
-        type: "project-stats",
-        sectionId: "default-stats-section",
-        size: "full",
-        width: 4,
-        height: 1
-    },
-    {
-        id: "default-recent-activity",
-        type: "recent-activity",
-        sectionId: "default-info-section",
-        size: "half",
-        width: 2,
-        height: 2
-    },
-    {
-        id: "default-online-members",
-        type: "online-members",
-        sectionId: "default-info-section",
-        size: "half",
-        width: 2,
-        height: 1
-    },
+function starterLinks(links: DashboardQuickLink[]) {
+    return links.map((link, index) => starterWidget(`link-${link}-chip`, "default-links", index))
+}
+
+const defaultDashboardWidgets = [
+    starterWidget("text-rows-3", "default-header", 0, {id: "org-heading", width: 3.5, rows: [
+        {text: "WORKSHOP OVERVIEW", align: "left", size: 12, font: "IBM Plex Mono", bold: true},
+        {text: "%org_name%", align: "left", size: 30, bold: true},
+        {text: "Teams %org_team_count% · Projects %org_project_count%", align: "left", runs: [
+            {text: "Teams ", size: 14}, {text: "%org_team_count%", bold: true},
+            {text: " · Projects ", size: 14}, {text: "%org_project_count%", bold: true},
+        ]},
+    ]}),
+    starterWidget("info-org-members", "default-header", 3.5),
+    ...starterLinks(["teams", "org-chart", "sdlc", "todo", "bug-reports"]),
+    starterWidget("info-org-todos", "default-overview", 0, {width: 3}),
+    starterWidget("info-org-teams", "default-overview", 3),
+    starterWidget("graph-tasks", "default-project-health", 0),
+    starterWidget("graph-bugs", "default-project-health", 2.5),
+]
+
+const defaultPersonalWidgets = [
+    starterWidget("text-rows-3", "default-header", 0, {id: "personal-heading", width: 3.5, rows: [
+        {text: "YOUR WORKSHOP", align: "left", size: 12, font: "IBM Plex Mono", bold: true},
+        {text: "Welcome, %personal_first_name%", align: "left", runs: [
+            {text: "Welcome, ", size: 24}, {text: "%personal_first_name%", size: 30, bold: true},
+        ]},
+        {text: "Working in %org_name%", align: "left", runs: [
+            {text: "Working in ", size: 14}, {text: "%org_name%", size: 14, bold: true},
+        ]},
+    ]}),
+    starterWidget("text-rows-3", "default-header", 3.5, {id: "personal-snapshot", width: 1.5, rows: [
+        {text: "MY WORKDAY", size: 12, font: "IBM Plex Mono", bold: true},
+        {text: "Open tasks · %personal_open_task_count%", runs: [
+            {text: "Open tasks · ", size: 14}, {text: "%personal_open_task_count%", size: 20, bold: true},
+        ]},
+        {text: "Local time · %personal_time%", runs: [
+            {text: "Local time · ", size: 14}, {text: "%personal_time%", size: 14, font: "IBM Plex Mono"},
+        ]},
+    ]}),
+    ...starterLinks(["todo", "calendar", "project-wiki", "project", "erd"]),
+    starterWidget("info-personal-tasks", "default-overview", 0, {width: 2.5}),
+    starterWidget("info-schedule", "default-overview", 2.5, {width: 2.5}),
 ]
 
 export function WorkshopLobbyPage() {
@@ -502,31 +475,31 @@ export function WorkshopLobbyPage() {
     return <DashboardContent key={`${organization.id}:${userId}:${personal}`} personal={personal}/>
 }
 
-const defaultPersonalWidgets = defaultDashboardWidgets.filter(widget =>
-    ["welcome", "assigned-tasks", "quick-action-tasks", "quick-action-idea", "project-overview"].includes(widget.type))
-
 function DashboardContent({personal}: {personal: boolean}) {
     const dispatch = useAppDispatch()
     const {organization, project, setDashboardEditing} = useOutletContext<WorkshopOutletContext>()
     const user = useAppSelector((state) => state.auth.user)
-    const [isCreatingTeam, setIsCreatingTeam] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [libraryOpen, setLibraryOpen] = useState(false)
     const [widgetInsertTarget, setWidgetInsertTarget] = useState<WidgetInsertTarget>()
     const [draftWidgets, setDraftWidgets] = useState<DashboardWidget[]>([])
+    const [draftWidgetGap, setDraftWidgetGap] = useState(defaultWidgetGap)
     const [focusedWidgetId, setFocusedWidgetId] = useState<string>()
     const [draggedWidgetId, setDraggedWidgetId] = useState<string>()
-    const moveGesture = useRef<{ id: string; pointerId: number; x: number; y: number; active: boolean } | null>(null)
+    const moveGesture = useRef<WidgetMoveGesture | null>(null)
     const suppressWidgetClick = useRef(false)
     const [dropTargetId, setDropTargetId] = useState<string>()
+    const nativePaletteItem = useRef<DashboardCatalogItem | null>(null)
+    const paletteWindow = useDashboardPaletteWindow(isEditing, closeWidgetLibrary)
     const [dragOffset, setDragOffset] = useState({x: 0, y: 0})
     const resizeGesture = useRef<{
         id: string;
         pointerId: number;
         x: number;
         y: number;
-        width: number;
-        height: number;
+        placement: WidgetPlacement;
+        layout: WidgetLayout;
+        template: DashboardCatalogItem;
         columnStep: number;
         rowStep: number;
         corner: string
@@ -536,7 +509,6 @@ function DashboardContent({personal}: {personal: boolean}) {
     const [now, setNow] = useState(() => new Date())
     const isPersistedOrganization = guidPattern.test(organization.id)
     const canManageDashboard = isPersistedOrganization && (personal || hasWorkshopPermission(organization, user?.id ?? "current", "Manage dashboard"))
-    const canManageTeams = hasWorkshopPermission(organization, user?.id ?? "current", "Manage teams")
     const orgQuery = useGetOrganizationDashboardQuery(
         organization.id,
         {skip: !isPersistedOrganization || personal},
@@ -544,6 +516,8 @@ function DashboardContent({personal}: {personal: boolean}) {
     const personalKey = {organizationId: organization.id, userId: user?.id ?? "current"}
     const personalQuery = useGetPersonalDashboardQuery(personalKey, {skip: !isPersistedOrganization || !personal})
     const dashboardQuery = personal ? personalQuery : orgQuery
+    const savedWidgetGap = dashboardQuery.currentData?.widgetGap ?? defaultWidgetGap
+    const widgetGap = isEditing ? draftWidgetGap : savedWidgetGap
     const dashboardLoading = dashboardQuery.isLoading
     const dashboardError = dashboardQuery.error
     const [publishDashboard, {isLoading: orgPublishing}] = usePublishOrganizationDashboardMutation()
@@ -561,74 +535,88 @@ function DashboardContent({personal}: {personal: boolean}) {
     }, [])
 
     const members = organization.members
-    const teams = organization.teams
     const currentUserId = user?.id ?? "current"
     const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : members.find((member) => member.id === currentUserId)?.name ?? "there"
-    const projectTasks = organization.tasks.filter((task) => task.projectId === project?.id)
-    const assignedTasks = organization.tasks.filter((task) => task.assigneeId === currentUserId || task.assigneeId === "current").slice(0, 6)
-    const completedTasks = projectTasks.filter((task) => task.status === "done").length
-    const pendingTasks = projectTasks.filter((task) => task.status === "pending").length
-    const activeTasks = projectTasks.filter((task) => task.status === "progress").length
     const onlineMembers = members.filter((member) => member.online)
-    const publishedWidgets = useMemo(() => ensureWidgetSectionIds(expandLegacyQuickActions(
-        personal ? (personalQuery.currentData?.savedAtUtc ? personalQuery.currentData.widgets : defaults)
-            : (orgQuery.currentData?.publishedAtUtc ? orgQuery.currentData.widgets : defaults),
-    )), [personal, personalQuery.currentData, orgQuery.currentData, defaults])
-    const visibleWidgets = useMemo(() => expandLegacyQuickActions(
-        isEditing ? draftWidgets : publishedWidgets,
-    ), [isEditing, draftWidgets, publishedWidgets])
+    const publishedWidgets = useMemo(() => {
+        const stored = personal ? (personalQuery.currentData?.savedAtUtc ? personalQuery.currentData.widgets : defaults)
+            : (orgQuery.currentData?.publishedAtUtc ? orgQuery.currentData.widgets : defaults)
+        // Saved layouts can still contain widgets from before the revamp.
+        return ensureWidgetSectionIds(stored.map(normalizeDashboardImageFrame).filter(widget => dashboardWidgetByType.has(widget.type)))
+    }, [personal, personalQuery.currentData, orgQuery.currentData, defaults])
+    const visibleWidgets = isEditing ? draftWidgets : publishedWidgets
     const widgetSections = useMemo(() => buildWidgetSections(visibleWidgets), [visibleWidgets])
 
     function beginEditing() {
         if (!canManageDashboard || dashboardLoading || dashboardError) return
-        setDraftWidgets(publishedWidgets.map(normalizeWidget))
+        setLibraryOpen(false)
+        setWidgetInsertTarget(undefined)
+        setDropTargetId(undefined)
+        setDraftWidgets(captureWidgetPositions(publishedWidgets).map(normalizeWidget))
+        setDraftWidgetGap(savedWidgetGap)
         setPublishError("")
         setIsEditing(true)
     }
 
     function resetToDefault() {
         setDraftWidgets(defaults.map(normalizeWidget))
+        setDraftWidgetGap(defaultWidgetGap)
         setFocusedWidgetId(undefined)
         setDraggedWidgetId(undefined)
         setDropTargetId(undefined)
         setPublishError("")
     }
 
-    function addWidget(item: WidgetCatalogItem) {
-        if (widgetInsertTarget && (
-            item.minWidth * 2 > widgetInsertTarget.maxColumns ||
-            item.minHeight > widgetInsertTarget.maxHeight
-        )) return
+    function widgetFits(item: DashboardCatalogItem, target = widgetInsertTarget) {
+        return !target || item.minWidth * columnsPerUnit <= target.maxColumns && item.minHeight <= target.maxHeight
+    }
+
+    function addWidget(item: DashboardCatalogItem, target = widgetInsertTarget) {
+        if (isPublishing || !widgetFits(item, target) || draftWidgets.length >= 30) return
 
         setDraftWidgets((current) => {
+            if (current.length >= 30) return current
+            const destination = target ?? firstAvailableWidgetSpace(current, item)
             current = captureWidgetPositions(current)
-            const insertIndex = Math.min(widgetInsertTarget?.index ?? current.length, current.length)
-            const width = fitWidgetWidth(item.defaultWidth, widgetInsertTarget?.maxColumns ?? gridColumns, item.minWidth)
+            const insertIndex = Math.min(destination?.index ?? current.length, current.length)
+            const width = fitWidgetWidth(item.defaultWidth, destination?.maxColumns ?? gridColumns, item.minWidth)
             if (!width) return current
-            const sectionId = widgetInsertTarget?.newSection || !widgetInsertTarget?.sectionId
+            const sectionId = destination?.newSection || !destination?.sectionId
                 ? `section-${createClientId()}`
-                : widgetInsertTarget.sectionId
+                : destination.sectionId
             const widget: DashboardWidget = {
                 id: `${item.type}-${createClientId()}`,
                 type: item.type,
                 sectionId,
-                column: widgetInsertTarget?.column, row: widgetInsertTarget?.row,
+                column: destination?.column == null ? undefined : destination.column / columnsPerResizeStep, row: destination?.row,
                 size: legacySizeForWidth(width),
                 width,
-                height: Math.max(item.minHeight, Math.min(item.defaultHeight, widgetInsertTarget?.maxHeight ?? 2)) as DashboardWidgetHeight,
-                content: item.type === "text" ? "Add a heading or note for %organization%" : null,
+                height: Math.max(item.minHeight, Math.min(item.defaultHeight, destination?.maxHeight ?? 2)) as DashboardWidgetHeight,
+                content: dashboardWidgetStarterContent(item.type),
             }
             const next = [...current]
             next.splice(insertIndex, 0, widget)
             return next
         })
-        setLibraryOpen(false)
         setWidgetInsertTarget(undefined)
     }
 
     function openWidgetLibrary(target?: WidgetInsertTarget) {
+        if (!isEditing || isPublishing) return
         setWidgetInsertTarget(target)
+        paletteWindow.open()
         setLibraryOpen(true)
+    }
+
+    function clearPaletteDrag() {
+        nativePaletteItem.current = null
+        setDropTargetId(undefined)
+    }
+
+    function closeWidgetLibrary() {
+        setLibraryOpen(false)
+        setWidgetInsertTarget(undefined)
+        clearPaletteDrag()
     }
 
     function dropWidget(sourceId: string, targetId: string) {
@@ -670,17 +658,18 @@ function DashboardContent({personal}: {personal: boolean}) {
             if (sourceIndex < 0) return current
             const next = [...current]
             const [widget] = next.splice(sourceIndex, 1)
-            const minimums = widgetMinimums[widget.type]
-            const width = fitWidgetWidth(widgetWidth(widget), target.maxColumns, minimums.width)
-            if (!width || minimums.height > target.maxHeight) return current
+            const template = dashboardWidgetByType.get(widget.type)
+            if (!template) return current
+            const width = fitWidgetWidth(widgetWidth(widget), target.maxColumns, template.minWidth)
+            if (!width || template.minHeight > target.maxHeight) return current
             const insertIndex = sourceIndex < target.index ? target.index - 1 : target.index
             next.splice(insertIndex, 0, {
                 ...widget,
                 sectionId: target.sectionId,
-                column: target.column, row: target.row,
+                column: target.column == null ? undefined : target.column / columnsPerResizeStep, row: target.row,
                 size: legacySizeForWidth(width),
                 width,
-                height: Math.max(minimums.height, Math.min(widgetHeight(widget), target.maxHeight)) as DashboardWidgetHeight,
+                height: Math.max(template.minHeight, Math.min(widgetHeight(widget), target.maxHeight)) as DashboardWidgetHeight,
             })
             return next
         })
@@ -690,7 +679,10 @@ function DashboardContent({personal}: {personal: boolean}) {
     function beginWidgetMove(event: PointerEvent<HTMLElement>, widgetId: string) {
         if (!isEditing || resizeGesture.current || moveGesture.current || event.button !== 0 || !event.isPrimary) return
         const target = event.target as HTMLElement
-        if (target.closest('textarea, input, select, [contenteditable="true"], .workshop-widget-remove, .workshop-widget-resize')) return
+        if (target.closest('textarea, input, select, [contenteditable="true"], [role="dialog"], [role="listbox"], [data-dashboard-text-editor], .dashboard-widget-field, .dashboard-widget-config, .workshop-widget-remove, .workshop-widget-resize')) {
+            suppressWidgetClick.current = false
+            return
+        }
         event.preventDefault()
         setFocusedWidgetId(widgetId)
         suppressWidgetClick.current = false
@@ -699,13 +691,104 @@ function DashboardContent({personal}: {personal: boolean}) {
             pointerId: event.pointerId,
             x: event.clientX,
             y: event.clientY,
-            active: false
+            active: false,
+            ...gridStep(event.currentTarget.closest<HTMLElement>('.workshop-widget-grid')!),
         }
         event.currentTarget.setPointerCapture(event.pointerId)
     }
 
-    function widgetDropTarget(x: number, y: number) {
-        return document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget-id], [data-widget-space]')
+    function targetForEmptySpace(element: HTMLElement): WidgetInsertTarget | undefined {
+        const section = widgetSections.find(candidate => candidate.id === element.dataset.widgetSection)
+        const slot = section?.layout.slots.find(candidate => `${section.id}:${candidate.row}:${candidate.column / columnsPerResizeStep}` === element.dataset.widgetSpace)
+        if (!section || !slot) return
+        return {index: section.widgets.at(-1)!.index + 1, maxColumns: slot.width, maxHeight: slot.heightRows / rowsPerHeightUnit as DashboardWidgetHeight,
+            sectionId: section.id, column: slot.column, row: slot.row}
+    }
+
+    function widgetMoveTarget(gesture: WidgetMoveGesture, x: number, y: number): {id?: string; space?: WidgetInsertTarget} | undefined {
+        const element = document.elementsFromPoint(x, y)
+            .map(node => node.closest<HTMLElement>('[data-widget-id], [data-widget-space], [data-widget-grid]'))
+            .find(node => node && node.dataset.widgetId !== gesture.id)
+        if (!element) return
+        const {widgetId, widgetSpace, widgetGrid} = element.dataset
+        if (widgetId) return {id: widgetId}
+
+        const sourceSection = widgetSections.find(section => section.layout.placements.has(gesture.id))
+        const source = sourceSection?.layout.placements.get(gesture.id)
+        if (!sourceSection || !source) return
+        const target = widgetSpace ? targetForEmptySpace(element) : undefined
+        if (widgetGrid === sourceSection.id || target?.sectionId === sourceSection.id) {
+            const {cells} = sourceSection.layout
+            const projected = {...source, column: source.column + Math.round((x - gesture.x) / gesture.columnStep),
+                row: source.row + Math.round((y - gesture.y) / gesture.rowStep)}
+            let placement: WidgetPlacement | undefined = projected
+            if (target?.column != null && target.row != null) {
+                const gap = {column: target.column, row: target.row, width: target.maxColumns, heightRows: target.maxHeight * rowsPerHeightUnit}
+                placement = source.width <= gap.width && source.heightRows <= gap.heightRows
+                    ? {...source, column: gap.column, row: gap.row}
+                    : closestPlacementOverGap(cells, source, gap, projected, gesture.id)
+            }
+            if (placement && placement.row + source.heightRows <= cells.length && isWidgetAreaFree(cells, placement, gesture.id)) {
+                const {column, row} = placement
+                if (column === source.column && row === source.row) return
+                return {id: widgetSpace, space: {
+                    index: target?.index ?? sourceSection.widgets.at(-1)!.index + 1,
+                    sectionId: sourceSection.id, column, row, maxColumns: source.width,
+                    maxHeight: source.heightRows / rowsPerHeightUnit as DashboardWidgetHeight,
+                }}
+            }
+        }
+        if (target) {
+            const widget = sourceSection.widgets.find(({widget}) => widget.id === gesture.id)!.widget
+            const template = dashboardWidgetByType.get(widget.type)
+            if (template && widgetFits(template, target)) return {id: widgetSpace, space: target}
+        }
+    }
+
+    function paletteDropTarget(item: DashboardCatalogItem, x: number, y: number) {
+        if (!isEditing || isPublishing || draftWidgets.length >= 30) return
+        const element = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-widget-space], [data-widget-id], [data-widget-insert]")
+        if (!element) return
+        const {widgetSpace, widgetId, widgetInsert} = element.dataset
+        if (widgetSpace) {
+            const target = targetForEmptySpace(element)
+            if (target && item.defaultWidth * columnsPerUnit <= target.maxColumns && item.defaultHeight <= target.maxHeight) return {id: widgetSpace, target}
+        } else if (widgetInsert !== undefined) {
+            return {id: `insert:${widgetInsert}`, target: {index: Number(widgetInsert), maxColumns: gridColumns, maxHeight: 2, newSection: true} as const}
+        } else if (widgetId) {
+            const section = widgetSections.find(candidate => candidate.widgets.some(({widget}) => widget.id === widgetId))
+            const destination = section?.widgets.find(({widget}) => widget.id === widgetId)
+            if (section && destination) return {id: widgetId, target: {index: destination.index + 1, maxColumns: gridColumns, maxHeight: 2, sectionId: section.id} as const}
+        }
+    }
+
+    function highlightPaletteDrop(item: DashboardCatalogItem, x: number, y: number) {
+        const destination = paletteDropTarget(item, x, y)
+        setDropTargetId(destination?.id)
+        return !!destination
+    }
+
+    function placePaletteWidget(item: DashboardCatalogItem, x: number, y: number) {
+        const destination = paletteDropTarget(item, x, y)
+        clearPaletteDrag()
+        if (!destination) return false
+        addWidget(item, destination.target)
+        return true
+    }
+
+    function nativePaletteDragOver(event: DragEvent<HTMLDivElement>) {
+        const item = nativePaletteItem.current
+        if (!item || !event.dataTransfer.types.includes(dashboardWidgetDragMime)) return
+        if (!highlightPaletteDrop(item, event.clientX, event.clientY)) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = "copy"
+    }
+
+    function nativePaletteDrop(event: DragEvent<HTMLDivElement>) {
+        const item = nativePaletteItem.current
+        if (!item || event.dataTransfer.getData(dashboardWidgetDragMime) !== item.type) return
+        event.preventDefault()
+        if (placePaletteWidget(item, event.clientX, event.clientY)) paletteWindow.refocusAfterDrop()
     }
 
     function moveWidgetPointer(event: PointerEvent<HTMLElement>) {
@@ -718,8 +801,7 @@ function DashboardContent({personal}: {personal: boolean}) {
         suppressWidgetClick.current = true
         setDraggedWidgetId(gesture.id)
         setDragOffset({x, y})
-        const target = widgetDropTarget(event.clientX, event.clientY)
-        setDropTargetId(target?.dataset.widgetId ?? target?.dataset.widgetSpace)
+        setDropTargetId(widgetMoveTarget(gesture, event.clientX, event.clientY)?.id)
     }
 
     function finishWidgetMove(event: PointerEvent<HTMLElement>, cancelled = false) {
@@ -727,20 +809,9 @@ function DashboardContent({personal}: {personal: boolean}) {
         if (!gesture || gesture.pointerId !== event.pointerId) return
         moveGesture.current = null
         if (gesture.active && !cancelled) {
-            const target = widgetDropTarget(event.clientX, event.clientY)
-            if (target?.dataset.widgetId) dropWidget(gesture.id, target.dataset.widgetId)
-            else if (target?.dataset.widgetSpace) {
-                const section = widgetSections.find((candidate) => candidate.id === target.dataset.widgetSection)
-                const slot = section?.layout.slots.find((candidate) => `${section.id}:${candidate.row}:${candidate.column}` === target.dataset.widgetSpace)
-                if (section && slot) dropWidgetIntoSpace(gesture.id, {
-                    index: section.widgets.at(-1)!.index + 1,
-                    maxColumns: slot.width,
-                    maxHeight: slot.heightRows / 2 as DashboardWidgetHeight,
-                    sectionId: section.id,
-                    column: slot.column,
-                    row: slot.row,
-                })
-            }
+            const target = widgetMoveTarget(gesture, event.clientX, event.clientY)
+            if (target?.space) dropWidgetIntoSpace(gesture.id, target.space)
+            else if (target?.id) dropWidget(gesture.id, target.id)
         }
         setDraggedWidgetId(undefined)
         setDropTargetId(undefined)
@@ -749,18 +820,18 @@ function DashboardContent({personal}: {personal: boolean}) {
     }
 
     function startResize(event: PointerEvent<HTMLButtonElement>, widget: DashboardWidget, corner: string) {
-        if (event.button !== 0 || !event.isPrimary || moveGesture.current) return
+        if (event.button !== 0 || !event.isPrimary || moveGesture.current || resizeGesture.current) return
+        const section = widgetSections.find(section => section.layout.placements.has(widget.id))
+        const placement = section?.layout.placements.get(widget.id)
+        const template = dashboardWidgetByType.get(widget.type)
+        if (!section || !placement || !template || template.fixed) return
         event.preventDefault()
         event.stopPropagation()
         setFocusedWidgetId(widget.id)
-        const grid = event.currentTarget.closest('.workshop-widget-grid') as HTMLElement
-        const styles = getComputedStyle(grid)
-        const gap = parseFloat(styles.columnGap) || 0
         resizeGesture.current = {
             id: widget.id, pointerId: event.pointerId, x: event.clientX, y: event.clientY,
-            width: widgetWidth(widget), height: widgetHeight(widget), corner,
-            columnStep: (grid.clientWidth + gap) / gridColumns,
-            rowStep: (parseFloat(styles.gridAutoRows) || 80) + (parseFloat(styles.rowGap) || 0),
+            placement, layout: section.layout, template, corner,
+            ...gridStep(event.currentTarget.closest<HTMLElement>('.workshop-widget-grid')!),
         }
         setResizingWidgetId(widget.id)
         event.currentTarget.setPointerCapture(event.pointerId)
@@ -770,17 +841,27 @@ function DashboardContent({personal}: {personal: boolean}) {
         const gesture = resizeGesture.current
         if (!gesture || gesture.pointerId !== event.pointerId) return
         event.stopPropagation()
-        const horizontal = gesture.corner.includes('w') ? -1 : gesture.corner.includes('e') ? 1 : 0
-        const vertical = gesture.corner.includes('n') ? -1 : gesture.corner.includes('s') ? 1 : 0
-        const width = gesture.width + Math.round(horizontal * (event.clientX - gesture.x) / gesture.columnStep) / 2
-        const height = gesture.height + Math.round(vertical * (event.clientY - gesture.y) / gesture.rowStep) / 2
-        setDraftWidgets((current) => current.map((widget) => {
-            if (widget.id !== gesture.id) return widget
-            const minimums = widgetMinimums[widget.type]
-            const nextWidth = Math.max(minimums.width, Math.min(4, width)) as DashboardWidgetWidth
-            const nextHeight = Math.max(minimums.height, Math.min(2, height)) as DashboardWidgetHeight
-            return {...widget, width: nextWidth, height: nextHeight, size: legacySizeForWidth(nextWidth)}
-        }))
+        const dx = Math.round((event.clientX - gesture.x) / (gesture.columnStep * columnsPerResizeStep)) * columnsPerResizeStep
+        const dy = Math.round((event.clientY - gesture.y) / gesture.rowStep)
+        applyWidgetPlacements(resizeWidgetPlacements(gesture.layout, gesture.id, gesture.placement, gesture.template, gesture.corner, dx, dy))
+    }
+
+    function applyWidgetPlacements(placements: WidgetLayout['placements']) {
+        setDraftWidgets(current => {
+            let changed = false
+            const next = current.map(widget => {
+                const placement = placements.get(widget.id)
+                if (!placement) return widget
+                const {row} = placement
+                const column = placement.column / columnsPerResizeStep
+                const width = placement.width / columnsPerUnit as DashboardWidgetWidth
+                const height = placement.heightRows / rowsPerHeightUnit as DashboardWidgetHeight
+                if (widget.column === column && widget.row === row && widget.width === width && widget.height === height) return widget
+                changed = true
+                return {...widget, column, row, width, height, size: legacySizeForWidth(width)}
+            })
+            return changed ? next : current
+        })
     }
 
     function finishResize() {
@@ -792,12 +873,12 @@ function DashboardContent({personal}: {personal: boolean}) {
         if (!canManageDashboard || isPublishing) return
         setPublishError("")
         try {
-            const widgets = captureWidgetPositions(expandLegacyQuickActions(draftWidgets)).map(normalizeWidget)
+            const widgets = captureWidgetPositions(draftWidgets).map(normalizeWidget)
             if (personal) {
-                const savedDashboard = await savePersonalDashboard({...personalKey, widgets}).unwrap()
+                const savedDashboard = await savePersonalDashboard({...personalKey, widgets, widgetGap: draftWidgetGap}).unwrap()
                 dispatch(api.util.updateQueryData("getPersonalDashboard", personalKey, () => savedDashboard))
             } else {
-                const savedDashboard = await publishDashboard({organizationId: organization.id, widgets}).unwrap()
+                const savedDashboard = await publishDashboard({organizationId: organization.id, widgets, widgetGap: draftWidgetGap}).unwrap()
                 dispatch(api.util.updateQueryData("getOrganizationDashboard", organization.id, () => savedDashboard))
             }
             setIsEditing(false)
@@ -807,15 +888,12 @@ function DashboardContent({personal}: {personal: boolean}) {
         }
     }
 
-    const widgetContext: WidgetContext = {
-        assignedTasks, canManageTeams, completedTasks, displayName, members, now, onlineMembers,
-        organizationName: organization.name, projectName: project?.name, projectTasks,
-        pendingTasks, activeTasks, teams, onCreateTeam: () => setIsCreatingTeam(true),
-    }
+    const widgetContext: DashboardDataContext = {organization, project, user, userId: currentUserId, displayName, persisted: isPersistedOrganization, now}
 
     return (
-        <div className="workshop-page workshop-dashboard-page" onPointerDown={(event) => {
-            if (!(event.target as HTMLElement).closest("[data-widget-id]")) setFocusedWidgetId(undefined)
+        <div className={cn("workshop-page workshop-dashboard-page", libraryOpen && isEditing && !paletteWindow.surface && "has-widget-palette")} onPointerDown={(event) => {
+            const target = event.target as HTMLElement
+            if (target.ownerDocument === event.currentTarget.ownerDocument && !target.closest('[data-widget-id], [data-dashboard-text-editor], [role="listbox"]')) setFocusedWidgetId(undefined)
         }}>
             <section className="workshop-dashboard-heading">
                 <div><h2>{personal ? "Personal Dashboard" : "Org Dashboard"}</h2>
@@ -832,7 +910,11 @@ function DashboardContent({personal}: {personal: boolean}) {
                 <div>
                     <LayoutDashboard/><span><strong>Edit mode</strong><small>{personal ? "Only you can see this layout. Save or discard to switch dashboards." : "Publish or discard to switch dashboards."}</small></span>
                 </div>
-                <div><Button onClick={() => openWidgetLibrary()} type="button" variant="outline"><Plus/> Add
+                <div><label className="dashboard-widget-gap-control">Widget gap
+                    <input type="range" min={minWidgetGap} max={maxWidgetGap} value={draftWidgetGap} disabled={isPublishing}
+                           aria-valuetext={`${draftWidgetGap} pixels`} onChange={event => setDraftWidgetGap(event.currentTarget.valueAsNumber)}/>
+                    <span aria-hidden="true">{draftWidgetGap} px</span>
+                </label><Button onClick={() => openWidgetLibrary()} disabled={isPublishing} type="button" variant="outline"><Plus/> Add
                     widget</Button><Button onClick={resetToDefault} type="button" variant="outline"><RotateCcw/> Reset
                     to default</Button><Button onClick={() => {
                     setDraftWidgets([]);
@@ -846,12 +928,17 @@ function DashboardContent({personal}: {personal: boolean}) {
             {publishError && <WorkshopToast variant="error" onDismiss={() => setPublishError("")}>{publishError}</WorkshopToast>}
 
             {dashboardError && !isEditing ? <WorkshopEmptyState icon={LayoutDashboard} title="Could not load dashboard" description="Try again to load your saved layout." action={<Button onClick={() => void dashboardQuery.refetch()}>Retry</Button>}/> : dashboardLoading && !isEditing ? <div className="workshop-dashboard-loading">Loading dashboard…</div> : (
-                <div className="workshop-widget-sections">
+                <div className={cn("workshop-widget-sections", isEditing && visibleWidgets.length === 0 && "dashboard-empty-drop-area", dropTargetId === "insert:0" && visibleWidgets.length === 0 && "is-drop-target")}
+                     style={widgetGap !== defaultWidgetGap ? {"--dashboard-widget-gap": `${widgetGap}px`} as CSSProperties : undefined}
+                     data-widget-insert={isEditing && visibleWidgets.length === 0 ? 0 : undefined}
+                     onDragOver={nativePaletteDragOver} onDrop={nativePaletteDrop} onDragLeave={event => {
+                        if (nativePaletteItem.current && (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget))) setDropTargetId(undefined)
+                     }}>
                     {widgetSections.map((section, sectionIndex) => {
                         const firstIndex = section.widgets[0].index
                         const lastIndex = section.widgets.at(-1)!.index
                         return <section className="workshop-widget-section" key={section.id}>
-                            {isEditing && sectionIndex > 0 && <button className="workshop-add-section-rail"
+                            {isEditing && sectionIndex > 0 && <button className={cn("workshop-add-section-rail", dropTargetId === `insert:${firstIndex}` && "is-drop-target")} data-widget-insert={firstIndex}
                                                                       onClick={() => openWidgetLibrary({
                                                                           index: firstIndex,
                                                                           maxColumns: gridColumns,
@@ -859,16 +946,16 @@ function DashboardContent({personal}: {personal: boolean}) {
                                                                           newSection: true
                                                                       })} type="button"><span><Plus/> Add section</span>
                             </button>}
-                            <div className={cn("workshop-widget-grid", isEditing && "is-editing")}>
+                            <div className={cn("workshop-widget-grid", isEditing && "is-editing")} data-widget-grid={section.id}>
                                 {section.widgets.map(({widget}) => {
-                                    const catalogItem = widgetCatalog.find((item) => item.type === widget.type)
+                                    const template = dashboardWidgetByType.get(widget.type)
                                     const placement = section.layout.placements.get(widget.id)
-                                    if (!placement) return null
+                                    if (!template || !placement) return null
                                     const height = widgetHeight(widget)
                                     const width = widgetWidth(widget)
                                     return <section
                                         className={cn("workshop-widget", `workshop-widget-width-${String(width).replace(".", "-")}`, `workshop-widget-height-${String(height).replace(".", "-")}`, isEditing && "is-editing", draggedWidgetId === widget.id && "is-dragging", dropTargetId === widget.id && draggedWidgetId !== widget.id && "is-drop-target", resizingWidgetId === widget.id && "is-resizing", focusedWidgetId === widget.id && "is-focused")}
-                                        data-widget-id={widget.id} key={widget.id} tabIndex={isEditing ? 0 : undefined}
+                                        data-widget-id={widget.id} data-widget-scope={template.scope} key={widget.id} tabIndex={isEditing ? 0 : undefined}
                                         onFocus={() => setFocusedWidgetId(widget.id)}
                                         onPointerDown={(event) => beginWidgetMove(event, widget.id)}
                                         onPointerMove={moveWidgetPointer}
@@ -886,19 +973,23 @@ function DashboardContent({personal}: {personal: boolean}) {
                                             }
                                         }}
                                         style={{
+                                            ...dashboardWidgetAppearanceStyle(widget.appearance),
                                             "--widget-height-rows": placement.heightRows,
                                             gridColumn: `${placement.column + 1} / span ${placement.width}`,
                                             gridRow: `${placement.row + 1} / span ${placement.heightRows}`, ...(draggedWidgetId === widget.id ? {transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`} : {})
                                         } as CSSProperties}>
                                         {isEditing && <>
-                                            <Button aria-label={`Remove ${catalogItem?.title ?? 'widget'}`}
+                                            <span className="dashboard-widget-scope">{template.scope}</span>
+                                            <DashboardWidgetAppearanceControl widget={widget} title={template.title} onChange={appearance =>
+                                                setDraftWidgets(current => current.map(candidate => candidate.id === widget.id ? {...candidate, appearance} : candidate))}/>
+                                            <Button aria-label={`Remove ${template.title}`}
                                                     className="workshop-widget-remove" onPointerDown={() => {
                                                 suppressWidgetClick.current = false
                                             }}
                                                     onClick={() => setDraftWidgets((current) => captureWidgetPositions(current).filter((candidate) => candidate.id !== widget.id))}
                                                     size="icon" type="button" variant="ghost"><X/></Button>
-                                            {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((direction) => <button
-                                                aria-label={`Resize ${catalogItem?.title ?? 'widget'} from ${direction}`}
+                                            {!template.fixed && ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((direction) => <button
+                                                aria-label={`Resize ${template.title} from ${direction}`}
                                                 className="workshop-resize-handle workshop-widget-resize"
                                                 data-direction={direction} key={direction}
                                                 onPointerDown={(event) => startResize(event, widget, direction)}
@@ -908,19 +999,9 @@ function DashboardContent({personal}: {personal: boolean}) {
                                                 onKeyDown={(event) => {
                                                     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
                                                     event.preventDefault()
-                                                    const minimums = widgetMinimums[widget.type]
-                                                    const dx = event.key === 'ArrowRight' ? .5 : event.key === 'ArrowLeft' ? -.5 : 0
-                                                    const dy = event.key === 'ArrowDown' ? .5 : event.key === 'ArrowUp' ? -.5 : 0
-                                                    const horizontal = direction.includes('w') ? -1 : direction.includes('e') ? 1 : 0
-                                                    const vertical = direction.includes('n') ? -1 : direction.includes('s') ? 1 : 0
-                                                    const nextWidth = Math.max(minimums.width, Math.min(4, width + horizontal * dx)) as DashboardWidgetWidth
-                                                    const nextHeight = Math.max(minimums.height, Math.min(2, height + vertical * dy)) as DashboardWidgetHeight
-                                                    setDraftWidgets((current) => current.map((candidate) => candidate.id === widget.id ? {
-                                                        ...candidate,
-                                                        width: nextWidth,
-                                                        height: nextHeight,
-                                                        size: legacySizeForWidth(nextWidth)
-                                                    } : candidate))
+                                                    const dx = event.key === 'ArrowRight' ? columnsPerResizeStep : event.key === 'ArrowLeft' ? -columnsPerResizeStep : 0
+                                                    const dy = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+                                                    applyWidgetPlacements(resizeWidgetPlacements(section.layout, widget.id, placement, template, direction, dx, dy))
                                                 }} title="Drag to resize; arrow keys adjust size" type="button"/>)}
                                         </>}
                                         <DashboardWidgetContent context={widgetContext} editing={isEditing}
@@ -931,8 +1012,8 @@ function DashboardContent({personal}: {personal: boolean}) {
                                     </section>
                                 })}
                                 {isEditing && section.layout.slots.map((slot) => {
-                                    const maxHeight = slot.heightRows / 2 as DashboardWidgetHeight
-                                    const slotId = `${section.id}:${slot.row}:${slot.column}`
+                                    const maxHeight = slot.heightRows / rowsPerHeightUnit as DashboardWidgetHeight
+                                    const slotId = `${section.id}:${slot.row}:${slot.column / columnsPerResizeStep}`
                                     const target: WidgetInsertTarget = {
                                         index: lastIndex + 1,
                                         maxColumns: slot.width,
@@ -949,7 +1030,7 @@ function DashboardContent({personal}: {personal: boolean}) {
                                         gridColumn: `${slot.column + 1} / span ${slot.width}`,
                                         gridRow: `${slot.row + 1} / span ${slot.heightRows}`
                                     }} type="button">
-                                        <Plus/><span>{draggedWidgetId ? "Drop widget here" : "Add widget here"}</span><small>{widthLabelForColumns(slot.width)} · {maxHeight}H</small>
+                                        <Plus/><span>{dropTargetId === slotId ? "Drop widget here" : "Add widget here"}</span><small>{widthLabelForColumns(slot.width)} · {maxHeight}H</small>
                                     </button>
                                 })}
                             </div>
@@ -958,13 +1039,13 @@ function DashboardContent({personal}: {personal: boolean}) {
                     {visibleWidgets.length === 0 &&
                         <WorkshopEmptyState icon={LayoutDashboard} title="No widgets yet"
                             description={isEditing ? "Add a section to start building the dashboard." : personal ? "Use Manage Dashboard to add your widgets." : "A dashboard manager can add and publish widgets."} action={isEditing &&
-                            <Button onClick={() => openWidgetLibrary({
+                            <Button data-widget-insert={0} className={dropTargetId === "insert:0" ? "dashboard-new-section-target is-drop-target" : undefined} onClick={() => openWidgetLibrary({
                                 index: 0,
                                 maxColumns: gridColumns,
                                 maxHeight: 2,
                                 newSection: true
                             })} type="button"><Plus/>Add section</Button>}/>}
-                    {isEditing && visibleWidgets.length > 0 && <button className="workshop-add-section-bottom"
+                    {isEditing && visibleWidgets.length > 0 && <button className={cn("workshop-add-section-bottom", dropTargetId === `insert:${visibleWidgets.length}` && "is-drop-target")} data-widget-insert={visibleWidgets.length}
                                                                        onClick={() => openWidgetLibrary({
                                                                            index: visibleWidgets.length,
                                                                            maxColumns: gridColumns,
@@ -975,174 +1056,32 @@ function DashboardContent({personal}: {personal: boolean}) {
                 </div>
             )}
 
-            <Dialog open={libraryOpen} onOpenChange={(open) => {
-                setLibraryOpen(open);
-                if (!open) setWidgetInsertTarget(undefined)
-            }}><DialogContent
-                className="workshop-widget-library sm:max-w-2xl"><DialogHeader><DialogTitle>{widgetInsertTarget?.newSection ? "Add a section" : "Add widgets"}</DialogTitle><DialogDescription>{widgetInsertTarget?.newSection ? "Choose the first component for this new full-width section. You can resize it afterward." : widgetInsertTarget ? `Choose a widget for this space. It supports up to ${widthLabelForColumns(widgetInsertTarget.maxColumns)} width and ${widgetInsertTarget.maxHeight} height unit.` : "Choose from categorized building blocks for your organization dashboard."}</DialogDescription></DialogHeader>
-                <div className="workshop-widget-library-content">
-                    {widgetCategories.map((category) => <section key={category}><h3>{category}</h3>
-                        <div>{widgetCatalog.filter((item) => item.category === category).map((item) => {
-                            const Icon = item.icon;
-                            const added = item.type !== "text" && draftWidgets.some((widget) => widget.type === item.type);
-                            const fitsTarget = !widgetInsertTarget || (item.minWidth * 2 <= widgetInsertTarget.maxColumns && item.minHeight <= widgetInsertTarget.maxHeight);
-                            const unavailable = added || !fitsTarget;
-                            return <Button disabled={unavailable} key={item.type} onClick={() => addWidget(item)}
-                                           type="button"
-                                           variant="outline"><span><Icon/></span><span><strong>{item.title}</strong><small>{added ? "Already added" : !fitsTarget ? `Needs at least ${item.minWidth}W × ${item.minHeight}H` : `${item.description} Minimum ${item.minWidth}W × ${item.minHeight}H.`}</small></span><Plus/></Button>
-                        })}</div>
-                    </section>)}
-                    <aside><strong>Text
-                        placeholders</strong><span>%time%</span><span>%username%</span><span>%organization%</span><span>%project%</span><span>%online%</span>
-                    </aside>
-                </div>
-            </DialogContent></Dialog>
+            <DashboardWidgetPicker open={libraryOpen && isEditing} surface={paletteWindow.surface} onOpenChange={open => {
+                if (!open) closeWidgetLibrary()
+            }} newSection={widgetInsertTarget?.newSection} projectName={project?.name} fits={widgetFits} full={draftWidgets.length >= 30} onAdd={addWidget}
+                onDragOver={highlightPaletteDrop} onDrop={placePaletteWidget} onDragCancel={clearPaletteDrag}
+                onNativeDragStart={item => {nativePaletteItem.current = item}}/>
 
-            <CreateTeamDialog defaultLeaderId={user?.id ?? members[0]?.id} members={members}
-                              onOpenChange={setIsCreatingTeam} open={isCreatingTeam} organization={organization}
-                              teams={teams}/>
         </div>
     )
 }
 
-type WidgetContext = {
-    assignedTasks: WorkshopTask[]; canManageTeams: boolean; completedTasks: number; displayName: string
-    members: WorkshopMember[]; now: Date; onlineMembers: WorkshopMember[]; organizationName: string
-    projectName?: string; projectTasks: WorkshopTask[]; pendingTasks: number; activeTasks: number
-    teams: WorkshopTeam[]; onCreateTeam: () => void
-}
-
 function DashboardWidgetContent({context, editing, onContentChange, widget}: {
-    context: WidgetContext;
+    context: DashboardDataContext;
     editing: boolean;
     onContentChange: (content: string) => void;
     widget: DashboardWidget
 }) {
-    const {
-        activeTasks,
-        assignedTasks,
-        canManageTeams,
-        completedTasks,
-        displayName,
-        members,
-        now,
-        onlineMembers,
-        organizationName,
-        pendingTasks,
-        projectName,
-        projectTasks,
-        teams
-    } = context
-    if (widget.type === "welcome") return <Card
-        className="workshop-welcome-widget"><CardContent><span>Welcome back</span>
-        <h3>{greeting(now)}, <strong>{displayName}</strong></h3>
-        <p>{projectName ? `Here’s what is moving in ${projectName}.` : `Here’s what is happening across ${organizationName}.`}</p>
-    </CardContent></Card>
-    if (widget.type === "quick-action-project") return <DashboardQuickAction
-        category="Projects" description="Define ownership, stack, and delivery dates." title="Create new project"
-        to="../projects"/>
-    if (widget.type === "quick-action-tasks") return <DashboardQuickAction
-        category="Tasks" description="Review work assigned across the current project." title="Open task board"
-        to="../todo"/>
-    // Reuse the saved widget identity so existing dashboard layouts remain intact.
-    if (widget.type === "quick-action-idea") return <DashboardQuickAction
-        category="Notes" description="Capture thoughts and reminders on colorful sticky notes." title="Open notes"
-        to="../notes"/>
-    if (widget.type === "quick-action-team") return canManageTeams
-        ? <DashboardQuickAction category="Teams" description="Choose a team leader and organize members."
-                             onClick={context.onCreateTeam} title="Create a team"/>
-        : <DashboardQuickAction category="Teams" description="See ownership and team membership." title="View teams"
-                             to="../teams"/>
-    if (widget.type === "assigned-tasks") return <section className="workshop-dashboard-section workshop-personal-todo">
-        <Card><CardHeader><span>Task</span><Link to="../todo">Open
-            board <ArrowRight/></Link><span>Status</span></CardHeader><CardContent>{assignedTasks.length > 0 ? assignedTasks.map((task) =>
-            <DashboardTaskRow key={task.id} task={task}/>) : <p>No tasks assigned to you yet.</p>}</CardContent></Card>
-    </section>
-    if (widget.type === "project-stats") return <section className="workshop-dashboard-section workshop-statistics">
-        <div className="workshop-statistics-panel">
-            <div className="workshop-stat-bars" aria-label="Project task statistics"><StatBar color="blue"
-                                                                                              label="Pending"
-                                                                                              total={projectTasks.length}
-                                                                                              value={pendingTasks}/><StatBar
-                color="amber" label="Active" total={projectTasks.length} value={activeTasks}/><StatBar color="green"
-                                                                                                       label="Done"
-                                                                                                       total={projectTasks.length}
-                                                                                                       value={completedTasks}/><StatBar
-                color="slate" label="Teams" total={Math.max(teams.length, 1)} value={teams.length}/></div>
-            <div className="workshop-trend-chart">
-                <div><strong>Work completed</strong><small>{projectName ?? organizationName}</small></div>
-                <svg aria-label="Project activity trend" preserveAspectRatio="none" role="img" viewBox="0 0 600 180">
-                    <line x1="0" x2="600" y1="164" y2="164"/>
-                    <polyline className="comparison" fill="none" points="0,164 120,100 240,128 360,72 480,116 600,46"/>
-                    <polyline className="primary" fill="none" points="0,164 120,124 240,78 360,68 480,62 600,28"/>
-                </svg>
-            </div>
-        </div>
-    </section>
-    if (widget.type === "recent-activity") return <section className="workshop-dashboard-activity">
-        <header><History/><strong>Recent activity</strong></header>
-        <ol><ActivityItem copy={`created the ${projectName ?? "current"} project workspace`} name={displayName}
-                          time="10 minutes ago"/><ActivityItem copy="moved a task to In progress"
-                                                               name={members[1]?.name ?? displayName}
-                                                               time="38 minutes ago"/><ActivityItem
-            copy="added a note to Notes" name={members[2]?.name ?? displayName} time="2 hours ago"/><ActivityItem
-            copy="completed a project task" name={members[3]?.name ?? displayName} time="Yesterday"/></ol>
-        <Button asChild variant="ghost"><Link to="../todo">Load more <ArrowRight/></Link></Button></section>
-    if (widget.type === "online-members") return <Card className="workshop-info-widget"><CardHeader><Users/><strong>Online
-        members</strong><Badge
-        variant="secondary">{onlineMembers.length}</Badge></CardHeader><CardContent>{onlineMembers.length > 0 ? onlineMembers.slice(0, 8).map((member) =>
-            <div key={member.id}><i/><span><strong>{member.name}</strong><small>@{member.username}</small></span></div>) :
-        <p>No one is online right now.</p>}</CardContent></Card>
-    if (widget.type === "project-overview") return <Card
-        className="workshop-overview-widget"><CardHeader><LayoutDashboard/><strong>Project
-        overview</strong></CardHeader><CardContent><strong>{projectName ?? "No project selected"}</strong>
-        <div>
-            <span><b>{projectTasks.length}</b> tasks</span><span><b>{teams.length}</b> teams</span><span><b>{members.length}</b> members</span>
-        </div>
-    </CardContent></Card>
-    if (widget.type === "team-distribution") {
-        const maximum = Math.max(...teams.map((team) => team.memberCount ?? team.memberIds.length), 1);
-        return <Card className="workshop-team-chart-widget"><CardHeader><BarChart3/><strong>Team
-            distribution</strong></CardHeader><CardContent>{teams.length > 0 ? teams.map((team) => {
-            const count = team.memberCount ?? team.memberIds.length;
-            return <div key={team.id}><span>{team.name}<small>{count}</small></span><i><b
-                style={{width: `${Math.max(8, (count / maximum) * 100)}%`, background: team.color}}/></i></div>
-        }) : <p>Create a team to see this graph.</p>}</CardContent></Card>
+    if (widget.type === "info-org-members") {
+        const {members, memberCount} = context.organization
+        return <DashboardMemberPresence members={members} memberCount={memberCount}/>
     }
-    const content = widget.content ?? ""
-    return <Card className="workshop-text-widget"><CardContent>{editing ?
-        <Textarea aria-label="Custom dashboard text" maxLength={2000}
-                  onChange={(event) => onContentChange(event.target.value)} value={content}/> :
-        <p>{resolvePlaceholders(content, context)}</p>}{editing &&
-        <small>Try %time%, %username%, %organization%, %project%, or %online%.</small>}</CardContent></Card>
-}
-
-function resolvePlaceholders(content: string, context: WidgetContext) {
-    return content.replaceAll("%time%", context.now.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
-    })).replaceAll("%username%", context.displayName).replaceAll("%organization%", context.organizationName).replaceAll("%project%", context.projectName ?? "your organization").replaceAll("%online%", String(context.onlineMembers.length))
-}
-
-function greeting(now: Date) {
-    const hour = now.getHours();
-    return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
-}
-
-function DashboardTaskRow({task}: { task: WorkshopTask }) {
-    const Icon = task.status === "done" ? CheckCircle2 : task.status === "progress" ? Clock3 : Circle;
-    return <div><span><Icon/><strong>{task.title}</strong></span><Badge
-        variant={task.status === "done" ? "secondary" : "outline"}>{task.status === "progress" ? "In progress" : task.status}</Badge>
-    </div>
-}
-
-function StatBar({color, label, total, value}: { color: string; label: string; total: number; value: number }) {
-    const height = total > 0 ? Math.max(18, Math.round((value / total) * 100)) : 18;
-    return <div><span><i data-color={color}
-                         style={{"--bar-height": `${height}%`} as CSSProperties}/></span><strong>{value}</strong><small>{label}</small>
-    </div>
-}
-
-function ActivityItem({copy, name, time}: { copy: string; name: string; time: string }) {
-    return <li><i/><p><strong>{name}</strong> {copy}<small>{time}</small></p></li>
+    switch (dashboardWidgetByType.get(widget.type)?.category) {
+        case "Quick Links": return <DashboardWidgetLink type={widget.type} project={context.project}/>
+        case "Image Containers": return <DashboardImageWidget {...{widget, context, editing, onContentChange}}/>
+        case "Text Containers": return <DashboardTextWidget {...{widget, context, editing, onContentChange}}/>
+        case "Graphs":
+        case "Info": return <DashboardDataWidget {...{widget, context, editing, onContentChange}}/>
+        default: return null
+    }
 }

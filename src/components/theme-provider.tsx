@@ -8,19 +8,13 @@ type ThemeContextValue = {
     setTheme: (theme: Theme) => void
 }
 
-const storageKey = "devhub.theme"
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
-
-function getStoredTheme(): Theme {
-    try {
-        const storedTheme = window.localStorage.getItem(storageKey)
-        if (storedTheme === "light" || storedTheme === "dark") return storedTheme
-    } catch {
-        // Fall back to the system setting when browser storage is unavailable.
+declare global {
+    interface Window {
+        zevontTheme?: {get: () => Theme; set: (theme: Theme) => void}
     }
-
-    return "system"
 }
+
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
 function resolveTheme(theme: Theme) {
     return (
@@ -41,11 +35,32 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({children}: { children: ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>(getStoredTheme)
+    const [theme, setThemeState] = useState<Theme>(() => window.zevontTheme?.get() ?? "system")
 
     useLayoutEffect(() => {
         applyTheme(theme)
     }, [theme])
+
+    useEffect(() => {
+        const syncTheme = () => {
+            const preference = window.zevontTheme?.get()
+            if (preference) setThemeState(preference)
+        }
+        const syncWhenVisible = () => {
+            if (!document.hidden) syncTheme()
+        }
+
+        window.addEventListener("focus", syncTheme)
+        window.addEventListener("pageshow", syncTheme)
+        window.addEventListener("storage", syncTheme)
+        document.addEventListener("visibilitychange", syncWhenVisible)
+        return () => {
+            window.removeEventListener("focus", syncTheme)
+            window.removeEventListener("pageshow", syncTheme)
+            window.removeEventListener("storage", syncTheme)
+            document.removeEventListener("visibilitychange", syncWhenVisible)
+        }
+    }, [])
 
     useEffect(() => {
         const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -59,11 +74,7 @@ export function ThemeProvider({children}: { children: ReactNode }) {
     }, [theme])
 
     function setTheme(nextTheme: Theme) {
-        try {
-            window.localStorage.setItem(storageKey, nextTheme)
-        } catch {
-            // The selected theme still applies for the current page lifetime.
-        }
+        window.zevontTheme?.set(nextTheme)
 
         const root = window.document.documentElement
         const currentTheme = root.classList.contains("dark") ? "dark" : "light"

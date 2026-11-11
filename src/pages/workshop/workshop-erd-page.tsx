@@ -20,7 +20,7 @@ import {ErdImportDialog, type ErdImportDialogHandle} from "@/features/workshop/e
 import {ErdRelationshipProperties} from "@/features/workshop/erd-relationship-properties"
 import "@/features/workshop/erd-properties.css"
 import {ErdConnections, type ErdReattachment} from "@/features/workshop/erd-connections"
-import {erdConnectionBounds} from "@/features/workshop/erd-connection"
+import {useErdRoutePlan} from "@/features/workshop/use-erd-route-plan"
 import {ErdEditableName} from "@/features/workshop/erd-editable-name"
 import {ErdPanel} from "@/features/workshop/erd-panel"
 import {ErdRelationshipDialog} from "@/features/workshop/erd-relationship-dialog"
@@ -66,7 +66,8 @@ function ErdEditor() {
         applyErdAutoArrange(current, typeof action === "function" ? action(current) : action, autoArrange)), [applyDocument, autoArrange])
     const dialect = document.dialect ?? "postgresql"
     const schemaIssues = useMemo(() => erdSchemaIssues(document), [document])
-    const connectionBounds = useMemo(() => erdConnectionBounds(document), [document])
+    const routePlan = useErdRoutePlan(document, !hideRelationships)
+    const connectionBounds = useMemo(() => routePlan.connections.map(connection => connection.route.bounds), [routePlan.connections])
     const renderIndex = useMemo(() => erdRenderIndex(document), [document])
     const canvasNodes = useMemo(() => document.tables.map(table => ({...table, width: 300, height: tableHeight(table)})), [document.tables])
     const [selectedIds, setSelectedIds] = useState<string[]>([]), [fieldId, setFieldId] = useState("")
@@ -89,6 +90,7 @@ function ErdEditor() {
         void exportErdPng(document, workspace.current, "erd-diagram.png", {showNotations: !hideNotations, showRelationships: !hideRelationships, taskKey: exportKey, projectName: project!.name}).catch(() => {})
     }
     const selected = renderIndex.tables.get(selectedIds[0])
+    const relationshipSource = selected?.id ?? document.tables[0]?.id
     const selectedRelation = document.relationships.find(relation => relation.id === selectedRelationId)
     const visibleRelations = document.relationships.filter(relation => selectedRelation ? relation.id === selectedRelation.id : relation.fromTable === selected?.id || relation.toTable === selected?.id)
     const field = selected?.fields.find(item => item.id === fieldId) ?? selected?.fields[0]
@@ -251,7 +253,6 @@ function ErdEditor() {
                 }}}
                 emptyState={<WorkshopEmptyState className="workshop-empty-state-canvas pointer-events-none" icon={Database} title="No tables yet" description={canWrite ? "Add a table or drop a .sql or .json file here to get started." : "Tables shared by your team will appear here."}/>}
                 onCopy={() => copyErdTables(document, selectedIds)} onPaste={pasteTables} onDuplicate={offset => {if (canEdit) pasteTables(copyErdTables(document, selectedIds), offset)}}
-                onConnect={document.relationships.length >= 2000 ? undefined : (fromId, toId) => {if (canEdit) setConnecting({fromId, toId})}}
                 onMove={positions => setDocument(current => {
                     const moved = new Map(positions.map(position => [position.id, position]))
                     let changed = false
@@ -263,8 +264,9 @@ function ErdEditor() {
                     return changed ? {...current, tables} : current
                 })}
                 renderNode={(node, {zoom}) => isErdTableOverview(zoom, selectedIds.includes(node.id)) ? overviewTables.get(node.id) : renderedTables.get(node.id)}
-                renderConnections={(positions, viewport) => <ErdConnections document={document} showNotations={!hideNotations} showRelationships={!hideRelationships} positions={positions} viewport={viewport} canEdit={canEdit} selectedId={selectedRelationId} onSelect={selectRelation} onReattach={reattach}/>}>
+                renderConnections={(positions, viewport) => <ErdConnections document={document} plan={routePlan} showNotations={!hideNotations} showRelationships={!hideRelationships} positions={positions} viewport={viewport} canEdit={canEdit} selectedId={selectedRelationId} onSelect={selectRelation} onReattach={reattach}/>}>
                 <Button size="sm" variant="secondary" disabled={!canEdit} onClick={addTable}><Plus/> Table</Button>
+                {canEdit && relationshipSource && document.relationships.length < 2000 && <Button size="sm" variant="outline" onClick={() => setConnecting({fromId: relationshipSource, toId: ""})}>Add relationship</Button>}
                 {!document.tables.length && <Button size="sm" variant="ghost" disabled={!canEdit} onClick={addExample}>Load example</Button>}
             </ToolCanvas>
             {(selected || selectedRelation) && <ErdPanel className="erd-properties-panel" side="right" title="Properties" detail={selected ? undefined : "Relationship"} collapsed={propertiesCollapsed} onToggle={() => setPropertiesCollapsed(value => !value)}>

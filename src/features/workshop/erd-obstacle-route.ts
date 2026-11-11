@@ -29,6 +29,12 @@ function makeIndex(tables: readonly ErdTable[], clearance = padding) {
 const crosses = (a: Point, b: Point, rect: Rectangle) => a.x === b.x
     ? a.x > rect.left && a.x < rect.right && Math.max(a.y, b.y) > rect.top && Math.min(a.y, b.y) < rect.bottom
     : a.y > rect.top && a.y < rect.bottom && Math.max(a.x, b.x) > rect.left && Math.min(a.x, b.x) < rect.right
+function overlapsTrack(a: Point, b: Point, c: Point, d: Point) {
+    const axis = a.x === b.x && a.x === c.x && c.x === d.x ? "y"
+        : a.y === b.y && a.y === c.y && c.y === d.y ? "x" : undefined
+    return axis !== undefined && Math.min(Math.max(a[axis], b[axis]), Math.max(c[axis], d[axis]))
+        > Math.max(Math.min(a[axis], b[axis]), Math.min(c[axis], d[axis]))
+}
 export function routePoints(path: string) {
     const points: Point[] = []
     for (const match of path.matchAll(/([MLHV])(-?[\d.]+)(?: (-?[\d.]+))?/g)) {
@@ -66,11 +72,7 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
     if (!index) {index = makeIndex(tables,context?erdRouteClearance:padding); routeIndexes.set(tables, index)}
     const foreign = (rect: Rectangle) => rect.id !== from.id && rect.id !== to.id
     const areas = context?.areas ?? [], segments = context?.segments ?? []
-    const sharesTrack = (a:Point,b:Point) => (context?.querySegments?.(a,b)??segments).some(({a:c,b:d})=>{
-        if(a.x===b.x && c.x===d.x && a.x===c.x) return Math.min(Math.max(a.y,b.y),Math.max(c.y,d.y))>Math.max(Math.min(a.y,b.y),Math.min(c.y,d.y))
-        if(a.y===b.y && c.y===d.y && a.y===c.y) return Math.min(Math.max(a.x,b.x),Math.max(c.x,d.x))>Math.max(Math.min(a.x,b.x),Math.min(c.x,d.x))
-        return false
-    })
+    const sharesTrack = (a: Point, b: Point) => (context?.querySegments?.(a, b) ?? segments).some(({a: c, b: d}) => overlapsTrack(a, b, c, d))
     const congestion = (a: Point, b: Point, includeCrossings = true) => (context?.querySegments?.(a,b)??segments).reduce((sum, segment) => {
         const {a: c, b: d} = segment, vertical = a.x === b.x, otherVertical = c.x === d.x
         if (vertical === otherVertical) {
@@ -95,7 +97,8 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
         if(i===original.length-1 && rect.id===to.id && leavesPort(b,a,route.target)) return false
         return crosses(a,b,rect)
     })
-    if (!original.some((point, i) => i > 0 && (areas.some(rect => crosses(original[i - 1],point,rect)) || congestion(original[i - 1],point,false) > 0
+    if (!original.some((point, i) => i > 0 && ((i > 1 && overlapsTrack(original[i - 2], original[i - 1], original[i - 1], point))
+        || areas.some(rect => crosses(original[i - 1],point,rect)) || congestion(original[i - 1],point,false) > 0
         || context && clipsOwn(original[i-1],point,i)
         || [...index.query(original[i - 1], point)].some(rect => foreign(rect) && crosses(original[i - 1], point, rect))))) return route
     // Shared routing reserves this exact exit length at every endpoint. Longer
@@ -171,7 +174,8 @@ export function avoidErdObstacles(route: Route, from: ErdTable, to: ErdTable, ta
         for (const next of neighbors) {
             if (next < 0) continue
             const b = point(next)
-            if (!clear(a, b)) continue
+            // The search begins after the source lead and ends before the target lead.
+            if (overlapsTrack(a, b, route.source, start) || overlapsTrack(a, b, end, route.target) || !clear(a, b)) continue
             const nextDirection = Number(a.x === b.x), state = next * 2 + nextDirection
             const cost = current.cost + Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + (nextDirection === direction ? 0 : 24)
                 + (next === last && nextDirection !== Number(!horizontal(route.target.edge)) ? 24 : 0) + congestion(a,b)

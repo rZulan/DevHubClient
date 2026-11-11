@@ -18,8 +18,15 @@ const source = ts.transpileModule(readFileSync(new URL('../src/features/workshop
 
 function canvas(deferMoves = true, overrides = {}, runEffects = false) {
     const states = [], frames = new Map(), commits = [], history = [], effects = [], cleanups = [], observers = []
+    const nodes = [{id: 'table', x: 0, y: 0, width: 300, height: 100}]
     let cursor = 0, frameId = 0, selected = [], effectEventCursor = 0, wheelHandler
+    function useMemo(create, deps) {
+        const index = cursor++, previous = states[index]
+        if (!previous || deps.some((dep, i) => !Object.is(dep, previous.deps[i]))) states[index] = {deps, value: create()}
+        return states[index].value
+    }
     const react = {
+        useMemo, useCallback: (callback, deps) => useMemo(() => callback, deps),
         useState(initial) {const index = cursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial; return [states[index], next => {states[index] = typeof next === 'function' ? next(states[index]) : next}]},
         useRef(initial) {const index = cursor++; return states[index] ??= {current: initial}},
         useEffect(callback, deps) {
@@ -55,7 +62,7 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
     function render() {
         cursor = 0
         effectEventCursor = 0
-        const result = exports.ToolCanvas({nodes: [{id: 'table', x: 0, y: 0, width: 300, height: 100}], selectedIds: selected, onSelect: ids => {selected = ids}, onMove: moves => commits.push(moves),
+        const result = exports.ToolCanvas({nodes, selectedIds: selected, onSelect: ids => {selected = ids}, onMove: moves => commits.push(moves),
             renderNode: () => null, canEdit: true, deferMoves, beginTransaction: () => history.push('begin'), endTransaction: () => history.push('end'), ...overrides})
         result.props.ref.current = root
         effects.splice(0).forEach(effect => effect())
@@ -63,6 +70,11 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
     }
     return {
         render,
+        controls() {
+            const elements = all(render())
+            return {actions: elements.find(node => node.props.className === 'tool-canvas-actions'), zoom: elements.find(node => node.props.onZoom)}
+        },
+        activeTool() {return all(render()).find(node => node.props['aria-pressed'] && node.props['aria-label'])?.props['aria-label']},
         connectButtons() {return all(render()).filter(node => node.props.className === 'tool-connect-handle')},
         unmount() {cleanups.forEach(cleanup => cleanup?.())},
         resize(width, height) {root.clientWidth = width; root.clientHeight = height; observers.forEach(observer => observer.callback()); render()},
@@ -152,6 +164,35 @@ test('middle-mouse panning captures child gestures, shows dragging state, and ne
     assert.equal(c.clickCapture().stopped, false, 'the next normal interaction still works')
 })
 
+test('middle-mouse panning highlights Hand and reuses both controls during pointer movement', () => {
+    const c = canvas(), before = c.controls()
+    assert.equal(c.activeTool(), 'Select tool')
+    c.capture({button: 1})
+    assert.equal(c.activeTool(), 'Hand tool')
+    const dragging = c.controls()
+    c.move(185, 140)
+    assert.equal(c.controls().actions, dragging.actions)
+    assert.equal(c.controls().zoom, before.zoom)
+    c.release(185, 140)
+    const after = c.controls()
+    assert.equal(c.activeTool(), 'Select tool')
+    assert.equal(after.zoom, before.zoom)
+    assert.deepEqual(c.pan(), [135, 140])
+
+    const [x, y] = c.pan(), scale = c.zoom()
+    after.zoom.props.onZoom(1)
+    const [nextX, nextY] = c.pan()
+    assert.ok(Math.abs((500 - x) / scale - (500 - nextX)) < 1e-9)
+    assert.ok(Math.abs((400 - y) / scale - (400 - nextY)) < 1e-9)
+    const zoomed = c.controls()
+    assert.equal(zoomed.zoom.props.zoom, 1)
+    assert.equal(zoomed.actions, after.actions)
+
+    c.key('h')
+    assert.equal(c.activeTool(), 'Hand tool')
+    assert.equal(c.controls().zoom, zoomed.zoom)
+})
+
 test('wheel zoom accumulates every delta in one frame while preserving the pointer anchor', () => {
     const c=canvas(), before=c.pan(), zoom=c.zoom()
     c.wheel(80); c.wheel(40); c.wheel(-20)
@@ -180,15 +221,18 @@ test('Hand and Space capture panning before child controls while toolbar and key
     for (const mode of ['h', ' ']) {
         const c = canvas()
         c.key(mode)
+        assert.equal(c.activeTool(), 'Hand tool')
         assert.deepEqual(c.capture({control: true}), {prevented: false, stopped: false})
         assert.equal(c.clickCapture(true).stopped, false)
         assert.equal(c.clickCapture(false, 0).stopped, false, 'keyboard activation is not a pointer pan')
         assert.deepEqual(c.capture(), {prevented: true, stopped: true})
         c.move(200); c.release(200)
+        assert.equal(c.activeTool(), 'Hand tool')
         assert.equal(c.clickCapture().stopped, true)
         assert.equal(c.clickCapture(false, 2, true).stopped, true, 'double-click does not rename a field in pan mode')
         assert.equal(c.commits.length, 0); assert.equal(c.history.length, 0)
         if (mode === 'h') c.key('v'); else c.keyUpSpace()
+        assert.equal(c.activeTool(), 'Select tool')
         c.capture()
         assert.equal(c.isHand(), false)
         assert.equal(c.clickCapture().stopped, false)

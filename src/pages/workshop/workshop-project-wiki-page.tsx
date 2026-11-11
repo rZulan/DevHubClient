@@ -1,8 +1,8 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyPage, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from "react"
-import {Link, useLocation, useOutletContext, useSearchParams} from "react-router-dom"
-import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Plus, Search, Trash2} from "lucide-react"
+import {Link, useLocation, useNavigate, useOutletContext, useSearchParams} from "react-router-dom"
+import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Plus, Trash2} from "lucide-react"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -19,6 +19,8 @@ import type {WikiHeadingNavigation} from "@/features/workshop/wiki-active-headin
 import {WikiMarkdown} from "@/features/workshop/wiki-markdown"
 import {WikiCopyLink} from "@/features/workshop/wiki-copy-link"
 import {WikiPageNavigation} from "@/features/workshop/wiki-page-navigation"
+import {WikiSearchDialog} from "@/features/workshop/wiki-search-dialog"
+import type {WikiSearchResult} from "@/features/workshop/wiki-search"
 import {WikiImageDialog} from "@/features/workshop/wiki-image-dialog"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -44,7 +46,7 @@ function ProjectWiki() {
     const [pageForm, setPageForm] = useState<WikiPageForm | null>(null)
     const [editMode, setEditMode] = useState(false), [editing, setEditing] = useState(false), [preview, setPreview] = useState(false)
     const canManage = canWrite && editMode
-    const [query, setQuery] = useState(""), [formError, setFormError] = useState("")
+    const [formError, setFormError] = useState("")
     const [imageOpen, setImageOpen] = useState(false)
     const [sidebarOpen, setSidebarOpen] = useState(true), sidebarId = useId()
     const [hasToc, setHasToc] = useState(false), [tocWide, setTocWide] = useState(false)
@@ -54,13 +56,15 @@ function ProjectWiki() {
     const [showHistory, setShowHistory] = useState(false), [historical, setHistorical] = useState<WikiRevision | null>(null)
     const [sectionState, setSectionState] = useState<{key: string; collapsed: ReadonlySet<string>}>({key: "", collapsed: expandedSections})
     const [headingNavigation, setHeadingNavigation] = useState<WikiHeadingNavigation | null>(null)
-    const [params, setParams] = useSearchParams(), location = useLocation(), bodyInput = useRef<HTMLTextAreaElement>(null), article = useRef<HTMLElement>(null)
+    const [params, setParams] = useSearchParams(), location = useLocation(), navigate = useNavigate()
+    const bodyInput = useRef<HTMLTextAreaElement>(null), article = useRef<HTMLElement>(null), mainContent = useRef<HTMLDivElement>(null)
     const requestedSlug = params.get("page")
     const page = requestedSlug ? document.pages.find(item => item.slug === requestedSlug) : document.pages.find(item => item.id === document.homePageId)
     const contentKey = `${page?.id}:${historical?.id ?? page?.updatedAt}`
     const collapsedSections = sectionState.key === contentKey ? sectionState.collapsed : expandedSections
     const revealSection = useCallback((id: string) => {
-        const target = window.document.getElementById(id)
+        const selector = `#${CSS.escape(id)}`
+        const target = article.current?.querySelector<HTMLElement>(selector)
         if (!target) return
         setHeadingNavigation(current => ({contentKey, id, sequence: (current?.sequence ?? 0) + 1}))
         const ancestors: string[] = []
@@ -76,7 +80,7 @@ function ProjectWiki() {
             for (const anchor of ancestors) next.delete(anchor)
             return {key: contentKey, collapsed: next}
         })
-        requestAnimationFrame(() => window.document.getElementById(id)?.scrollIntoView({block: "start"}))
+        requestAnimationFrame(() => article.current?.querySelector<HTMLElement>(selector)?.scrollIntoView({block: "start"}))
     }, [contentKey])
     const parents = pageForm ? wikiParentOptions(document.pages, pageForm.id) : []
     const ancestors = page ? wikiAncestors(document.pages, page.id) : []
@@ -107,7 +111,7 @@ function ProjectWiki() {
             try {id = decodeURIComponent(location.hash.slice(1))} catch {return}
             revealSection(id)
         }
-    }, [location.hash, requestedSlug, status, revealSection])
+    }, [location.hash, location.key, requestedSlug, status, revealSection])
 
     function toggleSection(id: string) {
         setSectionState(current => {
@@ -124,6 +128,11 @@ function ProjectWiki() {
 
     function navigatePage(slug: string) {
         setParams(current => {const next = new URLSearchParams(current); next.set("page", slug); return next})
+    }
+    function navigateSearchResult({slug, anchor}: WikiSearchResult) {
+        setEditing(false); setPageForm(null); setHistorical(null); setShowHistory(false)
+        if (!anchor) mainContent.current?.scrollTo({top: 0})
+        navigate({search: wikiPageHref(location.search, project.id, slug), hash: anchor ? `#${encodeURIComponent(anchor)}` : ""})
     }
     function startEditing(existing?: WikiPage, title?: string, parentId: string | null = null) {
         if (!canEdit) return
@@ -167,17 +176,19 @@ function ProjectWiki() {
         {status === "loading" ? <div className="wiki-loading" role="status"><LoaderCircle className="animate-spin"/>Loading project pages…</div> : status !== "load-error" && <div className={`wiki-workspace${sidebarOpen ? "" : " wiki-sidebar-collapsed"}`}>
             <aside id={sidebarId} className="wiki-sidebar" aria-label="Wiki pages" hidden={!sidebarOpen}>
                 <div className="wiki-sidebar-title"><BookOpen/><strong>{project.name} Wiki</strong></div>
-                <label className="wiki-search"><Search/><Input aria-label="Search wiki pages" placeholder="Find a page…" value={query} onChange={event => setQuery(event.target.value)}/></label>
                 {canManage && <Button className="wiki-new-page" variant="outline" size="sm" disabled={!canEdit || document.pages.length >= wikiLimits.pages || !!pageForm} onClick={() => startEditing(undefined, document.pages.length ? "" : "Home")}><Plus/>New page</Button>}
-                <WikiPageNavigation pages={document.pages} homePageId={document.homePageId} currentId={page?.id} projectId={project.id} query={query} canAdd={canManage && canEdit && !pageForm && document.pages.length < wikiLimits.pages} onAdd={parentId => startEditing(undefined, "", parentId)} onNavigate={() => {setEditing(false); setPageForm(null); setImageOpen(false)}}/>
+                <WikiPageNavigation pages={document.pages} homePageId={document.homePageId} currentId={page?.id} projectId={project.id} canAdd={canManage && canEdit && !pageForm && document.pages.length < wikiLimits.pages} onAdd={parentId => startEditing(undefined, "", parentId)} onNavigate={() => {setEditing(false); setPageForm(null); setImageOpen(false)}}/>
             </aside>
             <section className="wiki-main">
                 <div className="wiki-toolbar">
                     <div className="wiki-toolbar-navigation"><Button variant="ghost" size="icon-sm" aria-label={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} title={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} aria-expanded={sidebarOpen} aria-controls={sidebarId} onClick={() => setSidebarOpen(value => !value)}>{sidebarOpen ? <PanelLeftClose/> : <PanelLeftOpen/>}</Button><div className="wiki-breadcrumb"><BookOpen/><span>Wiki</span><span aria-hidden="true">/</span><strong>{editing && pageForm && canManage ? pageForm.title || "New page" : page?.title || "Pages"}</strong></div></div>
-                    <div className="wiki-actions"><span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}{hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm" aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"} title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen} aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>{tocOpen ? <PanelRightClose/> : <PanelRightOpen/>}</Button>}</div>
+                    <div className="wiki-actions">
+                        <WikiSearchDialog pages={document.pages} currentId={page?.id} homePageId={document.homePageId} canNavigate={!hasUnsavedEdits} shortcutEnabled={!deleting && !imageOpen} onNavigate={navigateSearchResult}/>
+                        <span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}{hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm" aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"} title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen} aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>{tocOpen ? <PanelRightClose/> : <PanelRightOpen/>}</Button>}
+                    </div>
                 </div>
                 <span className="sr-only" role="status">{statusText}</span>
-                <div className="wiki-main-content">
+                <div ref={mainContent} className="wiki-main-content">
                 {editing && pageForm && canManage ? <form className="wiki-editor" onSubmit={savePage}>
                     <div className="wiki-editor-heading"><span>{pageForm.baseVersion === null ? "CREATE A PAGE" : "EDIT PAGE"}</span></div>
                     {changedRemotely && <WorkshopToast variant="warning">This page changed in another session or was deleted. Copy your changes, then cancel editing and reopen the latest page before saving.</WorkshopToast>}

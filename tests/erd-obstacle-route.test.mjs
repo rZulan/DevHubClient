@@ -23,6 +23,23 @@ test('shared routing cannot double back onto its own table border after leaving 
         }
     }
 })
+
+test('a blocked outer track cannot send a relationship back over its own endpoint leads', () => {
+    const a = table('a', 0, 0), b = table('b', 0, 300), tables = [a, b]
+    const original = routeErdRelationship(a, b, 'id', 'id')
+    const segments = [
+        {a: {x: 348, y: 100}, b: {x: 348, y: 300}},
+        {a: {x: 356, y: -200}, b: {x: 356, y: -180}},
+    ]
+    const route = avoidErdObstacles(original, a, b, tables, 0, {areas: [], segments})
+    assert.deepEqual(routePoints(route.path), [{x: 300, y: 66}, {x: 364, y: 66}, {x: 364, y: 366}, {x: 300, y: 366}])
+    clear(route, tables)
+
+    const overshoot = {...original, path: 'M300 66 L348 66 L340 66 L340 366 L348 366 L300 366'}
+    const repaired = avoidErdObstacles(overshoot, a, b, tables, 0, {areas: [], segments: []})
+    assert.deepEqual(routePoints(repaired.path), routePoints(original.path))
+})
+
 function points(path) {
     const result = []
     for (const m of path.matchAll(/([MLHV])(-?[\d.]+)(?: (-?[\d.]+))?/g)) result.push(m[1] === 'H' ? {x:+m[2],y:result.at(-1).y} : m[1] === 'V' ? {x:result.at(-1).x,y:+m[2]} : {x:+m[2],y:+m[3]})

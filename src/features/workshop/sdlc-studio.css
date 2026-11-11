@@ -104,9 +104,6 @@
 .sdlc-related-tools a:hover { color: var(--primary); background: var(--secondary); }
 .sdlc-related-tools svg { width: 11px; height: 11px; }
 .sdlc-notes-field { display: grid; gap: 8px; font-size: 12px; }
-.sdlc-quality-details { margin-top: 22px; font-size: 11px; color: var(--muted-foreground); }
-.sdlc-quality-details > summary { padding: 10px 0; cursor: pointer; }
-.sdlc-quality-details .sdlc-quality-activity { margin-top: 6px; }
 .sdlc-phase-actions { display: grid; gap: 9px; padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--background); }
 .sdlc-phase-actions button { width: 100%; height: auto; min-height: 34px; font-size: 11px; white-space: normal; padding: 9px; }
 .sdlc-phase-actions .tool-help { font-size: 10px; line-height: 1.6; margin: 0; }

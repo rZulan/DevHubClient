@@ -557,9 +557,9 @@ export const api = createApi({
                 {type: "PersonalDashboard", id: `${organizationId}:${userId}`},
             ],
         }),
-        savePersonalDashboard: builder.mutation<PersonalDashboard, {organizationId: string; userId: string; widgets: DashboardWidget[]}>({
-            query: ({organizationId, widgets}) => ({
-                url: `/organizations/${organizationId}/dashboard/personal`, method: "PUT", body: {widgets},
+        savePersonalDashboard: builder.mutation<PersonalDashboard, {organizationId: string; userId: string; widgets: DashboardWidget[]; widgetGap?: number}>({
+            query: ({organizationId, widgets, widgetGap}) => ({
+                url: `/organizations/${organizationId}/dashboard/personal`, method: "PUT", body: {widgets, widgetGap},
             }),
             invalidatesTags: (_result, _error, {organizationId, userId}) => [
                 {type: "PersonalDashboard", id: `${organizationId}:${userId}`},
@@ -573,12 +573,12 @@ export const api = createApi({
         }),
         publishOrganizationDashboard: builder.mutation<
             OrganizationDashboard,
-            { organizationId: string; widgets: DashboardWidget[] }
+            { organizationId: string; widgets: DashboardWidget[]; widgetGap?: number }
         >({
-            query: ({organizationId, widgets}) => ({
+            query: ({organizationId, widgets, widgetGap}) => ({
                 url: `/organizations/${organizationId}/dashboard`,
                 method: "PUT",
-                body: {widgets},
+                body: {widgets, widgetGap},
             }),
             invalidatesTags: (_result, _error, {organizationId}) => [
                 {type: "OrganizationDashboard", id: organizationId},
