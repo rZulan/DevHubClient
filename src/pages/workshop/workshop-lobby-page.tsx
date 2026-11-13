@@ -477,10 +477,13 @@ export function WorkshopLobbyPage() {
 
 function DashboardContent({personal}: {personal: boolean}) {
     const dispatch = useAppDispatch()
-    const {organization, project, setDashboardEditing} = useOutletContext<WorkshopOutletContext>()
+    const {organization, project, setDashboardEditing, dashboardPickerDock} = useOutletContext<WorkshopOutletContext>()
     const user = useAppSelector((state) => state.auth.user)
     const [isEditing, setIsEditing] = useState(false)
     const [libraryOpen, setLibraryOpen] = useState(false)
+    const [windowedPicker, setWindowedPicker] = useState(false)
+    const [popupBlocked, setPopupBlocked] = useState(false)
+    const pickerTrigger = useRef<HTMLButtonElement>(null)
     const [widgetInsertTarget, setWidgetInsertTarget] = useState<WidgetInsertTarget>()
     const [draftWidgets, setDraftWidgets] = useState<DashboardWidget[]>([])
     const [draftWidgetGap, setDraftWidgetGap] = useState(defaultWidgetGap)
@@ -604,8 +607,25 @@ function DashboardContent({personal}: {personal: boolean}) {
     function openWidgetLibrary(target?: WidgetInsertTarget) {
         if (!isEditing || isPublishing) return
         setWidgetInsertTarget(target)
-        paletteWindow.open()
+        if (windowedPicker) popOutWidgetLibrary()
+        else setPopupBlocked(false)
         setLibraryOpen(true)
+    }
+
+    function popOutWidgetLibrary() {
+        const opened = paletteWindow.open()
+        setWindowedPicker(opened)
+        setPopupBlocked(!opened)
+    }
+
+    function switchWidgetLibraryMode() {
+        clearPaletteDrag()
+        if (paletteWindow.surface) {
+            paletteWindow.close()
+            setWindowedPicker(false)
+        } else {
+            popOutWidgetLibrary()
+        }
     }
 
     function clearPaletteDrag() {
@@ -617,6 +637,7 @@ function DashboardContent({personal}: {personal: boolean}) {
         setLibraryOpen(false)
         setWidgetInsertTarget(undefined)
         clearPaletteDrag()
+        pickerTrigger.current?.focus({preventScroll: true})
     }
 
     function dropWidget(sourceId: string, targetId: string) {
@@ -891,7 +912,7 @@ function DashboardContent({personal}: {personal: boolean}) {
     const widgetContext: DashboardDataContext = {organization, project, user, userId: currentUserId, displayName, persisted: isPersistedOrganization, now}
 
     return (
-        <div className={cn("workshop-page workshop-dashboard-page", libraryOpen && isEditing && !paletteWindow.surface && "has-widget-palette")} onPointerDown={(event) => {
+        <div className="workshop-page workshop-dashboard-page" onPointerDown={(event) => {
             const target = event.target as HTMLElement
             if (target.ownerDocument === event.currentTarget.ownerDocument && !target.closest('[data-widget-id], [data-dashboard-text-editor], [role="listbox"]')) setFocusedWidgetId(undefined)
         }}>
@@ -914,7 +935,7 @@ function DashboardContent({personal}: {personal: boolean}) {
                     <input type="range" min={minWidgetGap} max={maxWidgetGap} value={draftWidgetGap} disabled={isPublishing}
                            aria-valuetext={`${draftWidgetGap} pixels`} onChange={event => setDraftWidgetGap(event.currentTarget.valueAsNumber)}/>
                     <span aria-hidden="true">{draftWidgetGap} px</span>
-                </label><Button onClick={() => openWidgetLibrary()} disabled={isPublishing} type="button" variant="outline"><Plus/> Add
+                </label><Button ref={pickerTrigger} aria-expanded={libraryOpen} onClick={() => openWidgetLibrary()} disabled={isPublishing} type="button" variant="outline"><Plus/> Add
                     widget</Button><Button onClick={resetToDefault} type="button" variant="outline"><RotateCcw/> Reset
                     to default</Button><Button onClick={() => {
                     setDraftWidgets([]);
@@ -1056,9 +1077,9 @@ function DashboardContent({personal}: {personal: boolean}) {
                 </div>
             )}
 
-            <DashboardWidgetPicker open={libraryOpen && isEditing} surface={paletteWindow.surface} onOpenChange={open => {
-                if (!open) closeWidgetLibrary()
-            }} newSection={widgetInsertTarget?.newSection} projectName={project?.name} fits={widgetFits} full={draftWidgets.length >= 30} onAdd={addWidget}
+            <DashboardWidgetPicker open={libraryOpen && isEditing} surface={paletteWindow.surface} dock={dashboardPickerDock}
+                onSwitchMode={switchWidgetLibraryMode} onCollapse={closeWidgetLibrary} popupBlocked={popupBlocked}
+                newSection={widgetInsertTarget?.newSection} projectName={project?.name} fits={widgetFits} full={draftWidgets.length >= 30} onAdd={addWidget}
                 onDragOver={highlightPaletteDrop} onDrop={placePaletteWidget} onDragCancel={clearPaletteDrag}
                 onNativeDragStart={item => {nativePaletteItem.current = item}}/>
 

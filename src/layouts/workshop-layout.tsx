@@ -100,6 +100,7 @@ export type WorkshopOutletContext = {
     /** Previews a color scheme without saving it; pass nothing to restore the saved one. */
     previewColorScheme: (scheme?: ColorScheme) => void
     setDashboardEditing?: (editing: boolean) => void
+    dashboardPickerDock?: HTMLElement | null
 }
 
 const teamColors = ["#a78bfa", "#38bdf8", "#fb7185", "#34d399", "#fbbf24"]
@@ -145,6 +146,7 @@ export function WorkshopLayout() {
 
     const [membersOpen, setMembersOpen] = useState(true)
     const [dashboardEditing, setDashboardEditing] = useState(false)
+    const [dashboardPickerDock, setDashboardPickerDock] = useState<HTMLElement | null>(null)
     const mainColumn = useRef<HTMLElement>(null)
     const [contentWidth, setContentWidth] = useState<number | null>(null)
     const compact = useCompactWorkshop()
@@ -386,6 +388,7 @@ export function WorkshopLayout() {
         openInviteDialog: () => void openInviteDialog(),
         previewColorScheme,
         setDashboardEditing,
+        dashboardPickerDock,
     }
 
     return (
@@ -649,6 +652,8 @@ export function WorkshopLayout() {
                 </aside>
                 </ResponsiveWorkshopPanel>
             )}
+
+            <aside aria-label="Widget picker" className="workshop-dashboard-picker-slot" ref={setDashboardPickerDock}/>
 
             <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                 <DialogContent className="workshop-modal sm:max-w-md">

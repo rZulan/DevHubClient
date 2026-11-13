@@ -1,8 +1,7 @@
 import {memo, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent} from "react"
 import {createPortal} from "react-dom"
-import {Search} from "lucide-react"
+import {ExternalLink, PanelRightClose, PanelRightOpen, Search} from "lucide-react"
 import {Button} from "@/components/ui/button"
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
 import {colorSchemeAttribute} from "./appearance/color-schemes"
 import {dashboardCategories, dashboardWidgetCatalog, type DashboardCatalogItem} from "./dashboard-widget-catalog"
@@ -40,11 +39,11 @@ export function useDashboardPaletteWindow(enabled: boolean, onClosed: () => void
     function open() {
         if (current.current && !current.current.browser.closed) {
             current.current.browser.focus()
-            return
+            return true
         }
         close()
         const browser = window.open("", "_blank", `popup,width=540,height=720,left=${Math.max(0, window.screenX + window.outerWidth - 550)},top=${Math.max(0, window.screenY + 72)}`)
-        if (!browser) return // The same palette can run in the dashboard if a popup is blocked.
+        if (!browser) return false
 
         const target = browser.document
         target.title = "Widgets · Zevont"
@@ -94,6 +93,7 @@ export function useDashboardPaletteWindow(enabled: boolean, onClosed: () => void
         }}
         setSurface(mount)
         browser.focus()
+        return true
     }
 
     useEffect(() => {
@@ -104,7 +104,7 @@ export function useDashboardPaletteWindow(enabled: boolean, onClosed: () => void
         }
     }, [enabled])
 
-    return {surface, open, refocusAfterDrop}
+    return {surface, open, close, refocusAfterDrop}
 }
 
 type PickerProps = {
@@ -116,16 +116,18 @@ type PickerProps = {
     onNativeDragStart: (item: DashboardCatalogItem) => void
 }
 
-export function DashboardWidgetPicker({open, surface, onOpenChange, ...props}: PickerProps & {open: boolean; surface?: HTMLElement; onOpenChange: (open: boolean) => void}) {
-    if (!open) return null
-    if (surface) return createPortal(<main className="dashboard-picker-surface dashboard-picker-window" aria-labelledby="widget-palette-title">
-        <PickerContent {...props} separateWindow/>
-    </main>, surface)
-    return <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-        <DialogContent className="dashboard-picker dashboard-picker-surface" onInteractOutside={event => event.preventDefault()}>
-            <PickerContent {...props}/>
-        </DialogContent>
-    </Dialog>
+type PickerControls = {
+    popupBlocked: boolean
+    onSwitchMode: () => void
+    onCollapse: () => void
+}
+
+export function DashboardWidgetPicker({open, surface, dock, ...props}: PickerProps & PickerControls & {
+    open: boolean; surface?: HTMLElement; dock?: HTMLElement | null
+}) {
+    const mount = surface ?? dock
+    if (!open || !mount) return null
+    return <PickerContent {...props} mount={mount} separateWindow={!!surface}/>
 }
 
 const WidgetPreview = memo(function WidgetPreview({item, projectName}: {item: DashboardCatalogItem; projectName?: string}) {
@@ -136,7 +138,9 @@ const WidgetPreview = memo(function WidgetPreview({item, projectName}: {item: Da
     return <DashboardDataPreview type={item.type} title={item.title} projectName={projectName}/>
 })
 
-function PickerContent({newSection, projectName, fits, full, onAdd, onDragOver, onDrop, onDragCancel, onNativeDragStart, separateWindow}: PickerProps & {separateWindow?: boolean}) {
+function PickerContent({newSection, projectName, fits, full, onAdd, onDragOver, onDrop, onDragCancel, onNativeDragStart, mount, separateWindow, popupBlocked, onSwitchMode, onCollapse}: PickerProps & PickerControls & {
+    mount: HTMLElement; separateWindow: boolean
+}) {
     const [category, setCategory] = useState<(typeof dashboardCategories)[number] | "All">("All")
     const [query, setQuery] = useState("")
     const [dragPreview, setDragPreview] = useState<{item: DashboardCatalogItem; x: number; y: number; allowed: boolean}>()
@@ -225,16 +229,25 @@ function PickerContent({newSection, projectName, fits, full, onAdd, onDragOver, 
         </div>
     }
     const heading = newSection ? "Add a section" : "Widgets"
-    const help = "Drag a widget onto the dashboard, or click to add it."
-    return <>
-        {separateWindow ? <header className="dashboard-picker-header dashboard-picker-window-header">
-            <h1 id="widget-palette-title">{heading}</h1><p>{help}</p>
-        </header> : <DialogHeader className="dashboard-picker-header">
-            <DialogTitle>{heading}</DialogTitle>
-            <DialogDescription>{help}</DialogDescription>
-        </DialogHeader>}
+    const Surface = separateWindow ? "main" : "section"
+    return createPortal(<Surface className={`dashboard-picker-surface ${separateWindow ? "dashboard-picker-window" : "dashboard-picker-docked"}`} aria-labelledby="widget-palette-title">
+        <header className="dashboard-picker-header">
+            <div className="dashboard-picker-heading">
+                <h2 id="widget-palette-title">{heading}</h2>
+                <div className="dashboard-picker-actions">
+                    <Button type="button" size="sm" variant="ghost" autoFocus={!separateWindow} onClick={onSwitchMode}>
+                        {separateWindow ? <><PanelRightOpen/> Dock</> : <><ExternalLink/> Pop out</>}
+                    </Button>
+                    {!separateWindow && <Button type="button" size="icon-sm" variant="ghost" aria-label="Collapse widget picker" title="Collapse widget picker" onClick={onCollapse}>
+                        <PanelRightClose/>
+                    </Button>}
+                </div>
+            </div>
+            <p>Drag a widget onto the dashboard, or click to add it.</p>
+            {popupBlocked && <p role="status">Your browser blocked the widget window.</p>}
+        </header>
         <div className="dashboard-picker-tools">
-            <label className="dashboard-picker-search"><Search aria-hidden="true"/><Input type="search" autoFocus aria-label="Search widgets" placeholder="Search widgets" value={query} onChange={event => setQuery(event.target.value)}/></label>
+            <label className="dashboard-picker-search"><Search aria-hidden="true"/><Input type="search" autoFocus={separateWindow} aria-label="Search widgets" placeholder="Search widgets" value={query} onChange={event => setQuery(event.target.value)}/></label>
             <div className="dashboard-picker-categories" role="group" aria-label="Widget categories">
                 {(["All", ...dashboardCategories] as const).map(value => <Button key={value} type="button" size="sm" variant={category === value ? "secondary" : "ghost"} aria-pressed={category === value} onClick={() => setCategory(value)}>{value}</Button>)}
             </div>
@@ -263,5 +276,5 @@ function PickerContent({newSection, projectName, fits, full, onAdd, onDragOver, 
         </details>
         {dragPreview && createPortal(<div ref={ghost} className="dashboard-picker-ghost" aria-hidden="true" data-allowed={dragPreview.allowed}
             style={{translate: `${dragPreview.x + 14}px ${dragPreview.y + 14}px`}}>{title(dragPreview.item)}</div>, document.body)}
-    </>
+    </Surface>, mount)
 }

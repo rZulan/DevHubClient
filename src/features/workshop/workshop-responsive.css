@@ -45,6 +45,42 @@
     scroll-padding-block: 20px;
 }
 
+.workshop-dashboard-picker-slot:empty { display: none; }
+.workshop-dashboard-picker-slot {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    border-inline-start: 1px solid var(--border);
+    background: var(--sidebar);
+    color: var(--sidebar-foreground);
+}
+.workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) {
+    --dashboard-picker-width: min(22rem, 32vw);
+    grid-template-columns: 17rem minmax(0, 1fr) var(--dashboard-picker-width);
+}
+.workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) > .workshop-members { display: none; }
+.workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) .workshop-messages-button {
+    right: calc(var(--dashboard-picker-width) + 1.25rem);
+}
+@media (max-width: 1100px) {
+    .workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) {
+        grid-template-columns: minmax(0, 1fr) var(--dashboard-picker-width);
+    }
+}
+@media (max-width: 800px) {
+    .workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) {
+        --dashboard-picker-height: min(46dvh, 24rem);
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) var(--dashboard-picker-height);
+    }
+    .workshop-dashboard-picker-slot { border-inline-start: 0; border-block-start: 1px solid var(--border); }
+    .workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) .workshop-messages-button {
+        right: 1.25rem;
+        bottom: calc(var(--dashboard-picker-height) + 1.25rem);
+    }
+}
+
 /* Leave room for the on-demand panel buttons at laptop and tablet widths. */
 .workshop-shell .tool-editor-body:has(.tool-panel-launcher) {
     position: relative;
