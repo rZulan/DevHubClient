@@ -1,7 +1,8 @@
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from "react"
-import {HubConnectionBuilder, HubConnectionState} from "@microsoft/signalr"
+import {HubConnectionState} from "@microsoft/signalr"
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {api} from "@/services/api"
+import {realtimeConnection} from "@/services/realtime"
 import {type BeforeSignOutDetail, beforeSignOutEvent} from "@/features/auth/sign-out-events"
 import type {WorkshopPresenceStatus} from "@/features/workshop/workshop-types"
 
@@ -29,20 +30,19 @@ export const WorkshopPresenceContext = createContext<ReturnType<typeof useWorksh
 
 export function useWorkshopPresenceSession(organizationIds: string[]) {
     const dispatch = useAppDispatch()
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
     const currentUserId = useAppSelector((state) => state.auth.user?.id)
     const [manualStatus, setManualStatusState] = useState(() => readSavedStatus(currentUserId))
     const [automaticallyAway, setAutomaticallyAway] = useState(false)
     const [presence, setPresence] = useState<Map<string, PresenceMap>>(() => new Map())
     const effectiveStatus: Status = manualStatus === "online" && automaticallyAway ? "away" : manualStatus
-    const credentials = useRef({accessToken, status: effectiveStatus})
+    const status = useRef(effectiveStatus)
     const sendStatus = useRef<(() => void) | null>(null)
     const organizationKey = [...new Set(organizationIds.map(id => id.toLowerCase()))].sort().join(",")
 
     useEffect(() => {
-        credentials.current = {accessToken, status: effectiveStatus}
+        status.current = effectiveStatus
         sendStatus.current?.()
-    }, [accessToken, effectiveStatus])
+    }, [effectiveStatus])
     useEffect(() => {
         setManualStatusState(readSavedStatus(currentUserId))
     }, [currentUserId])
@@ -117,10 +117,7 @@ export function useWorkshopPresenceSession(organizationIds: string[]) {
         let membershipTimer: ReturnType<typeof setTimeout> | undefined
         const pendingMemberships = new Set<string>()
         const pendingDashboards = new Set<string>()
-        const connection = new HubConnectionBuilder().withUrl("/hubs/workshop", {
-            accessTokenFactory: () => credentials.current.accessToken ?? "",
-            withCredentials: true,
-        }).build()
+        const connection = realtimeConnection("/hubs/workshop", currentUserId).build()
         const stopped = () => disposed || signingOut
 
         function replaceMembers(id: string, members: PresenceMember[]) {
@@ -233,7 +230,7 @@ export function useWorkshopPresenceSession(organizationIds: string[]) {
                 for (const id of ids) {
                     if (stopped() || ready) break
                     try {
-                        const members = await heartbeat(id, credentials.current.status)
+                        const members = await heartbeat(id, status.current)
                         if (!ready && members) replaceMembers(id, members)
                     } catch { /* Retry on the next scheduled fallback. */
                     }
@@ -258,14 +255,14 @@ export function useWorkshopPresenceSession(organizationIds: string[]) {
             try {
                 let sent: Status
                 do {
-                    sent = credentials.current.status
+                    sent = status.current
                     for (const id of joined) {
                         if (stopped() || !ready) break
                         if (sentStatuses.get(id) === sent) continue
                         await connection.invoke("SetStatus", id, sent)
                         sentStatuses.set(id, sent)
                     }
-                } while (!stopped() && ready && sent !== credentials.current.status)
+                } while (!stopped() && ready && sent !== status.current)
             } catch {
                 ready = false
                 await connection.stop()
@@ -294,7 +291,7 @@ export function useWorkshopPresenceSession(organizationIds: string[]) {
                 for (const id of ids) {
                     if (stopped()) return
                     try {
-                        const joinedStatus = credentials.current.status
+                        const joinedStatus = status.current
                         const members = await connection.invoke<PresenceMember[]>("JoinOrganization", id, joinedStatus)
                         joined.add(id)
                         sentStatuses.set(id, joinedStatus)

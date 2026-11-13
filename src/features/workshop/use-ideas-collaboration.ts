@@ -1,14 +1,14 @@
-import {type HubConnection, HubConnectionBuilder, HubConnectionState} from "@microsoft/signalr"
+import {type HubConnection, HubConnectionState} from "@microsoft/signalr"
 import {useEffect, useEffectEvent, useMemo, useRef, useState} from "react"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
+import {realtimeConnection} from "@/services/realtime"
 import {ideasApi, type IdeasDocument, type IdeasKey} from "./ideas-api"
 
 export type RemoteIdeasSelection = { userId: string; username: string; shapeIds: string[] }
 
 export function useIdeasCollaboration(key: IdeasKey, selectedIds: string[], onDocument: (document: IdeasDocument) => void) {
     const dispatch = useAppDispatch()
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
     const currentUserId = useAppSelector((state) => state.auth.user?.id)
     const [remoteSelections, setRemoteSelections] = useState<Map<string, RemoteIdeasSelection>>(() => new Map())
     const connection = useRef<HubConnection | null>(null)
@@ -19,15 +19,12 @@ export function useIdeasCollaboration(key: IdeasKey, selectedIds: string[], onDo
 
     useEffect(() => {
         setRemoteSelections(new Map())
-        if (!accessToken || !currentUserId) return
+        if (!currentUserId) return
         const currentUserKey = currentUserId.toLowerCase()
         let disposed = false
         let retryTimer: ReturnType<typeof setTimeout> | undefined
         let attempt = 0
-        const hub = new HubConnectionBuilder().withUrl("/hubs/workshop", {
-            accessTokenFactory: () => accessToken,
-            withCredentials: true,
-        }).build()
+        const hub = realtimeConnection("/hubs/workshop", currentUserId).build()
         connection.current = hub
 
         function updateSelection(eventProjectId: string, remoteUserId: string, username: string, shapeIds: string[]) {
@@ -89,7 +86,7 @@ export function useIdeasCollaboration(key: IdeasKey, selectedIds: string[], onDo
             connection.current = null
             void hub.stop()
         }
-    }, [accessToken, currentUserId, dispatch, key.organizationId, key.projectId, projectId])
+    }, [currentUserId, dispatch, key.organizationId, key.projectId, projectId])
 
     useEffect(() => {
         pendingSelection.current = selectedIds

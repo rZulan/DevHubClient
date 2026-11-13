@@ -63,10 +63,10 @@ function harness({ failStart = false, failJoin = false } = {}) {
     fetch: async (url, options) => { requests.push([url, JSON.parse(options.body)]); return { ok: true, json: async () => [{ userId: 'bob', status: 'away' }] } },
     require: name => {
       if (name === 'react') return react
-      if (name === '@microsoft/signalr') return { HubConnectionState: { Disconnected: 'Disconnected', Connected: 'Connected' }, HubConnectionBuilder: class {
-        withUrl(_url, options) { this.options = options; return this }
-        build() { const connection = new Connection(); connection.options = this.options; connections.push(connection); return connection }
-      } }
+      if (name === '@microsoft/signalr') return { HubConnectionState: { Disconnected: 'Disconnected', Connected: 'Connected' } }
+      if (name === '@/services/realtime') return { realtimeConnection: () => ({ build() {
+        const connection = new Connection(); connections.push(connection); return connection
+      } }) }
       if (name === '@/app/hooks') return { useAppDispatch: () => dispatch, useAppSelector: selector => selector(state) }
       if (name === '@/services/api') return { api: { util: { invalidateTags: tags => tags }, endpoints: { updateWorkshopPresence: { initiate: presence => ({ presence }) } } } }
       if (name === '@/features/auth/sign-out-events') return { beforeSignOutEvent: 'sign-out' }
@@ -101,7 +101,7 @@ test('all organizations share one connection and healthy sessions never heartbea
   assert.equal(h.connections[0].calls.filter(c => c[0] === 'SetStatus').length, 2)
   assert.equal(h.requests.length, 0)
   h.state.auth.accessToken = 'token-2'; h.render(); await h.flush()
-  assert.equal(h.connections[0].options.accessTokenFactory(), 'token-2')
+  assert.equal(h.connections.length, 1)
   assert.equal(h.connections[0].starts, 1)
   h.dispose()
 })

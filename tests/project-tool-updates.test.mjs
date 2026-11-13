@@ -4,9 +4,9 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/use-project-tool-updates.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText
-function harness({enabled = true, token = 'token', failStart = false} = {}) {
+function harness({enabled = true, user = {id: 'user'}, failStart = false} = {}) {
     let index = 0, timerId = 0, key = {organizationId: 'org', projectId: 'project', tool: 'erd'}, fail = failStart
-    const state = {auth: {accessToken: token, user: {id: 'user'}}}, slots = [], pending = [], connections = [], timers = new Map(), events = new Map(), changes = []
+    const state = {auth: {user}}, slots = [], pending = [], connections = [], timers = new Map(), events = new Map(), changes = []
     const react = {
         useEffect(fn, deps) {const i = index++; if (!slots[i] || deps.some((value, j) => value !== slots[i].deps[j])) pending.push(() => {slots[i]?.cleanup?.(); slots[i] = {deps, cleanup: fn()}})},
         useEffectEvent(fn) {const i = index++; slots[i] ??= {}; slots[i].fn = fn; return (...args) => slots[i].fn(...args)},
@@ -19,11 +19,13 @@ function harness({enabled = true, token = 'token', failStart = false} = {}) {
         async invoke(...args) {this.calls.push(args)}
         async stop() {this.stops++; this.state = 'Disconnected'; this.closed?.()}
     }
-    class Builder {withUrl() {return this} build() {const c = new Connection(); connections.push(c); return c}}
     const exports = {}
     vm.runInNewContext(source, {exports, require: name => {
         if (name === 'react') return react
-        if (name === '@microsoft/signalr') return {HubConnectionBuilder: Builder, HubConnectionState: {Disconnected: 'Disconnected'}}
+        if (name === '@microsoft/signalr') return {HubConnectionState: {Disconnected: 'Disconnected'}}
+        if (name === '@/services/realtime') return {realtimeConnection: () => ({build() {
+            const connection = new Connection(); connections.push(connection); return connection
+        }})}
         if (name === '@/app/hooks') return {useAppSelector: fn => fn(state)}
         throw Error(name)
     }, window: {addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name)}, setTimeout: (fn, delay) => {timers.set(++timerId, {fn, delay}); return timerId}, clearTimeout: id => timers.delete(id)})
@@ -58,5 +60,5 @@ test('failed connections retry with bounded backoff and reconnect resynchronizes
 })
 test('browser-only previews and signed-out users do not start shared subscriptions', async () => {
     assert.equal(harness({enabled: false}).connections.length, 0)
-    assert.equal(harness({token: null}).connections.length, 0)
+    assert.equal(harness({user: null}).connections.length, 0)
 })

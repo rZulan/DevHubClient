@@ -1,4 +1,5 @@
 import {
+    type BaseQueryApi,
     type BaseQueryFn,
     createApi,
     type FetchArgs,
@@ -37,6 +38,7 @@ import type {ChatConversation, ChatMessage} from "@/features/chat/chat-types"
 type AuthRootState = {
     auth: {
         accessToken: string | null
+        user: {id: string} | null
     }
 }
 
@@ -61,47 +63,64 @@ const refreshBaseQuery = fetchBaseQuery({
     credentials: "include",
 })
 
-let refreshRequest: Promise<AuthenticationResponse | null> | null = null
+type RefreshResult = {data: AuthenticationResponse} | {error: FetchBaseQueryError}
+let refreshRequest: Promise<RefreshResult> | null = null
+
+function withSessionCookieLock<T>(request: () => Promise<T>): Promise<T> {
+    // A refresh rotates the cookie shared by tabs. Concurrent requests can revoke its entire family.
+    const locks = globalThis.navigator?.locks
+    return locks ? locks.request("devhub-auth-session", request) : request()
+}
+
+function refreshSession(apiContext: BaseQueryApi): Promise<RefreshResult> {
+    const readAuth = () => (apiContext.getState() as AuthRootState).auth
+    const initialUserId = readAuth().user?.id
+    refreshRequest ??= withSessionCookieLock<RefreshResult>(async () => {
+        const sessionChanged = {error: {status: "CUSTOM_ERROR", error: "The active session changed."}} as const
+        if (initialUserId !== readAuth().user?.id) return sessionChanged
+
+        const result = await refreshBaseQuery(
+            {url: "/auth/refresh", method: "POST"},
+            {...apiContext, signal: new AbortController().signal},
+            {},
+        )
+        if (initialUserId !== readAuth().user?.id) return sessionChanged
+
+        if (result.error) {
+            if (result.error.status === 401) {
+                clearStoredRefreshToken()
+                apiContext.dispatch(clearSession())
+            }
+            return {error: result.error}
+        }
+
+        const response = result.data as AuthenticationResponse
+        if (initialUserId && response.userId !== initialUserId) return sessionChanged
+        clearStoredRefreshToken()
+        apiContext.dispatch(setCredentials(response))
+        return {data: response}
+    }).finally(() => {
+        refreshRequest = null
+    })
+    return refreshRequest
+}
 
 const baseQueryWithReauthentication: BaseQueryFn<
     string | FetchArgs,
     unknown,
     FetchBaseQueryError
 > = async (args, apiContext, extraOptions) => {
-    let result = annotateRateLimit(await rawBaseQuery(args, apiContext, extraOptions))
+    const send = async () => annotateRateLimit(await rawBaseQuery(args, apiContext, extraOptions))
+    if (isAuthenticationRequest(args)) return withSessionCookieLock(send)
 
-    if (result.error?.status !== 401 || isAuthenticationRequest(args)) {
-        return result
-    }
-
-    refreshRequest ??= (async () => {
-        const refreshResult = await refreshBaseQuery(
-            {
-                url: "/auth/refresh",
-                method: "POST",
-            },
-            apiContext,
-            extraOptions,
-        )
-
-        if (refreshResult.data) {
-            const response = refreshResult.data as AuthenticationResponse
-            clearStoredRefreshToken()
-            apiContext.dispatch(setCredentials(response))
-            return response
-        }
-
-        clearStoredRefreshToken()
-        apiContext.dispatch(clearSession())
-        return null
-    })().finally(() => {
-        refreshRequest = null
-    })
-
-    const refreshedSession = await refreshRequest
-
-    if (refreshedSession) {
-        result = annotateRateLimit(await rawBaseQuery(args, apiContext, extraOptions))
+    const initialAuth = (apiContext.getState() as AuthRootState).auth
+    const result = await send()
+    if (result.error?.status === 401) {
+        const currentAuth = (apiContext.getState() as AuthRootState).auth
+        if (initialAuth.user && currentAuth.user?.id !== initialAuth.user.id) return result
+        if (currentAuth.accessToken && currentAuth.accessToken !== initialAuth.accessToken) return send()
+        const refreshed = await refreshSession(apiContext)
+        if ("data" in refreshed) return send()
     }
 
     return result
@@ -157,11 +176,7 @@ export const api = createApi({
             invalidatesTags: ["CurrentUser"],
         }),
         refresh: builder.mutation<AuthenticationResponse, void>({
-            query: () => ({
-                url: "/auth/refresh",
-                method: "POST",
-            }),
-            invalidatesTags: ["CurrentUser"],
+            queryFn: (_args, apiContext) => refreshSession(apiContext),
         }),
         logout: builder.mutation<void, void>({
             query: () => ({

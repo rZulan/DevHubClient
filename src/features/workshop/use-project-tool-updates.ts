@@ -1,17 +1,17 @@
 import {useEffect, useEffectEvent} from "react"
-import {HubConnectionBuilder, HubConnectionState} from "@microsoft/signalr"
+import {HubConnectionState} from "@microsoft/signalr"
 import {useAppSelector} from "@/app/hooks"
+import {realtimeConnection} from "@/services/realtime"
 import type {DocumentTool} from "./tool-documents"
 
 export function useProjectToolUpdates(key: {organizationId: string; projectId: string; tool: DocumentTool | "todo"}, enabled: boolean, onChange: (revision?: number) => void) {
-    const token = useAppSelector(state => state.auth.accessToken)
     const userId = useAppSelector(state => state.auth.user?.id)
     const receive = useEffectEvent(onChange)
     useEffect(() => {
-        if (!enabled || !token || !userId) return
+        if (!enabled || !userId) return
         let disposed = false, attempt = 0, restarting = false
         let timer: ReturnType<typeof setTimeout> | undefined
-        const connection = new HubConnectionBuilder().withUrl("/hubs/workshop", {accessTokenFactory: () => token, withCredentials: true}).build()
+        const connection = realtimeConnection("/hubs/workshop", userId).build()
         connection.on("ProjectToolChanged", (projectId: string, tool: string, revision: number) => {
             if (!disposed && projectId.toLowerCase() === key.projectId.toLowerCase() && tool === key.tool && Number.isInteger(revision) && revision >= 0) receive(revision)
         })
@@ -33,5 +33,5 @@ export function useProjectToolUpdates(key: {organizationId: string; projectId: s
         window.addEventListener("focus", refetchOnFocus)
         void start()
         return () => {disposed = true; clearTimeout(timer); window.removeEventListener("focus", refetchOnFocus); void connection.stop()}
-    }, [enabled, token, userId, key.organizationId, key.projectId, key.tool])
+    }, [enabled, userId, key.organizationId, key.projectId, key.tool])
 }

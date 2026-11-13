@@ -1,8 +1,9 @@
 import {useCallback, useEffect, useRef, useState} from "react"
-import {type HubConnection, HubConnectionBuilder, HubConnectionState,} from "@microsoft/signalr"
+import {type HubConnection, HubConnectionState} from "@microsoft/signalr"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {api} from "@/services/api"
+import {realtimeConnection} from "@/services/realtime"
 import type {ChatMessage} from "@/features/chat/chat-types"
 
 export function useChatConnection(
@@ -11,7 +12,7 @@ export function useChatConnection(
     onMessage: (message: ChatMessage) => void,
 ) {
     const dispatch = useAppDispatch()
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
+    const userId = useAppSelector((state) => state.auth.user?.id)
     const connectionRef = useRef<HubConnection | null>(null)
     const onMessageRef = useRef(onMessage)
     const [connected, setConnected] = useState(false)
@@ -20,15 +21,11 @@ export function useChatConnection(
 
     useEffect(() => {
         setConnected(false)
-        if (!enabled || !organizationId) return
+        if (!enabled || !organizationId || !userId) return
 
         let disposed = false
         let retryTimer: ReturnType<typeof setTimeout> | undefined
-        const connection = new HubConnectionBuilder()
-            .withUrl("/hubs/chat", {
-                accessTokenFactory: () => accessToken ?? "",
-                withCredentials: true,
-            })
+        const connection = realtimeConnection("/hubs/chat", userId)
             .withAutomaticReconnect()
             .build()
         connectionRef.current = connection
@@ -85,7 +82,7 @@ export function useChatConnection(
             connectionRef.current = null
             if (connection.state !== HubConnectionState.Disconnected) void connection.stop()
         }
-    }, [accessToken, dispatch, enabled, organizationId])
+    }, [userId, dispatch, enabled, organizationId])
 
     const sendMessage = useCallback(async (
         conversationId: string,
