@@ -126,10 +126,17 @@
 .wiki-article-title > .wiki-actions { flex-shrink: 0; }
 .wiki-page-title-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* Contain the absolute screen-reader status so offscreen headings cannot extend the document. */
-.wiki-copy-link { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 5px; background: transparent; color: var(--muted-foreground); opacity: .35; transition: opacity 150ms ease; cursor: pointer; vertical-align: middle; }
+.wiki-copy-link { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 5px; background: transparent; color: var(--muted-foreground); opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; cursor: pointer; vertical-align: middle; }
 .wiki-copy-link svg { width: 15px; height: 15px; }
-.wiki-copy-link:hover { opacity: .8; }
-.wiki-copy-link:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: 2px; }
+:where(.wiki-article-title, .wiki-section-heading):where(:hover, :has(:focus-visible)) .wiki-copy-link { opacity: .65; }
+.wiki-copy-link:is(:hover, :focus-visible) { opacity: 1; background: var(--muted); }
+.wiki-copy-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (hover: none), (pointer: coarse) {
+    .wiki-copy-link { opacity: .72; min-width: 2rem; min-height: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .wiki-copy-link { transition: none; }
+}
 .note-markdown .wiki-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .wiki-heading-label { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .note-markdown a.wiki-heading-anchor { min-width: 0; color: inherit; text-decoration: none; }
@@ -192,8 +199,8 @@
     .wiki-toc > ol { max-height: 180px; }
 }
 @container (max-width: 600px) {
-    .wiki-search-trigger { padding-inline: 7px; }
-    .wiki-search-trigger span, .wiki-search-trigger kbd { display: none; }
+    .wiki-search-trigger, .wiki-files-trigger { padding-inline: 7px; }
+    .wiki-search-trigger span, .wiki-search-trigger kbd, .wiki-files-trigger span { display: none; }
     .wiki-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .wiki-sidebar { border-right: 0; border-bottom: 1px solid var(--border); padding: 16px; gap: 10px; }
     .wiki-sidebar nav { max-height: 112px; }

@@ -46,7 +46,7 @@ export function useDashboardPaletteWindow(enabled: boolean, onClosed: () => void
         if (!browser) return false
 
         const target = browser.document
-        target.title = "Widgets · Zevont"
+        target.title = "Widgets · Zhimera"
         const base = target.createElement("base")
         base.href = document.baseURI
         const viewport = target.createElement("meta")

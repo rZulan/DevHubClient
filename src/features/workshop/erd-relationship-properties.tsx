@@ -2,6 +2,7 @@ import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {ChevronDown} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {ErdRelationshipEndpoints} from "./erd-relationship-endpoints"
+import {ConnectionLightning} from "./connections/connection-lightning"
 import {type ErdDocument, type ErdRelationship} from "./tool-documents"
 
 export function ErdRelationshipProperties({document, relation, initiallyOpen, canEdit, onChange, onEditColumns, onCreateJunction, onDelete}: {
@@ -10,7 +11,11 @@ export function ErdRelationshipProperties({document, relation, initiallyOpen, ca
 }) {
     const parent = document.tables.find(table => table.id === relation.fromTable), child = document.tables.find(table => table.id === relation.toTable)
     return <details className="erd-relationship-entry" open={initiallyOpen}>
-        <summary><span><strong>{parent?.name} → {child?.name}</strong><small>{relation.cardinality}</small></span><ChevronDown/></summary>
+        <summary className="connection-node-anchor">
+            <span><strong>{parent?.name} → {child?.name}</strong><small>{relation.cardinality}</small></span>
+            <ConnectionLightning node={{kind: "erd-relationship", id: relation.id, label: `${parent?.name ?? "Table"} → ${child?.name ?? "Table"}`}}/>
+            <ChevronDown/>
+        </summary>
         <div className="erd-relationship-fields">
             <ErdRelationshipEndpoints document={document} relation={relation} canEdit={canEdit} onChange={onChange}/>
             <Button size="sm" variant="secondary" disabled={!canEdit} onClick={onEditColumns}>Edit connected columns</Button>

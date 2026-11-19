@@ -38,6 +38,7 @@ import {UmlConnectorPanel} from "@/features/workshop/ideas/uml-connector-panel"
 import {UmlElementFields} from "@/features/workshop/ideas/uml-element-fields"
 import {UmlCanvasActions} from "@/features/workshop/ideas/uml-canvas-actions"
 import {UmlLayersPanel} from "@/features/workshop/ideas/uml-layers-panel"
+import {ConnectionLightning} from "@/features/workshop/connections/connection-lightning"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import {expandGroupedIds, groupShapes, ungroupShapes} from "@/features/workshop/shape-groups"
 import {CanvasCard, type TextSelection, type TextStyleCommand} from "@/features/workshop/ideas/canvas-card"
@@ -60,7 +61,7 @@ export function WorkshopIdeationPage() {
     return <Navigate to="../uml" replace/>
 }
 
-export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {diagram: UmlDiagram; adapter: {canEdit: boolean; status: string; error: string; setItems: (items: CanvasItem[]) => void; save: () => void; retry: () => void; reload: () => void}; onBack: () => void; viewStorageKey?: string}) {
+export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey, initialItemId}: {diagram: UmlDiagram; adapter: {canEdit: boolean; status: string; error: string; setItems: (items: CanvasItem[]) => void; save: () => void; retry: () => void; reload: () => void}; onBack: () => void; viewStorageKey?: string; initialItemId?: string}) {
     const {project} = useOutletContext<WorkshopOutletContext>()
     const items = useMemo(()=>upgradeUmlConnections(diagram.items),[diagram.items]), setDocumentItems = adapter.setItems, saveStatus = adapter.status, saveError = adapter.error, save = adapter.save, retry = adapter.retry, reload = adapter.reload, hasEditPermission = adapter.canEdit
     const itemsRef = useRef(items)
@@ -157,7 +158,7 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
         worldY: number;
         target: "canvas" | "selection"
     }>()
-    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [selectedIds, setSelectedIds] = useState<string[]>(() => initialItemId ? [initialItemId] : [])
     const [activeTextSelection, setActiveTextSelection] = useState<TextSelection>()
     const [textStyleCommand, setTextStyleCommand] = useState<TextStyleCommand>()
     const textStyleCommandId = useRef(0)
@@ -176,7 +177,7 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
     const selectedGroupId = useMemo(() => selectedItems.length > 1 && selectedItems[0].groupId && selectedItems.every((item) => item.groupId === selectedItems[0].groupId)
         ? selectedItems[0].groupId
         : undefined, [selectedItems])
-    const [propertyItemId, setPropertyItemId] = useState<string>()
+    const [propertyItemId, setPropertyItemId] = useState(initialItemId)
     useEffect(() => {
         if (!selectedItems.some((item) => item.id === propertyItemId)) setPropertyItemId(selectedItems[0]?.id)
     }, [propertyItemId, selectedItems])
@@ -190,6 +191,16 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
     const lastPaste = useRef({text: "", count: 0})
     const contextClipboard = useRef<CanvasItem[]>([])
     const [viewportSize, setViewportSize] = useState({width: 1, height: 1})
+    const revealedInitialItem = useRef(false)
+    useLayoutEffect(() => {
+        if (revealedInitialItem.current || !initialItemId || viewportSize.width < 2 || viewportSize.height < 2) return
+        const item = diagram.items.find(candidate => candidate.id === initialItemId)
+        if (!item) return
+        const view = fitBounds(combinedBounds([item]), viewportSize, viewportSize.width > 600 ? 300 : 0)
+        setZoom(view.zoom)
+        setPan(view.pan)
+        revealedInitialItem.current = true
+    }, [diagram.items, initialItemId, viewportSize])
     useLayoutEffect(() => {
         const canvas = canvasRef.current
         if (!canvas) return
@@ -821,12 +832,13 @@ export function PlaygroundCanvas({diagram, adapter, onBack, viewStorageKey}: {di
                                    hasGroupedItems={selectedItems.some((item) => item.groupId)}
                                    selectionCount={selectedItems.length} target={contextMenu.target} x={contextMenu.x}
                                    y={contextMenu.y} onAction={runContextAction}/>}
-            {layersOpen && <UmlLayersPanel items={items} selectedIds={selectedIds} canEdit={canEditIdeation} onSelect={id=>{setSelectedIds([id]);setPropertyItemId(id)}} onUpdate={item=>setItems(current=>current.map(n=>n.id===item.id?item:n))} onClose={()=>setLayersOpen(false)}/>}
+            {layersOpen && <UmlLayersPanel diagramId={diagram.id} items={items} selectedIds={selectedIds} canEdit={canEditIdeation} onSelect={id=>{setSelectedIds([id]);setPropertyItemId(id)}} onUpdate={item=>setItems(current=>current.map(n=>n.id===item.id?item:n))} onClose={()=>setLayersOpen(false)}/>}
             {canEditIdeation && isShapeMenuOpen && !layersOpen &&
                 <ShapeSelector umlType={diagram.type} onAdd={addPreset} onClose={() => setIsShapeMenuOpen(false)}/>}
-            {canEditIdeation && tool === "select" && selectedItem && (selectedItem.connection ? <UmlConnectorPanel key={selectedItem.id} item={selectedItem} items={items} onChange={next=>setItems(current=>current.map(n=>n.id===next.id?next:n))} onDelete={deleteSelection}/> : (
+            {canEditIdeation && tool === "select" && selectedItem && (selectedItem.connection ? <UmlConnectorPanel key={selectedItem.id} diagramId={diagram.id} item={selectedItem} items={items} onChange={next=>setItems(current=>current.map(n=>n.id===next.id?next:n))} onDelete={deleteSelection}/> : (
                 <ShapePropertiesPanel
                     key={selectedItem.id}
+                    headingAction={<ConnectionLightning node={{kind: "uml-element", id: selectedItem.id, parentId: diagram.id, label: selectedItem.umlDetails?.name || selectedItem.text.split("\n")[0] || "UML element"}}/>}
                     extra={<UmlElementFields item={selectedItem} onChange={next=>setItems(current=>current.map(n=>n.id===next.id?next:n))}/>}
                     disabled={selectedItem.locked}
                     allItemsCount={items.length}

@@ -21,10 +21,22 @@
     white-space: nowrap;
 }
 
-.workshop-topbar .workshop-topbar-title > h1 {
+.workshop-topbar-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.workshop-topbar-heading > h1 {
     display: flex;
     max-width: 100%;
     line-height: 1.5;
+}
+
+.workshop-history-buttons {
+    display: inline-flex;
+    flex: none;
+    gap: 2px;
 }
 
 .workshop-topbar-title h1 > span {
@@ -225,6 +237,7 @@
 }
 
 @media (pointer: coarse) {
+    .workshop-history-buttons > button { min-width: 32px; min-height: 32px; }
     .workshop-shell :is(.calendar-view-switch, .calendar-month-controls, .directory-segment) > button { min-height: 44px; }
     .workshop-shell .calendar-month-controls > button { min-width: 40px; }
     .workshop-shell :is(.ui-design-toolbar, .workshop-canvas-toolbar) > button { min-width: 40px; min-height: 40px; }

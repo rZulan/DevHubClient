@@ -1,6 +1,29 @@
-.workshop-toast-viewport { position: fixed; z-index: 100; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); display: flex; flex-direction: column; gap: 10px; width: min(390px, calc(100vw - 32px)); max-height: calc(100svh - 32px); overflow-y: auto; margin: 0; padding: 0; list-style: none; outline: none; pointer-events: none; }
-body:has(.workshop-shell) .workshop-toast-viewport { top: calc(5.5rem + 12px); max-height: calc(100svh - 120px); }
-body:has(.workshop-shell:not(.members-collapsed)) .workshop-toast-viewport { right: calc(17rem + 16px); }
+.workshop-toast-viewport {
+    --toast-gutter: 16px;
+    --toast-right: calc(var(--toast-members-offset, 0px) + max(var(--toast-gutter), env(safe-area-inset-right)));
+    --toast-bottom: max(var(--toast-gutter), env(safe-area-inset-bottom));
+    position: fixed;
+    z-index: 100;
+    inset: auto var(--toast-right) var(--toast-bottom) auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 390px;
+    max-width: calc(100vw - var(--toast-right) - max(var(--toast-gutter), env(safe-area-inset-left)));
+    max-height: calc(100dvh - var(--toast-bottom) - max(var(--toast-gutter), env(safe-area-inset-top)));
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    list-style: none;
+    outline: none;
+    pointer-events: none;
+}
+
+body:has(.workshop-shell > .workshop-members):not(:has(.workshop-dashboard-picker-slot:not(:empty))) .workshop-toast-viewport {
+    --toast-members-offset: var(--workshop-members-width);
+}
 .workshop-toast { --toast-tone: #60a5fa; display: flex; align-items: flex-start; gap: 12px; flex: none; position: relative; min-width: 0; border: 1px solid color-mix(in oklab, var(--toast-tone) 28%, var(--border)); border-left: 3px solid var(--toast-tone); border-radius: 10px; padding: 14px 12px 14px 14px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 30px #0002; pointer-events: auto; font-size: 13px; line-height: 1.5; animation: workshop-toast-enter .18s ease-out; }
 .workshop-toast[data-variant="error"] { --toast-tone: #ef4444; }
 .workshop-toast[data-variant="warning"] { --toast-tone: #f59e0b; }
@@ -25,7 +48,6 @@ body:has(.workshop-shell:not(.members-collapsed)) .workshop-toast-viewport { rig
 .workshop-toast :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .workshop-toast[data-swipe="move"] { transform: translateX(var(--radix-toast-swipe-move-x)); animation: none; }
 .workshop-toast[data-swipe="cancel"] { transform: translateX(0); transition: transform .15s ease-out; }
-@keyframes workshop-toast-enter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 600px) { .workshop-toast-viewport { right: 12px; width: calc(100vw - 24px); } }
+@keyframes workshop-toast-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 600px) { .workshop-toast-viewport { --toast-gutter: 12px; width: 100vw; } }
 @media (prefers-reduced-motion: reduce) { .workshop-toast { animation: none; transition: none !important; } }
-.workshop-toast-viewport { left: auto; bottom: auto; border: 0; background: transparent; }

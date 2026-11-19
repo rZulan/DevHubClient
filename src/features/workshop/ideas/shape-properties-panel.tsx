@@ -14,6 +14,7 @@ export type ShapeStyleChanges = Partial<Pick<CanvasItem, "width" | "height" | "r
 
 type ShapePropertiesPanelProps = {
     extra?: ReactNode
+    headingAction?: ReactNode
     disabled?: boolean
     allItemsCount: number
     selectedGroupId?: string
@@ -36,6 +37,7 @@ const PropertiesShapeContext = createContext("")
 export function ShapePropertiesPanel({
                                          allItemsCount,
                                          extra,
+                                         headingAction,
                                          disabled,
                                          selectedGroupId,
                                          selectedIds,
@@ -53,9 +55,12 @@ export function ShapePropertiesPanel({
                                      }: ShapePropertiesPanelProps) {
     const compact = useCompactWorkshopContent()
     const [open, setOpen] = useState(false)
-    const panel = <aside aria-label="Properties" className="workshop-shape-properties" data-shape-properties
+    const panel = <aside aria-label="Properties" className="workshop-shape-properties connection-node-anchor" data-shape-properties
                    onPointerDown={(event) => event.stopPropagation()} onWheel={(event) => event.stopPropagation()}>
-                <strong>Properties{selectedGroupId ? " · Group" : selectedIds.length > 1 ? ` · ${selectedIds.length} selected` : ""}</strong>
+                <div className="connection-node-heading">
+                    <strong className="connection-node-title">Properties{selectedGroupId ? " · Group" : selectedIds.length > 1 ? ` · ${selectedIds.length} selected` : ""}</strong>
+                    {headingAction}
+                </div>
                 {selectedGroupId &&
                     <label className="workshop-property-field workshop-group-member-picker"><span>Shape</span><WorkshopSelect
                         aria-label="Group member properties" value={selectedItem.id}

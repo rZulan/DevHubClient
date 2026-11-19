@@ -1,0 +1,26 @@
+.project-tool-nav-row {
+    position: relative;
+}
+
+.workshop-nav-submenu .project-tool-nav-row.has-connection > .workshop-nav-link {
+    padding-inline-end: 2.5rem;
+}
+
+.project-tool-nav-row > .project-tool-nav-lightning {
+    position: absolute;
+    inset-inline-end: .25rem;
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+}
+
+@media (pointer: coarse) {
+    .workshop-nav-submenu .project-tool-nav-row.has-connection > .workshop-nav-link {
+        padding-inline-end: 3rem;
+    }
+
+    .project-tool-nav-row > .project-tool-nav-lightning {
+        inline-size: 2.75rem;
+        block-size: 2.75rem;
+        inset-inline-end: 0;
+    }
+}

@@ -8,6 +8,7 @@ export type WorkshopPermission =
     | "Manage teams"
     | "View all projects"
     | "Manage projects"
+    | "Manage connections"
     | "Manage tasks"
     | "Edit ideation"
     | "Edit ERD"

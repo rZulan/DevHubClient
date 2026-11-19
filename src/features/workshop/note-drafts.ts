@@ -1,5 +1,6 @@
 import type {StickyNote} from "./tool-documents.ts"
 import {noteEmoji, validNoteEmoji} from "./note-emojis.ts"
+import {validNoteColor} from "./sticky-notes.ts"
 
 export type NoteDraft = {note: StickyNote; creating: boolean; savedAt: string}
 type DraftStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">
@@ -15,7 +16,7 @@ function validDraft(value: unknown): value is NoteDraft {
         && !!note && typeof note.id === "string" && !!note.id.trim() && note.id.length <= 100
         && typeof note.title === "string" && note.title.length <= 150
         && typeof note.body === "string" && note.body.length <= 10000
-        && typeof note.color === "string" && /^#[a-fA-F0-9]{6}$/.test(note.color)
+        && validNoteColor(note.color)
         && validNoteEmoji(note.emoji)
         && typeof note.updatedAt === "string" && Number.isFinite(Date.parse(note.updatedAt))
 }

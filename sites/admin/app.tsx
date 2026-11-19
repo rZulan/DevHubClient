@@ -101,7 +101,7 @@ export function App() {
 
     return <>
         <header className="masthead">
-            <a href="/" className="brand"><Fingerprint aria-hidden="true"/> Zevont <span>Admin</span></a>
+            <a href="/" className="brand"><Fingerprint aria-hidden="true"/> Zhimera <span>Admin</span></a>
             {(screen === "ready" || screen === "denied") && <button type="button" disabled={busy} onClick={() => void logout()}>Sign out</button>}
         </header>
         <main className={screen === "ready" ? "dashboard" : "gate"}>
@@ -110,7 +110,7 @@ export function App() {
             {screen === "login" && <section className="panel sign-in">
                 <p className="eyebrow">Platform administration</p>
                 <h1>Sign in</h1>
-                <p>Use your approved Zevont account.</p>
+                <p>Use your approved Zhimera account.</p>
                 <form onSubmit={login}>
                     <label>Email<input name="email" type="email" autoComplete="username" maxLength={320} required/></label>
                     <label>Password<input name="password" type="password" autoComplete="current-password" maxLength={128} required/></label>
@@ -120,7 +120,7 @@ export function App() {
             {screen === "denied" && <section className="panel sign-in"><p className="eyebrow">Platform administration</p><h1>Access restricted</h1><p>This account hasn’t been granted platform admin access.</p></section>}
             {screen === "unavailable" && <section className="panel sign-in"><h1>Admin panel unavailable</h1><p>Check that the API is running and try again.</p><button type="button" onClick={() => location.reload()}>Retry</button></section>}
             {screen === "ready" && overview && <>
-                <div className="intro"><p className="eyebrow">Platform administration</p><h1>Overview</h1><p>Read-only activity across Zevont.</p></div>
+                <div className="intro"><p className="eyebrow">Platform administration</p><h1>Overview</h1><p>Read-only activity across Zhimera.</p></div>
                 <div className="metrics">
                     <section className="panel"><Users aria-hidden="true"/><span>Users</span><strong>{overview.userCount.toLocaleString()}</strong></section>
                     <section className="panel"><Building2 aria-hidden="true"/><span>Organizations</span><strong>{overview.organizationCount.toLocaleString()}</strong></section>

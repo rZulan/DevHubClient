@@ -17,7 +17,7 @@
 .project-detail-tabs [role="tab"]:hover { color: var(--foreground); }
 .project-detail-tabs [role="tab"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
 .project-detail-tabs > [role="tabpanel"] { padding-top: 24px; outline: none; }
-.project-detail-section { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 22px 24px; }
+.project-detail-section { border-radius: 12px; background: var(--workshop-card-surface); padding: 22px 24px; }
 .project-detail-section + .project-detail-section { margin-top: 20px; }
 .project-detail-section > h2, .project-detail-section-heading > h2 { margin: 0; color: var(--foreground); font-size: 14px; font-weight: 600; line-height: 1.5; }
 .project-detail-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 32px; margin-top: 20px; }

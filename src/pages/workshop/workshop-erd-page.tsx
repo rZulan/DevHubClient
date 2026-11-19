@@ -12,6 +12,8 @@ import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {ToolCanvas} from "@/features/workshop/tool-canvas"
 import {canvasViewKey} from "@/features/workshop/canvas-view-storage"
 import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
+import {ConnectionLightning} from "@/features/workshop/connections/connection-lightning"
+import {useConnectionNodeLink} from "@/features/workshop/connections/use-connection-node-link"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {erdDialects, erdDialectLabels, downloadFile, erdSql, newField, removeField, removeTable, tableHeight, cardinalityForEnds, relationshipEnds, type ErdDocument, type ErdDialect, type ErdField, type ErdRelationship, type ErdTable} from "@/features/workshop/tool-documents"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -107,6 +109,23 @@ function ErdEditor() {
         return true
     }
     function selectRelation(id: string) {setSelectedRelationId(id); setSelectedIds([]); setFieldId(""); setPropertiesCollapsed(false); setRelationError("")}
+    useConnectionNodeLink(project!.id, node => {
+        if (node.kind === "erd-relationship") {
+            if (!document.relationships.some(relation => relation.id === node.id)) return false
+            selectRelation(node.id)
+            setHideRelationships(false)
+        } else {
+            if (node.kind !== "erd-column" && node.kind !== "erd-table") return false
+            const table = renderIndex.tables.get(node.kind === "erd-column" ? node.parentId ?? "" : node.id)
+            if (!table || node.kind === "erd-column" && !table.fields.some(column => column.id === node.id)) return false
+            selectTables([table.id])
+            setFieldId(node.kind === "erd-column" ? node.id : "")
+            setPropertiesTab(node.kind === "erd-column" ? "columns" : "table")
+            setPropertiesCollapsed(false)
+        }
+        setArrangement(value => value + 1)
+        return true
+    })
     const updateTable = useCallback((id: string, changes: Partial<ErdTable>) => {
         const next = {...document, tables: document.tables.map(table => table.id === id ? {...table, ...changes} : table)}
         const invalidRelation = document.relationships.find(relation => !erdRelationshipError(document, relation) && erdRelationshipError(next, relation))
@@ -206,9 +225,22 @@ function ErdEditor() {
         setDocument(current => selectedRelation ? {...current, relationships: current.relationships.filter(relation => relation.id !== selectedRelation.id)} : selectedIds.reduce(removeTable, current))
         selectTables([])
     }
-    const renderedTables = useMemo(() => new Map(document.tables.map(table => [table.id, <div key={table.id} className="erd-table-card"><article className="erd-table"><header><Database/><strong><ErdEditableName name={table.name} label={`Rename table ${table.name}`} canEdit={canEdit} onChange={name => updateTable(table.id, {name})}/></strong><small>{table.fields.length} columns</small></header>
-                        {table.fields.map(item => <div role="button" tabIndex={0} key={item.id} className={`erd-field-row ${selected?.id === table.id && field?.id === item.id ? "active" : ""}`} onPointerDown={event => event.stopPropagation()} onClick={() => {selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}}}>
-                            <span className="erd-field-key">{item.primary ? <KeyRound/> : renderIndex.foreignKeys.get(table.id)?.has(item.id) ? <Link2/> : null}</span><ErdEditableName name={item.name} label={`Rename column ${table.name}.${item.name}`} canEdit={canEdit} onChange={name => setDocument(current => ({...current, tables: current.tables.map(value => value.id === table.id ? {...value, fields: value.fields.map(column => column.id === item.id ? {...column, name} : column)} : value)}))}/><small title={item.autoIncrement ? "Generated ID" : undefined}>{erdDisplayType(item)}{item.autoIncrement ? " ↗" : ""}</small><i>{item.nullable ? "?" : ""}</i>
+    const renderedTables = useMemo(() => new Map(document.tables.map(table => [table.id, <div key={table.id} className="erd-table-card"><article className="erd-table">
+                        <header className="connection-node-anchor">
+                            <Database/><strong><ErdEditableName name={table.name} label={`Rename table ${table.name}`} canEdit={canEdit} onChange={name => updateTable(table.id, {name})}/></strong>
+                            <span className="erd-table-card-meta">
+                                <small>{table.fields.length} columns</small>
+                                <ConnectionLightning node={{kind: "erd-table", id: table.id, label: table.name}}/>
+                            </span>
+                        </header>
+                        {table.fields.map(item => <div role="button" tabIndex={0} key={item.id} className={`erd-field-row connection-node-anchor ${selected?.id === table.id && field?.id === item.id ? "active" : ""}`} onPointerDown={event => event.stopPropagation()} onClick={() => {selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); selectTables([table.id]); setFieldId(item.id); setPropertiesTab("columns"); setPropertiesCollapsed(false)}}}>
+                            <span className="erd-field-key">{item.primary ? <KeyRound/> : renderIndex.foreignKeys.get(table.id)?.has(item.id) ? <Link2/> : null}</span>
+                            <ErdEditableName name={item.name} label={`Rename column ${table.name}.${item.name}`} canEdit={canEdit} onChange={name => setDocument(current => ({...current, tables: current.tables.map(value => value.id === table.id ? {...value, fields: value.fields.map(column => column.id === item.id ? {...column, name} : column)} : value)}))}/>
+                            <span className="erd-table-card-meta">
+                                <small title={item.autoIncrement ? "Generated ID" : undefined}>{erdDisplayType(item)}{item.autoIncrement ? " ↗" : ""}</small>
+                                {item.nullable && <i>?</i>}
+                                <ConnectionLightning node={{kind: "erd-column", id: item.id, parentId: table.id, label: `${table.name}.${item.name}`}}/>
+                            </span>
                         </div>)}
                         {!table.fields.length && <p>No columns yet</p>}
                     </article>{canEdit && <button type="button" className="erd-add-column" aria-label={`Add column to ${table.name}`} disabled={table.fields.length >= 200} onPointerDown={event => event.stopPropagation()} onClick={() => addColumn(table)}><Plus/>Add column</button>}</div>])), [document, canEdit, selected?.id, field?.id, renderIndex, updateTable, setDocument, addColumn])

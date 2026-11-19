@@ -8,8 +8,8 @@
 .uml-directory-search svg { width: 15px; height: 15px; color: var(--muted-foreground); }
 .uml-directory-search input { width: 100%; min-width: 0; font-size: 13px; background: transparent; outline: none; }
 .uml-directory-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(250px,1fr)); gap: 16px; }
-.uml-directory-card { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--background); overflow: hidden; }
-.uml-directory-card:hover { border-color: color-mix(in srgb,var(--primary) 60%,var(--border)); }
+.uml-directory-card { position: relative; border-radius: 12px; background: var(--workshop-card-surface); overflow: hidden; }
+.uml-directory-card:hover { background: var(--accent); }
 .uml-directory-open { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; padding: 20px; text-align: left; cursor: pointer; }
 .uml-directory-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--secondary); color: var(--primary); }
 .uml-directory-icon svg { width: 20px; height: 20px; }
@@ -17,7 +17,7 @@
 .uml-directory-open > span:not(.uml-directory-icon), .uml-directory-open small { color: var(--muted-foreground); font-size: 12px; }
 .uml-directory-open .uml-directory-open-label { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: 100%; margin-top: 15px; color: var(--foreground); }
 .uml-directory-open-label svg { width: 14px; height: 14px; }
-.uml-directory-actions { position: absolute; right: 10px; top: 16px; display: flex; gap: 2px; }
+.uml-directory-actions { position: absolute; right: 10px; top: 16px; display: flex; align-items: center; gap: 2px; }
 .uml-playground-host { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .uml-playground-host > .workshop-ideation { width: 100%; height: 100%; }
 .uml-create-form { display: grid; gap: 20px; }

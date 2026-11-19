@@ -23,7 +23,7 @@ export function GitHubRepositoriesField({initial = [], disabled = false}: {initi
         </div>)}
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="github-repository-picker sm:max-w-2xl">
-                <DialogHeader><DialogTitle>Connect GitHub repositories</DialogTitle><DialogDescription>Choose up to 10 repositories. Connected repository names and links will be visible to people who can access this Zevont project.</DialogDescription></DialogHeader>
+                <DialogHeader><DialogTitle>Connect GitHub repositories</DialogTitle><DialogDescription>Choose up to 10 repositories. Connected repository names and links will be visible to people who can access this Zhimera project.</DialogDescription></DialogHeader>
                 {open && <GitHubPicker selected={selected} disabled={disabled} onAdd={repo => setSelected(items => items.some(item => item.repositoryId === repo.repositoryId) || items.length >= 10 ? items : [...items, {...repo, label: repo.fullName.split("/").at(-1) ?? "Repository"}])}/>}
                 <Button type="button" onClick={() => setOpen(false)}>Done · {selected.length} selected</Button>
             </DialogContent>
@@ -55,7 +55,7 @@ function GitHubPicker({selected, onAdd, disabled}: {selected: GitHubRepository[]
         const finished = (event: MessageEvent) => {
             if (event.origin !== window.location.origin || event.source !== popup.current || event.data?.type !== "devhub-github-connected") return
             setWaiting(false)
-            if (event.data.status !== "connected") setError("GitHub connection was not completed. Retry and make sure you are still signed into Zevont.")
+            if (event.data.status !== "connected") setError("GitHub connection was not completed. Retry and make sure you are still signed into Zhimera.")
             refresh.current()
         }
         window.addEventListener("message", finished)
@@ -68,7 +68,7 @@ function GitHubPicker({selected, onAdd, disabled}: {selected: GitHubRepository[]
     async function connect(install = false) {
         setError("")
         popup.current = window.open("about:blank", "devhub-github-integration", "popup,width=800,height=760")
-        if (!popup.current) {setError("Allow pop-ups for Zevont, then try again."); return}
+        if (!popup.current) {setError("Allow pop-ups for Zhimera, then try again."); return}
         setWaiting(true)
         try {const result = await authorize(install).unwrap(); popup.current.location.href = result.url}
         catch (failure) {popup.current?.close(); popup.current = null; setWaiting(false); setError(getApiErrorMessage(failure))}
@@ -78,7 +78,7 @@ function GitHubPicker({selected, onAdd, disabled}: {selected: GitHubRepository[]
         if (!settingsUrl) {void connect(true); return}
         setError("")
         popup.current = window.open(settingsUrl, "devhub-github-integration", "popup,width=800,height=760")
-        if (!popup.current) {setError("Allow pop-ups for Zevont, then try again."); return}
+        if (!popup.current) {setError("Allow pop-ups for Zhimera, then try again."); return}
         setWaiting(true)
     }
     const failure = error || (status.error ? getApiErrorMessage(status.error) : status.data?.connected && installations.error ? getApiErrorMessage(installations.error) : status.data?.connected && repos.error ? getApiErrorMessage(repos.error) : "")
@@ -105,7 +105,7 @@ function GitHubPicker({selected, onAdd, disabled}: {selected: GitHubRepository[]
                                 const added = selected.some(item => item.repositoryId === repo.repositoryId)
                                 return <button type="button" key={repo.repositoryId} disabled={busy || added || selected.length >= 10} onClick={() => onAdd(repo)}><Github aria-hidden="true"/><span><strong>{repo.fullName}</strong><small>{repo.private ? "Private" : "Public"} · {repo.defaultBranch || "Empty repository"}</small></span><span>{added ? "Added" : "Add"}</span></button>
                             })}
-                            {!repos.isFetching && !repos.error && repos.currentData?.repositories.filter(repo => repo.fullName.toLowerCase().includes(term.toLowerCase())).length === 0 && <p>{term.trim() ? "No repositories on this page match your search." : page === 1 ? "No repositories are accessible to Zevont in this GitHub account. Use Manage repository access to approve repository permissions and select your repositories, then refresh." : "No repositories on this page. Go back to the previous page."}</p>}
+                            {!repos.isFetching && !repos.error && repos.currentData?.repositories.filter(repo => repo.fullName.toLowerCase().includes(term.toLowerCase())).length === 0 && <p>{term.trim() ? "No repositories on this page match your search." : page === 1 ? "No repositories are accessible to Zhimera in this GitHub account. Use Manage repository access to approve repository permissions and select your repositories, then refresh." : "No repositories on this page. Go back to the previous page."}</p>}
                         </div>
                         <div className="github-picker-pagination"><Button type="button" variant="outline" disabled={page <= 1 || repos.isFetching} onClick={() => {setPage(value => value - 1); setTerm("")}}>Previous</Button><span>Page {page}</span><Button type="button" variant="outline" disabled={!repos.currentData?.hasMore || repos.isFetching} onClick={() => {setPage(value => value + 1); setTerm("")}}>Next</Button></div>
                     </>}

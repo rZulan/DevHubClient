@@ -1,4 +1,4 @@
-# Zevont
+# Zhimera
 
 A Vite + React + TypeScript application configured with:
 
@@ -6,14 +6,13 @@ A Vite + React + TypeScript application configured with:
 - Redux Toolkit with typed React Redux hooks
 - RTK Query with a shared base API
 - React Router with nested routes and a 404 page
-- Cookie and bearer authentication against the Zevont .NET API
+- Cookie and bearer authentication against the Zhimera .NET API
 - Automatic rotating refresh-token handling in RTK Query
 - Nested user settings for profile, account connections, display, and billing
 
-Profile editing and social authentication are backed by the Zevont .NET API.
+Profile editing and social authentication are backed by the Zhimera .NET API.
 
-Zevont is currently hosted at https://dev-hub.site. The existing domain, API
-addresses, and internal storage identifiers remain in place during the rebrand.
+Open the web app at [dev-hub.site](https://dev-hub.site).
 
 ## Development
 
@@ -31,7 +30,7 @@ VITE_OAUTH_ENABLED=true
 ```
 
 During local development, Vite proxies `/api` to `https://localhost:7116`. Start
-the Zevont API's HTTPS profile before starting the frontend. The proxy keeps the
+the Zhimera API's HTTPS profile before starting the frontend. The proxy keeps the
 browser requests same-origin and accepts the local ASP.NET development certificate.
 
 Usernames use X-style handle syntax: 5-15 ASCII letters, numbers, or underscores.
@@ -47,9 +46,9 @@ them Frontend, Backend, API, or another name. Up to ten GitHub repositories can 
 saved per project. The manual Repository URL field is also available.
 
 Authorization opens a separate window so unsaved project fields stay in place.
-Allow pop-ups for Zevont. The connected repositories appear on the project's
+Allow pop-ups for Zhimera. The connected repositories appear on the project's
 Links tab after saving. Choosing a repository shares its name and URL with people
-who can view the Zevont project; it does not give them GitHub repository access.
+who can view the Zhimera project; it does not give them GitHub repository access.
 
 ## Dashboard views
 

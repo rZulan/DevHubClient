@@ -8,12 +8,14 @@ import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Textarea} from "@/components/ui/textarea"
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {ConnectionLightning} from "@/features/workshop/connections/connection-lightning"
+import {useConnectionNodeLink} from "@/features/workshop/connections/use-connection-node-link"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {createClientId} from "@/lib/create-client-id"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
 import {downloadFile} from "@/features/workshop/tool-documents"
-import {deleteWikiPage, saveWikiPage, wikiAncestors, wikiCanAddSubpage, wikiParentOptions, wikiLimits, wikiPageHref, wikiPageVersion, type WikiPage, type WikiPageForm, type WikiRevision} from "@/features/workshop/wiki-document"
+import {deleteWikiPage, saveWikiPage, wikiAncestors, wikiCanAddSubpage, wikiParentOptions, wikiLimits, wikiPageHref, wikiPageVersion, type WikiDocument, type WikiPage, type WikiPageForm, type WikiRevision} from "@/features/workshop/wiki-document"
 import {WikiTableOfContents} from "@/features/workshop/wiki-table-of-contents"
 import type {WikiHeadingNavigation} from "@/features/workshop/wiki-active-heading"
 import {WikiMarkdown} from "@/features/workshop/wiki-markdown"
@@ -22,6 +24,8 @@ import {WikiPageNavigation} from "@/features/workshop/wiki-page-navigation"
 import {WikiSearchDialog} from "@/features/workshop/wiki-search-dialog"
 import type {WikiSearchResult} from "@/features/workshop/wiki-search"
 import {WikiImageDialog} from "@/features/workshop/wiki-image-dialog"
+import {WikiFileActions} from "@/features/workshop/wiki-file-actions"
+import {wikiPageFileStem, wikiPageMarkdown} from "@/features/workshop/wiki-files"
 import {WorkshopSelect} from "@/features/workshop/workshop-select"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/wiki.css"
@@ -48,6 +52,7 @@ function ProjectWiki() {
     const canManage = canWrite && editMode
     const [formError, setFormError] = useState("")
     const [imageOpen, setImageOpen] = useState(false)
+    const [importOpen, setImportOpen] = useState(false)
     const [sidebarOpen, setSidebarOpen] = useState(true), sidebarId = useId()
     const [hasToc, setHasToc] = useState(false), [tocWide, setTocWide] = useState(false)
     const [tocPreference, setTocPreference] = useState<boolean | null>(null), tocId = useId()
@@ -57,8 +62,19 @@ function ProjectWiki() {
     const [sectionState, setSectionState] = useState<{key: string; collapsed: ReadonlySet<string>}>({key: "", collapsed: expandedSections})
     const [headingNavigation, setHeadingNavigation] = useState<WikiHeadingNavigation | null>(null)
     const [params, setParams] = useSearchParams(), location = useLocation(), navigate = useNavigate()
+    useConnectionNodeLink(project.id, ({kind, id}) => {
+        if (kind !== "wiki-page") return false
+        const linkedPage = document.pages.find(item => item.id === id)
+        if (!linkedPage) return false
+        const next = new URLSearchParams(params)
+        next.set("page", linkedPage.slug)
+        for (const key of ["node", "nodeKind", "nodeParent"]) next.delete(key)
+        setParams(next, {replace: true})
+        return true
+    })
     const bodyInput = useRef<HTMLTextAreaElement>(null), article = useRef<HTMLElement>(null), mainContent = useRef<HTMLDivElement>(null)
     const requestedSlug = params.get("page")
+    const canImport = canEdit && !pageForm && !deleting
     const page = requestedSlug ? document.pages.find(item => item.slug === requestedSlug) : document.pages.find(item => item.id === document.homePageId)
     const contentKey = `${page?.id}:${historical?.id ?? page?.updatedAt}`
     const collapsedSections = sectionState.key === contentKey ? sectionState.collapsed : expandedSections
@@ -129,20 +145,39 @@ function ProjectWiki() {
     function navigatePage(slug: string) {
         setParams(current => {const next = new URLSearchParams(current); next.set("page", slug); return next})
     }
-    function navigateSearchResult({slug, anchor}: WikiSearchResult) {
+    function navigateSearchResult({slug, anchor}: Pick<WikiSearchResult, "slug" | "anchor">) {
         setEditing(false); setPageForm(null); setHistorical(null); setShowHistory(false)
         if (!anchor) mainContent.current?.scrollTo({top: 0})
         navigate({search: wikiPageHref(location.search, project.id, slug), hash: anchor ? `#${encodeURIComponent(anchor)}` : ""})
     }
-    function startEditing(existing?: WikiPage, title?: string, parentId: string | null = null) {
+    function startEditing(existing?: WikiPage, title?: string, parentId: string | null = null, body = "") {
         if (!canEdit) return
         if (!existing && parentId && !wikiCanAddSubpage(document.pages, parentId)) {setFormError("Wiki pages can only nest 2 levels deep."); return}
         setEditMode(true)
-        setPageForm({id: existing?.id ?? createClientId(), title: existing?.title ?? title ?? "", body: existing?.body ?? "", message: "", parentId: existing?.parentId ?? parentId, baseVersion: wikiPageVersion(existing)})
+        setPageForm({id: existing?.id ?? createClientId(), title: existing?.title ?? title ?? "", body: existing?.body ?? body, message: "", parentId: existing?.parentId ?? parentId, baseVersion: wikiPageVersion(existing)})
         setEditing(true); setPreview(false); setFormError("")
     }
     function finishEditing() {
         setEditing(false); setPageForm(null); setEditMode(false); setPreview(false); setFormError(""); setDeleting(null); setImageOpen(false)
+    }
+    function exportPage(page: WikiPage) {
+        downloadFile(wikiPageMarkdown(page), `${wikiPageFileStem(page.slug)}.md`, "text/markdown")
+    }
+    function importPage(page: Pick<WikiPage, "title" | "body">) {
+        if (document.pages.length >= wikiLimits.pages) throw new Error(`This wiki has reached its ${wikiLimits.pages}-page limit.`)
+        startEditing(undefined, page.title, null, page.body)
+    }
+    function importWiki(wiki: WikiDocument, reviewed: WikiDocument) {
+        let applied = false
+        editor.setDocument(current => {
+            if (current !== reviewed) return current
+            applied = true
+            return wiki
+        })
+        if (!applied) throw new Error("The wiki changed during import. Choose the ZIP again to review the latest version.")
+        finishEditing()
+        const home = wiki.pages.find(item => item.id === wiki.homePageId)!
+        navigateSearchResult({slug: home.slug})
     }
     function savePage(event: FormEvent) {
         event.preventDefault()
@@ -183,7 +218,10 @@ function ProjectWiki() {
                 <div className="wiki-toolbar">
                     <div className="wiki-toolbar-navigation"><Button variant="ghost" size="icon-sm" aria-label={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} title={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} aria-expanded={sidebarOpen} aria-controls={sidebarId} onClick={() => setSidebarOpen(value => !value)}>{sidebarOpen ? <PanelLeftClose/> : <PanelLeftOpen/>}</Button><div className="wiki-breadcrumb"><BookOpen/><span>Wiki</span><span aria-hidden="true">/</span><strong>{editing && pageForm && canManage ? pageForm.title || "New page" : page?.title || "Pages"}</strong></div></div>
                     <div className="wiki-actions">
-                        <WikiSearchDialog pages={document.pages} currentId={page?.id} homePageId={document.homePageId} canNavigate={!hasUnsavedEdits} shortcutEnabled={!deleting && !imageOpen} onNavigate={navigateSearchResult}/>
+                        <WikiSearchDialog pages={document.pages} currentId={page?.id} homePageId={document.homePageId} canNavigate={!hasUnsavedEdits} shortcutEnabled={!deleting && !imageOpen && !importOpen} onNavigate={navigateSearchResult}/>
+                        <WikiFileActions document={document} page={page} projectName={project.name} userId={userId}
+                            canWrite={canWrite} canImport={canImport} open={importOpen} onOpenChange={setImportOpen}
+                            onExportPage={exportPage} onImportPage={importPage} onImportWiki={importWiki}/>
                         <span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}{hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm" aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"} title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen} aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>{tocOpen ? <PanelRightClose/> : <PanelRightOpen/>}</Button>}
                     </div>
                 </div>
@@ -212,7 +250,7 @@ function ProjectWiki() {
                 </form> : !document.pages.length && !requestedSlug ? <WorkshopEmptyState icon={BookOpen} title="No wiki pages yet" description={canWrite ? "Create a page to share setup guides, team knowledge, and project decisions." : "Your team's guides and documentation will appear here."} action={canManage && <Button disabled={!canEdit || !!pageForm} onClick={() => startEditing(undefined, "Home")}><Plus/>Create page</Button>}/> : !page ? <WorkshopEmptyState icon={FileText} title="Page not found" description="This page may have been deleted, or its link is incomplete." action={canManage && <Button disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages} onClick={() => startEditing(undefined, requestedSlug?.replaceAll("-", " "))}><Plus/>Create page</Button>}/> : <>
                     <div className="wiki-reader"><div className="wiki-reader-document"><header className="wiki-article-header">
                         {ancestors.length > 0 && <nav className="wiki-page-ancestry" aria-label="Parent pages">{ancestors.map(parent => <span key={parent.id}><Link to={wikiPageHref(location.search, project.id, parent.slug)}>{parent.title}</Link><span aria-hidden="true">/</span></span>)}</nav>}
-                        <div className="wiki-article-title">
+                        <div className="wiki-article-title connection-node-anchor">
                             <div className="wiki-page-title-label"><h2>{page.title}</h2><WikiCopyLink key={page.id} href={`${location.pathname}${wikiPageHref(location.search, project.id, page.slug)}`} title={page.title}/></div>
                             <div className="wiki-actions">
                                 {canManage && <><Button variant="outline" size="sm" disabled={!canEdit || !!pageForm} onClick={() => startEditing(page)}><Pencil/>Edit page</Button>
@@ -220,7 +258,7 @@ function ProjectWiki() {
                                         <DropdownMenuContent align="end" className="min-w-44">
                                             <DropdownMenuItem disabled={!canEdit || !!pageForm || document.pages.length >= wikiLimits.pages || !wikiCanAddSubpage(document.pages, page.id)} title={!wikiCanAddSubpage(document.pages, page.id) ? "Maximum of 2 nesting levels reached" : undefined} onSelect={() => startEditing(undefined, "", page.id)}><Plus/>Add subpage</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={() => {setShowHistory(value => !value); setHistorical(null)}}><History/>{showHistory ? "Hide history" : "Page history"}<span className="wiki-count ml-auto">{page.history.length + 1}</span></DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => downloadFile(page.body, `${page.slug}.md`, "text/markdown")}><Download/>Download Markdown</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => exportPage(page)}><Download/>Download Markdown</DropdownMenuItem>
                                             <DropdownMenuItem disabled={!canEdit || page.id === document.homePageId} onSelect={() => editor.setDocument(current => ({...current, homePageId: page.id}))}><Home/>{page.id === document.homePageId ? "Home page" : "Set as home"}</DropdownMenuItem>
                                             <DropdownMenuSeparator/>
                                             <DropdownMenuItem variant="destructive" disabled={!canEdit} onSelect={() => setDeleting(page)}><Trash2/>Delete page</DropdownMenuItem>
@@ -228,6 +266,7 @@ function ProjectWiki() {
                                     </DropdownMenu>
                                 </>}
                                 {hasToc && <button type="button" className="wiki-section-toggle" aria-label={collapsedSections.size ? "Expand all wiki sections" : "Collapse all wiki sections"} title={collapsedSections.size ? "Expand all sections" : "Collapse all sections"} aria-expanded={!collapsedSections.size} onClick={() => setSectionsExpanded(!!collapsedSections.size)}><ChevronDown aria-hidden="true"/></button>}
+                                <ConnectionLightning node={{kind: "wiki-page", id: page.id, label: page.title}}/>
                             </div>
                         </div>
                     </header>

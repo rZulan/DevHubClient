@@ -5,6 +5,7 @@ export type WorkshopNotification = {
 export type NotificationPage = {items: WorkshopNotification[]; unreadCount: number; nextCursor: number | null; latestId: number}
 
 export function notificationAction(kind: string) {
+    if (kind === "connection-triggered") return "triggered a rule"
     if (kind === "task-assigned") return "assigned you a task"
     if (kind === "team-member-added") return "added a team member"
     if (kind === "team-member-removed") return "removed a team member"
@@ -23,6 +24,11 @@ export function notificationHref(organizationId: string, notification: WorkshopN
     if (notification.kind.startsWith("task-") || notification.kind.startsWith("todo-")) {
         page = "todo"; params.set("todoProject", notification.projectId ?? ""); params.set("todo", notification.contextId)
         if (notification.kind.startsWith("task-") && notification.kind !== "task-deleted") params.set("task", notification.targetId)
+    } else if (notification.kind === "connection-triggered") {
+        page = "connections"
+        params.set("view", "runs")
+        params.set("connection", notification.contextId)
+        params.set("run", notification.targetId)
     } else if (notification.kind.startsWith("bug-")) {
         page = "bug-reports"
         if (notification.kind !== "bug-settings") params.set("report", notification.targetId)

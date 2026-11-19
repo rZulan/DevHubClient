@@ -20,9 +20,9 @@ export const AppHeader = memo(function AppHeader() {
     return (
         <header className="border-b bg-background/95 backdrop-blur">
             <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-3 sm:px-4">
-                <Link aria-label="Zevont home" className="flex items-center gap-2 font-semibold tracking-tight" to="/">
+                <Link aria-label="Zhimera home" className="flex items-center gap-2 font-semibold tracking-tight" to="/">
                     <BrandMark className="size-9"/>
-                    <span className="hidden min-[360px]:inline">Zevont</span>
+                    <span className="hidden min-[360px]:inline">Zhimera</span>
                 </Link>
                 <div className="flex items-center gap-1 sm:gap-2">
                     <nav aria-label="Main navigation" className="flex items-center gap-1">

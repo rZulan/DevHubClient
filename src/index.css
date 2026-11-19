@@ -12,6 +12,7 @@
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
+    --workshop-card-surface: var(--card);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
     --primary: oklch(0.205 0 0);
@@ -40,6 +41,56 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    --workshop-members-width: 17rem;
+}
+
+/* Give borderless cards a visible fill when the default light theme shares the canvas color. */
+:root:not(.dark, [data-workshop-scheme]) :is(.workshop-shell, .workshop-entry) {
+    --workshop-card-surface: oklch(0.975 0 0);
+}
+
+@media (forced-colors: none) {
+    /* Scope by active Workshop view so controls inside portals use the same treatment. */
+    body:has(:where(.workshop-shell, .workshop-entry))
+    :is(
+        button, select, textarea, [data-slot="button"],
+        input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="image"]))
+    ):not(
+        :focus-visible, [aria-invalid="true"],
+        :where(.note-color-picker button, .bug-portal-switch, .workshop-dashboard-nav-switch, .bug-report-row, .directory-create-card)
+    ) {
+        border-color: transparent !important;
+    }
+
+    :where(:root:not(.dark, [data-workshop-scheme]) body:has(.workshop-shell, .workshop-entry))
+    :is(input[data-slot="input"], textarea[data-slot="textarea"]).bg-transparent:where(.border):not(:where(:disabled, [type="hidden"])) {
+        background-color: var(--secondary);
+    }
+
+    body:has(:where(.workshop-shell, .workshop-entry))
+    :is(.calendar-search, .shape-library-search, .project-chip-input, .ui-number-field, .ui-color-field, .ui-layer-search, .uml-directory-search, .uml-suggestions-search) {
+        border-color: transparent;
+    }
+
+    body:has(:where(.workshop-shell, .workshop-entry))
+    :is(.project-chip-input, .ui-layer-search, .uml-directory-search, .uml-suggestions-search) {
+        background-color: var(--secondary);
+    }
+
+    :is(.ui-color-field, .ui-layer-search, .uml-directory-search, .uml-suggestions-search):focus-within {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    :root:not(.dark, [data-workshop-scheme]) body:has(:where(.workshop-shell, .workshop-entry))
+    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select], select) {
+        background-color: var(--secondary);
+    }
+
+    :root:not(.dark, [data-workshop-scheme]) body:has(:where(.workshop-shell, .workshop-entry))
+    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select], select):is(:hover, [aria-expanded="true"]):not(:disabled) {
+        background-color: color-mix(in oklab, var(--secondary), var(--foreground) 5%);
+    }
 }
 
 .dark {
@@ -512,19 +563,16 @@
         width: 100%;
         align-items: center;
         gap: .9rem;
-        border: 1px solid rgba(255, 255, 255, .1);
         border-radius: .85rem;
-        background: rgba(19, 23, 32, .8);
+        background: var(--workshop-card-surface);
         padding: .75rem;
         color: #f8fafc;
         text-align: left;
-        box-shadow: inset 0 1px rgba(255, 255, 255, .04);
         cursor: pointer;
-        transition: border-color .18s ease, background .18s ease, transform .18s ease;
+        transition: background .18s ease, transform .18s ease;
     }
 
     .workshop-org-card:hover {
-        border-color: rgba(167, 139, 250, .45);
         background: rgba(29, 34, 47, .88);
         transform: translateY(-1px);
     }
@@ -574,18 +622,16 @@
         display: grid;
         align-items: center;
         gap: .7rem;
-        border: 1px solid rgba(255, 255, 255, .09);
         border-radius: .9rem;
-        background: rgba(12, 15, 22, .72);
+        background: var(--workshop-card-surface);
         padding: 1rem;
         color: #f8fafc;
         text-align: left;
         grid-template-columns: auto 1fr auto;
-        transition: border-color .18s ease, background .18s ease;
+        transition: background .18s ease;
     }
 
     .workshop-setup-actions > button:hover {
-        border-color: rgba(56, 189, 248, .35);
         background: rgba(21, 27, 38, .82);
     }
 
@@ -778,7 +824,7 @@
         overflow: hidden;
         background: #0c0f15;
         color: #e8edf5;
-        grid-template-columns: 17rem minmax(0, 1fr) 17rem;
+        grid-template-columns: 17rem minmax(0, 1fr) var(--workshop-members-width);
     }
 
     .workshop-shell.members-collapsed {
@@ -1759,11 +1805,9 @@
         display: flex;
         align-items: center;
         gap: .7rem;
-        border: 1px solid #292f3c;
         border-radius: .72rem;
         background: #151922;
         padding: .8rem;
-        box-shadow: inset 0 1px rgba(255, 255, 255, .025);
     }
 
     .workshop-stat-grid article > span {
@@ -1805,9 +1849,8 @@
         display: grid;
         overflow: hidden;
         margin-top: .75rem;
-        border: 1px solid #303747;
         border-radius: .85rem;
-        background: radial-gradient(circle at 95% 10%, rgba(124, 58, 237, .18), transparent 38%), #151922;
+        background: var(--workshop-card-surface);
         grid-template-columns: minmax(0, 1.6fr) minmax(14rem, .8fr);
     }
 
@@ -1990,7 +2033,6 @@
 
     .workshop-section-card {
         overflow: hidden;
-        border: 1px solid #292f3c;
         border-radius: .75rem;
         background: #151922;
     }
@@ -2271,7 +2313,6 @@
     }
 
     .workshop-team-summary [data-slot="card"] {
-        border: 1px solid #292f3c;
         background: #151922;
         padding: 0;
         box-shadow: none;
@@ -2357,7 +2398,6 @@
         position: relative;
         gap: 0;
         overflow: hidden;
-        border: 1px solid #2a303d;
         background: #151922;
         padding: 0;
         box-shadow: inset 0 2px var(--team-color);
@@ -2642,11 +2682,10 @@
         display: flex;
         min-width: 0;
         flex-direction: column;
-        border: 1px solid #2a303d;
+        border: 1px solid transparent;
         border-radius: .8rem;
         background: #151922;
         padding: 1rem;
-        box-shadow: inset 0 1px rgba(255, 255, 255, .025);
     }
 
     .workshop-project-grid > article.current {
@@ -2715,7 +2754,6 @@
         min-width: 0;
         align-items: center;
         gap: .55rem;
-        border: 1px solid #282e3a;
         border-radius: .5rem;
         background: #10141b;
         padding: .5rem .6rem;
@@ -2965,7 +3003,6 @@
     .workshop-project-wizard-panel {
         min-height: 16.5rem;
         overflow: hidden;
-        border: 1px solid #292f3c;
         border-radius: .7rem;
         background: #0d1118;
     }
@@ -3260,7 +3297,6 @@
         display: flex;
         min-width: 0;
         flex-direction: column;
-        border: 1px solid #292f3b;
         border-radius: .75rem;
         background: #12161e;
     }
@@ -3314,7 +3350,7 @@
 
     .workshop-task {
         cursor: grab;
-        border: 1px solid #2c3341;
+        border: 1px solid transparent;
         border-radius: .62rem;
         background: #1a1f29;
         padding: .7rem;
@@ -3323,7 +3359,6 @@
     }
 
     .workshop-task:hover {
-        border-color: #40495b;
         transform: translateY(-1px);
     }
 
@@ -3374,7 +3409,7 @@
         gap: .35rem;
     }
 
-    .workshop-task > div svg {
+    .workshop-task > div:not(:where(.workshop-task-heading)) svg {
         width: .7rem;
         flex: none;
         color: #485365;
@@ -3463,7 +3498,6 @@
         display: flex;
         align-items: center;
         gap: .65rem;
-        border: 1px solid #2b313e;
         border-radius: .7rem;
         background: #151922;
         padding: .8rem;
@@ -3514,7 +3548,6 @@
         min-width: 0;
         align-items: center;
         gap: .65rem;
-        border: 1px solid #2c3240;
         border-left: 3px solid var(--role-color);
         border-radius: .68rem;
         background: #151922;
@@ -3854,7 +3887,6 @@
         min-height: 37rem;
         margin-top: 1.4rem;
         overflow: auto;
-        border: 1px solid #2b313e;
         border-radius: .8rem;
         background-color: #11151c;
         background-image: radial-gradient(#343b49 1px, transparent 1px);
@@ -3954,7 +3986,6 @@
 
     .workshop-chart-tree article {
         width: 12rem;
-        border: 1px solid #303745;
         border-top: 2px solid var(--role-color);
         border-radius: .65rem;
         background: #191e27;
@@ -4667,7 +4698,8 @@
         cursor: default;
     }
 
-    .workshop-shape-properties > strong {
+    .workshop-shape-properties > strong,
+    .workshop-shape-properties > .connection-node-heading > strong {
         font-size: 0.875rem;
     }
 
@@ -5595,15 +5627,14 @@
     .workshop-quick-actions > a,
     .workshop-quick-actions > button {
         display: flex; flex-direction: column; align-items: stretch; justify-content: space-between;
-        min-width: 0; min-height: 180px; gap: 18px; border: 1px solid var(--border); border-radius: 14px;
-        padding: 20px; background: var(--card); color: var(--card-foreground); text-align: left;
+        min-width: 0; min-height: 180px; gap: 18px; border-radius: 14px;
+        padding: 20px; background: var(--workshop-card-surface); color: var(--card-foreground); text-align: left;
         white-space: normal; cursor: pointer; box-shadow: none;
-        transition: border-color .18s ease, background .18s ease;
+        transition: background .18s ease;
     }
     .workshop-quick-actions > a:hover,
     .workshop-quick-actions > button:hover {
-        border-color: color-mix(in oklab, var(--foreground) 25%, var(--border));
-        background: color-mix(in oklab, var(--foreground) 3%, var(--card));
+        background: color-mix(in oklab, var(--foreground) 3%, var(--workshop-card-surface));
     }
     .workshop-quick-actions > a:focus-visible,
     .workshop-quick-actions > button:focus-visible {
@@ -5635,9 +5666,8 @@
 
     .workshop-personal-todo > [data-slot="card"] {
         overflow: hidden;
-        border-color: var(--border);
         border-radius: .65rem;
-        background: var(--card);
+        background: var(--workshop-card-surface);
         box-shadow: none;
     }
 
@@ -5727,9 +5757,8 @@
         min-height: 100%;
         height: 100%;
         overflow: hidden;
-        border: 1px solid var(--border);
         border-radius: .7rem;
-        background: var(--card);
+        background: var(--workshop-card-surface);
         grid-template-columns: minmax(13rem, .65fr) minmax(0, 1.35fr);
     }
 
@@ -5846,9 +5875,8 @@
         position: sticky;
         top: 1rem;
         overflow: hidden;
-        border: 1px solid var(--border);
         border-radius: .7rem;
-        background: var(--card);
+        background: var(--workshop-card-surface);
     }
 
     .workshop-dashboard-activity > header {
@@ -6365,7 +6393,6 @@
     }
 
     .workshop-welcome-widget {
-        border-color: var(--border);
         background: linear-gradient(120deg, var(--card), color-mix(in oklab, var(--primary) 5%, var(--card)));
         box-shadow: none;
     }
@@ -6401,8 +6428,7 @@
     }
 
     .workshop-info-widget, .workshop-overview-widget, .workshop-team-chart-widget, .workshop-text-widget {
-        border-color: var(--border);
-        background: var(--card);
+        background: var(--workshop-card-surface);
         box-shadow: none;
     }
 
@@ -6799,8 +6825,7 @@
     }
 
     .workshop-project-detail-page [data-slot="card"] {
-        border: 1px solid var(--border);
-        background: var(--card);
+        background: var(--workshop-card-surface);
         box-shadow: none;
     }
 
@@ -7658,14 +7683,12 @@
     }
 
     .workshop-setup-actions > button {
-        border-color: var(--border);
-        background: var(--card);
+        background: var(--workshop-card-surface);
         color: var(--card-foreground);
         box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 5%, transparent);
     }
 
     .workshop-setup-actions > button:hover {
-        border-color: color-mix(in oklab, var(--foreground) 24%, var(--border));
         background: var(--accent);
     }
 
@@ -7784,13 +7807,11 @@
     }
 
     .workshop-org-card {
-        border-color: var(--border);
-        background: var(--card);
+        background: var(--workshop-card-surface);
         color: var(--card-foreground);
     }
 
     .workshop-org-card:hover {
-        border-color: color-mix(in oklab, var(--foreground) 24%, var(--border));
         background: var(--accent);
     }
 
@@ -7975,9 +7996,12 @@
     .workshop-chart-tree article,
     .workshop-team-summary [data-slot="card"],
     .workshop-team-card {
-        border-color: var(--border);
-        background: var(--card);
+        background: var(--workshop-card-surface);
         color: var(--card-foreground);
+    }
+
+    .workshop-empty-panel {
+        border-color: var(--border);
     }
 
     .workshop-stat-grid article > span,
@@ -7989,7 +8013,7 @@
     }
 
     .workshop-featured-project {
-        background: var(--card);
+        background: var(--workshop-card-surface);
     }
 
     .workshop-project-snapshot,
@@ -8475,6 +8499,12 @@
         background: rgba(14, 27, 61, .85);
     }
 
+    .discovery-arrival-clock {
+        position: absolute;
+        pointer-events: none;
+        animation: discovery-arrival var(--arrival-interval) linear infinite;
+    }
+
     .discovery-traveler {
         position: absolute;
         z-index: 2;
@@ -8483,7 +8513,7 @@
         cursor: grab;
         outline: none;
         touch-action: none;
-        animation: discovery-flyby calc(var(--flight-duration) * var(--travel-duration)) linear var(--travel-delay) infinite;
+        animation: discovery-flyby calc(var(--flight-duration) * var(--travel-duration)) linear both;
         will-change: transform, opacity;
     }
 
@@ -8510,7 +8540,6 @@
         border-radius: 999px;
         background: #172554;
         box-shadow: 0 0 24px rgba(103, 232, 249, .35);
-        object-fit: cover;
         user-select: none;
     }
 
@@ -8545,8 +8574,13 @@
         border-radius: 999px;
         background: #172554;
         box-shadow: 0 0 0 3px rgba(8, 47, 73, .85), 0 0 30px rgba(34, 211, 238, .72);
-        object-fit: cover;
         user-select: none;
+    }
+
+    :is(.discovery-traveler-avatar, .discovery-hover-avatar) [data-slot="avatar-fallback"] {
+        background: #172554;
+        color: #cffafe;
+        font-weight: 650;
     }
 
     .discovery-profile {
@@ -8554,7 +8588,7 @@
         z-index: 2;
         left: var(--discovery-profile-offset);
         top: var(--discovery-profile-top);
-        width: 18.5rem;
+        width: calc(18.5rem + var(--discovery-profile-extra-width, 0px));
         height: 9rem;
         pointer-events: auto;
         opacity: 0;
@@ -8592,7 +8626,7 @@
         border-right: 0;
         border-left: 1px solid rgba(103, 232, 249, .72);
         border-radius: .75rem .15rem .15rem .75rem;
-        padding-right: 1.65rem;
+        padding-right: calc(1.65rem + var(--discovery-profile-extra-width, 0px));
         padding-left: .82rem;
     }
 
@@ -8610,7 +8644,7 @@
         border-radius: .15rem .75rem .75rem .15rem;
         background: linear-gradient(105deg, rgba(5, 26, 44, .97), rgba(6, 54, 70, .88) 54%, rgba(13, 87, 95, .8));
         box-shadow: inset 0 0 22px rgba(34, 211, 238, .15), 0 0 18px rgba(34, 211, 238, .2);
-        padding: .72rem .82rem .62rem 1.65rem;
+        padding: .72rem .82rem .62rem calc(1.65rem + var(--discovery-profile-extra-width, 0px));
         color: #cffafe;
         backdrop-filter: blur(12px);
     }
@@ -8688,14 +8722,6 @@
         text-transform: uppercase;
     }
 
-    .discovery-profile-status i {
-        width: .35rem;
-        height: .35rem;
-        border-radius: 999px;
-        background: #4ade80;
-        box-shadow: 0 0 8px #4ade80;
-    }
-
     .discovery-profile-name {
         position: relative;
         z-index: 1;
@@ -8716,26 +8742,6 @@
         color: #67e8f9;
         font-size: .67rem;
         letter-spacing: .04em;
-    }
-
-    .discovery-profile-stack {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        margin-top: .48rem;
-        gap: .3rem;
-        list-style: none;
-    }
-
-    .discovery-profile-stack li {
-        border: 1px solid rgba(103, 232, 249, .38);
-        border-radius: 999px;
-        background: rgba(8, 47, 73, .72);
-        padding: .16rem .42rem;
-        color: #cffafe;
-        font-size: .55rem;
-        line-height: 1;
-        white-space: nowrap;
     }
 
     .discovery-profile-visit {
@@ -8770,11 +8776,11 @@
         height: .7rem;
     }
 
-    .discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-stack, .discovery-profile-visit {
+    .discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-visit {
         animation: discovery-profile-data 360ms steps(1, end) 45ms both;
     }
 
-    .discovery-hover-overlay[data-side="left"] :is(.discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-stack, .discovery-profile-visit) {
+    .discovery-hover-overlay[data-side="left"] :is(.discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-visit) {
         animation-name: discovery-profile-data-left;
     }
 
@@ -9140,8 +9146,7 @@
 
     .discovery-profile-status,
     .discovery-profile-name,
-    .discovery-profile-handle,
-    .discovery-profile-stack {
+    .discovery-profile-handle {
         margin-left: 5.5rem;
     }
 
@@ -9160,25 +9165,13 @@
         font-size: .78rem;
     }
 
-    .discovery-profile-stack {
-        flex-wrap: wrap;
-        width: calc(100% - 5.5rem);
-        margin-top: .65rem;
-        gap: .32rem;
-    }
-
-    .discovery-profile-stack li {
-        padding: .26rem .48rem;
-        font-size: .65rem;
-    }
-
     .discovery-profile-visit {
         display: flex;
         width: fit-content;
         min-width: 9.5rem;
         min-height: 2.35rem;
         justify-content: center;
-        margin: .85rem auto .35rem;
+        margin: 1.4rem auto .35rem;
         padding-inline: 1.15rem;
         border-radius: .55rem;
         font-size: .7rem;
@@ -9210,7 +9203,7 @@
         height: .9rem;
     }
 
-    .discovery-hover-overlay[data-side="left"] :is(.discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-stack, .discovery-profile-visit) {
+    .discovery-hover-overlay[data-side="left"] :is(.discovery-profile-status, .discovery-profile-name, .discovery-profile-handle, .discovery-profile-visit) {
         animation-name: discovery-profile-data;
     }
 }
@@ -9271,6 +9264,14 @@
     }
 }
 
+
+@keyframes discovery-arrival {
+    from, to { opacity: 0; }
+}
+
+@keyframes discovery-stationary {
+    from, to { opacity: 1; }
+}
 
 @keyframes discovery-flyby {
     0% {
@@ -9575,15 +9576,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .discovery-traveler {
+        animation-name: discovery-stationary;
+        transform: translate(
+            calc(-50% + var(--travel-start-x) + var(--travel-drag-x)),
+            calc(-50% + var(--travel-start-y) + var(--travel-drag-y))
+        );
+    }
+
     .mesh-orb,
     .mesh-waves,
-    .discovery-traveler,
     .discovery-profile,
     .discovery-profile::before,
     .discovery-profile-status,
     .discovery-profile-name,
     .discovery-profile-handle,
-    .discovery-profile-stack,
     .discovery-profile-visit,
     .discovery-forward-mesh::after,
     .discovery-pilot-avatar::before,
@@ -10302,10 +10309,6 @@
     }
 }
 
-.workshop-todo-heading > div > button {
-    margin-bottom: 12px;
-}
-
 .workshop-todo-pagination {
     display: flex;
     min-height: 72px;
@@ -10402,6 +10405,7 @@
 .note-color-picker legend { margin-bottom: 10px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
 .note-color-picker > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .note-color-picker button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid color-mix(in srgb, var(--note-ink) 20%, transparent); border-radius: 50%; background: var(--note-color); color: var(--note-ink); cursor: pointer; }
+.note-color-picker .note-no-color { border-color: color-mix(in srgb, var(--popover-foreground) 38%, transparent); background: transparent; color: var(--popover-foreground); }
 .note-color-picker button[aria-pressed="true"] { outline: 2px solid var(--foreground); outline-offset: 3px; }
 .note-color-picker button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .note-color-picker button svg { width: 16px; height: 16px; }
@@ -10500,24 +10504,48 @@
     .note-color-picker > div { gap: 12px; }
 }
 
+.workshop-todo-card-node {
+    position: relative;
+    display: grid;
+    min-width: 0;
+}
+
+.workshop-todo-card-node:has(> .workshop-todo-card-connections) .workshop-todo-card-heading strong {
+    margin-inline-end: 1.75rem;
+}
+
+.workshop-todo-card-node > .workshop-todo-card-connections {
+    position: absolute;
+    inset-block-start: 21px;
+    inset-inline-end: 48px;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .workshop-todo-card-node > .workshop-todo-card-connections { inset-block-start: 19px; }
+}
+
 .workshop-todo-card {
     display: flex;
     flex-direction: column;
     gap: 16px;
     padding: 24px;
-    border: 1px solid var(--border);
     border-radius: 16px;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     color: var(--card-foreground);
     text-align: left;
     cursor: pointer;
     min-width: 0;
-    transition: border-color .15s, box-shadow .15s;
+    transition: background .15s, box-shadow .15s;
 }
 
 .workshop-todo-card:hover, .workshop-todo-card:focus-visible {
-    border-color: var(--primary);
     box-shadow: 0 4px 18px color-mix(in srgb, var(--primary) 10%, transparent);
+    background: color-mix(in oklab, var(--primary) 5%, var(--workshop-card-surface));
+}
+
+.workshop-todo-card:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
 }
 
 .workshop-todo-card-heading {
@@ -10550,10 +10578,6 @@
     align-items: center;
     font-size: 13px;
     color: var(--muted-foreground);
-}
-
-.workshop-todo-heading .workshop-todo-date {
-    margin-top: .55rem;
 }
 
 .workshop-todo-date[data-status="overdue"] {
@@ -10697,7 +10721,12 @@
 }
 
 .workshop-task {
-    transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    background-color: color-mix(in oklab, var(--workshop-card-surface) 96%, var(--foreground));
+    transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.workshop-task:hover {
+    background-color: color-mix(in oklab, var(--workshop-card-surface) 92%, var(--foreground));
 }
 
 .workshop-task.workshop-task-dragging {
@@ -10883,9 +10912,9 @@
 }
 
 .workshop-settings-card {
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: .85rem;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     padding: 1.1rem;
     color: var(--card-foreground);
 }
@@ -10987,9 +11016,8 @@
     display: flex;
     align-items: center;
     gap: .6rem;
-    border: 1px solid var(--border);
     border-radius: .7rem;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     padding: .7rem .8rem;
 }
 
@@ -11219,9 +11247,8 @@
     display: grid;
     align-items: center;
     gap: 1.1rem;
-    border: 1px solid var(--border);
     border-radius: .9rem;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     padding: .85rem;
     grid-template-columns: 10.5rem minmax(0, 1fr);
 }
@@ -11292,15 +11319,15 @@
 }
 
 .workshop-scheme-card {
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: .85rem;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     padding: .5rem;
     transition: border-color .15s ease, box-shadow .15s ease;
 }
 
 .workshop-scheme-card:hover {
-    border-color: color-mix(in oklab, var(--foreground) 22%, var(--border));
+    background: var(--accent);
 }
 
 .workshop-scheme-card.active {
@@ -11467,9 +11494,8 @@
     min-width: 0;
     flex-direction: column;
     gap: .45em;
-    border: 1px solid var(--border);
     border-radius: .5em;
-    background: var(--card);
+    background: var(--workshop-card-surface);
     padding: .8em;
 }
 
@@ -11827,10 +11853,9 @@
     .project-tools-settings:hover, .project-tools-settings[data-state="open"] { background: var(--secondary); color: var(--foreground); }
     .project-tools-settings svg { width: 14px; height: 14px; }
     .project-tools-menu { width: 292px; padding: 14px; }
-    .project-tools-menu > strong { font-size: 14px; }
-    .project-tools-menu > p { font-size: 13px; color: var(--muted-foreground); margin: 4px 0 12px; }
+    .project-tools-menu > strong { display: block; margin-bottom: 6px; font-size: 14px; }
     .project-tool-option { display: flex; align-items: center; gap: 4px; min-height: 38px; }
-    .project-tool-option label { display: flex; gap: 9px; align-items: center; flex: 1; font-size: 14px; cursor: pointer; }
+    .project-tool-option label { display: flex; gap: 9px; align-items: center; align-self: stretch; flex: 1; font-size: 14px; cursor: pointer; }
     .project-tool-option input { accent-color: var(--sidebar-primary); width: 14px; height: 14px; }
     .project-tool-option svg { width: 14px; height: 14px; }
     .project-tool-option button { padding: 5px; border-radius: 5px; cursor: pointer; }
@@ -11901,7 +11926,7 @@
     .tool-inspector-empty { color: var(--muted-foreground); line-height: 1.8; }
     .tool-inspector-empty > svg { width: 28px; height: 28px; margin: 20px 0; color: var(--primary); }
     .tool-inspector-empty small { display: block; font-size: 12px; margin-top: 18px; }
-    .erd-table { width: 100%; height: 100%; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 25px #0002; }
+    .erd-table { width: 100%; height: 100%; background: var(--workshop-card-surface); color: var(--popover-foreground); border: 1px solid transparent; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 25px #0002; }
     .erd-table > header { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; background: color-mix(in oklab, var(--primary) 13%, var(--popover)); border-bottom: 1px solid var(--border); }
     .erd-table > header svg { width: 15px; height: 15px; color: var(--primary); }
     .erd-table > header strong { font-size: 14px; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -11987,7 +12012,7 @@
     .sdlc-phase-star em { display: flex; align-items: center; gap: 4px; font-style: normal; font-size: 10px; color: var(--muted-foreground); }
     .sdlc-phase-star em svg { width: 10px; height: 10px; color: var(--sdlc-ink); }
     .sdlc-canvas-footer { position: relative; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 18px; padding: 12px 28px 24px; }
-    .sdlc-progress-card { flex: 1 1 200px; max-width: 280px; min-width: 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in oklab, var(--background) 88%, transparent); }
+    .sdlc-progress-card { flex: 1 1 200px; max-width: 280px; min-width: 0; padding: 14px 16px; border-radius: 9px; background: var(--workshop-card-surface); }
     .sdlc-progress-card > div { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
     .sdlc-progress-card strong { color: var(--primary); font-size: 13px; }
     .sdlc-progress-card progress { width: 100%; height: 3px; display: block; margin: 10px 0; accent-color: var(--primary); border-radius: 8px; overflow: hidden; }
@@ -12068,14 +12093,15 @@
 }
 @layer components {
     .project-tools-sort-list { position: relative; display: flex; flex-direction: column; gap: 3px; }
-    .project-tool-option { position: relative; min-height: 42px; border-radius: 6px; padding: 0 4px; }
-    .project-tool-option.dragging { opacity: .3; }
+    .project-tool-option { position: relative; min-height: 42px; border-radius: 6px; padding: 0 4px; transition: background-color 120ms ease-out, box-shadow 120ms ease-out; }
+    .project-tool-option.drop-target { z-index: 1; box-shadow: inset 0 0 0 2px var(--primary); background: color-mix(in oklab, var(--primary) 12%, var(--popover)); }
     .project-tool-option.keyboard-dragging { outline: 1px solid var(--sidebar-primary); background: color-mix(in oklab, var(--sidebar-primary) 8%, transparent); }
     .project-tool-option .project-tool-drag-handle { flex-shrink: 0; color: var(--muted-foreground); cursor: grab; touch-action: none; padding: 6px 4px; }
-    .project-tool-drag-handle:active { cursor: grabbing; }
-    .project-tool-drop-indicator { position: absolute; left: 0; right: 0; z-index: 2; height: 2px; border-radius: 2px; background: var(--primary); box-shadow: 0 0 0 1px var(--popover); transform: translateY(-1px); pointer-events: none; }
-    .project-tool-drag-preview { position: absolute; left: 0; right: 0; z-index: 1; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 10px; border: 1px solid var(--primary); border-radius: 6px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 5px 20px #0003; pointer-events: none; font-size: 12px; }
-    .project-tool-drag-preview svg { width: 14px; height: 14px; color: var(--muted-foreground); }
+    .project-tool-drag-name { flex: 1; align-self: stretch; cursor: grab; touch-action: none; user-select: none; }
+    :is(.project-tool-drag-handle, .project-tool-drag-name):active { cursor: grabbing; }
+    @media (prefers-reduced-motion: reduce) {
+        .project-tool-option { transition: none; }
+    }
 }
 
 .erd-editable-name { display: inline-block; min-width: 0; }
@@ -12266,7 +12292,7 @@
 .chat-modal { height: min(48rem, calc(100dvh - 2rem)); }
 .workshop-settings-content, .workshop-settings-sidebar, .workshop-page-heading > div { min-width: 0; }
 .workshop-settings { align-content: start; }
-.workshop-task-actions-trigger { position: absolute; right: 8px; top: 8px; z-index: 2; display: none; }
+.workshop-task-actions-trigger { display: none; flex: none; }
 
 @media (max-width: 1100px) {
     .workshop-shell, .workshop-shell.members-collapsed { display: grid; height: 100dvh; min-height: 0; padding: 0; grid-template-columns: minmax(0, 1fr); }
@@ -12350,7 +12376,7 @@
     .workshop-todo-actions { width: 100%; }
     .workshop-todo-actions > button { flex: 1; min-height: 40px; }
     .workshop-task { padding: 20px 16px; }
-    .workshop-task h3 { padding-right: 30px; font-size: 15px; line-height: 1.4; }
+    .workshop-task h3 { font-size: 15px; line-height: 1.4; }
     .workshop-task p { font-size: 13px; line-height: 1.6; }
     .workshop-board-column > header strong { font-size: 14px; }
     .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
@@ -12422,7 +12448,6 @@
 }
 @media (pointer: coarse) {
     .workshop-task-actions-trigger { display: inline-flex; min-width: 36px; min-height: 36px; }
-    .workshop-task h3 { padding-right: 30px; }
     .workshop-task-edge { opacity: 1; }
 .tool-resize-handle::after { content: ""; position: absolute; inset: -12px; }
     .workshop-zoom-control button { min-width: 36px; min-height: 36px; }
@@ -12477,7 +12502,7 @@
 .workshop-entry-plan > div > span:nth-child(-n+2) { background: #a78bfa; }
 .workshop-entry-cursor { position: absolute; right: 7px; bottom: -3px; display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid color-mix(in srgb, #a78bfa 30%, var(--border)); border-radius: 5px; background: color-mix(in srgb, #a78bfa 12%, var(--background)); color: var(--foreground); font-size: 10px; transform: rotate(-3deg); }
 .workshop-entry-cursor > svg { width: 14px; height: 14px; color: #a78bfa; }
-.workshop-entry-panel { min-width: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--card); color: var(--card-foreground); box-shadow: 0 16px 60px #00000009; }
+.workshop-entry-panel { min-width: 0; border-radius: 16px; background: var(--workshop-card-surface); color: var(--card-foreground); box-shadow: 0 16px 60px #00000009; }
 .workshop-entry-panel-label { display: flex; align-items: center; gap: 9px; padding: 16px 24px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-family: var(--workshop-font-code); font-size: 10px; letter-spacing: .1em; }
 .workshop-entry-panel-label > svg { width: 14px; height: 14px; color: var(--entry-accent); }
 .workshop-entry-panel-count { margin-left: auto; font-size: 9px; letter-spacing: 0; }
@@ -12485,9 +12510,10 @@
 .workshop-entry-panel-heading > h2 { font-size: 23px; font-weight: 650; line-height: 1.35; letter-spacing: -.04em; }
 .workshop-entry-search { width: calc(100% - 48px); margin: 0 24px 16px; }
 .workshop-entry-organizations { display: grid; gap: 10px; max-height: 380px; margin: 0 20px; padding: 4px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-.workshop-entry-organization { display: flex; align-items: center; gap: 14px; width: 100%; min-width: 0; padding: 14px 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
-.workshop-entry-organization[data-recent="true"] { border-color: color-mix(in srgb, var(--entry-accent) 35%, var(--border)); }
-.workshop-entry-organization:hover { border-color: var(--entry-accent); background: color-mix(in srgb, var(--entry-accent) 4%, var(--background)); }
+.workshop-entry-organization { display: flex; align-items: center; gap: 14px; width: 100%; min-width: 0; padding: 14px 15px; border-radius: 10px; background: var(--background); color: inherit; text-align: left; cursor: pointer; transition: background .15s; }
+.workshop-entry-organization[data-recent="true"] {
+    background: color-mix(in srgb, var(--entry-accent) 3%, var(--background)); }
+.workshop-entry-organization:hover { background: color-mix(in srgb, var(--entry-accent) 4%, var(--background)); }
 .workshop-entry-organization:focus-visible, .workshop-entry-header a:focus-visible { outline: 2px solid var(--entry-accent); outline-offset: 3px; }
 .workshop-entry-avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #0000000a; border-radius: 10px; background: #dbd0f4; color: #4b3c6b; font-family: var(--workshop-font-heading); font-size: 16px; font-weight: 700; }
 .workshop-entry-avatar[data-tone="1"] { background: #cce5ce; color: #354e38; }

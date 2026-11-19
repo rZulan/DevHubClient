@@ -9,7 +9,8 @@ const note = {id: 'note-1', title: 'Next release', body: 'Review onboarding', co
 test('notes recovery accepts valid notes and rejects corrupt drafts', () => {
     assert.equal(validToolDocument('notes', emptyDocuments.notes), true)
     assert.equal(validToolDocument('notes', {notes: [note]}), true)
-    for (const notes of [[note, note], [{...note, color: 'red'}], [{...note, title: ' '}], [{...note, body: 'a'.repeat(10001)}], [{...note, updatedAt: 'invalid'}], [null], Array.from({length: 1001}, (_, i) => ({...note, id: String(i)}))]) {
+    assert.equal(validToolDocument('notes', {notes: [{...note, color: null}]}), true)
+    for (const notes of [[note, note], [{...note, color: 'red'}], [{...note, color: undefined}], [{...note, title: ' '}], [{...note, body: 'a'.repeat(10001)}], [{...note, updatedAt: 'invalid'}], [null], Array.from({length: 1001}, (_, i) => ({...note, id: String(i)}))]) {
         assert.equal(validToolDocument('notes', {notes}), false)
     }
 })
@@ -32,6 +33,15 @@ test('theme-adjusted notes preserve the chosen color and readable text in both m
         assert.ok(contrastRatio(color, style['--note-light-ink']) >= 4.5, `light ${color}`)
         assert.ok(contrastRatio(style['--note-dark-color'], style['--note-dark-ink']) >= 4.5, `dark ${color}`)
     }
+})
+
+test('notes with no color use the active theme card colors', () => {
+    assert.deepEqual(noteStyle(null), {
+        '--note-base-color': 'var(--card)',
+        '--note-light-ink': 'var(--card-foreground)',
+        '--note-dark-color': 'var(--card)',
+        '--note-dark-ink': 'var(--card-foreground)',
+    })
 })
 
 test('older notes get the default emoji and None removes it explicitly', () => {

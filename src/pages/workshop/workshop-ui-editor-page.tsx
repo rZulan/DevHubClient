@@ -9,6 +9,7 @@ import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {ToolDocumentHeader} from "@/features/workshop/tool-document-header"
 import {useToolDocument} from "@/features/workshop/use-tool-document"
+import {useConnectionNodeLink} from "@/features/workshop/connections/use-connection-node-link"
 import {downloadFile} from "@/features/workshop/tool-documents"
 import {DesignCanvas} from "@/features/workshop/design-canvas"
 import {canvasViewKey} from "@/features/workshop/canvas-view-storage"
@@ -59,6 +60,14 @@ function UiEditor() {
         apply({...document, layers: document.layers.map(l => l.id === id ? {...l, ...changes} : l)})
     }
     function select(id: string, additive = false) {setSelectedIds(current => additive ? current.includes(id) ? current.filter(i => i !== id) : [...current, id] : [id]); setTool("select"); focusCanvas()}
+    useConnectionNodeLink(project!.id, ({kind, id}) => {
+        if (kind !== "ui-layer" && kind !== "ui-screen") return false
+        if (!document.layers.some(layer => layer.id === id && (layer.kind === "frame") === (kind === "ui-screen"))) return false
+        setMode("design")
+        select(id)
+        setFitKey(value => value + 1)
+        return true
+    })
     function addLayers(layers: DesignLayer[], fit = false) {
         if (!canEdit) return false
         if (document.layers.length + layers.length > 5000) {setError("This design can contain up to 5,000 layers."); return false}

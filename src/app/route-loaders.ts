@@ -1,8 +1,9 @@
-import {type LoaderFunctionArgs, redirect} from "react-router-dom"
+import {type LoaderFunctionArgs, matchPath, redirect} from "react-router-dom"
 
 import {store} from "@/app/store"
 import {clearSession, setUser} from "@/features/auth/auth-slice"
 import type {AuthUser} from "@/features/auth/auth-types"
+import {bugReportRoutePatterns} from "@/features/workshop/bug-reports"
 import {getWorkshopResumePath} from "@/features/workshop/workshop-storage"
 import {api} from "@/services/api"
 
@@ -10,7 +11,7 @@ let sessionRestoration: Promise<void> | undefined
 
 export async function rootLoader({request}: LoaderFunctionArgs) {
     const url = new URL(request.url)
-    if (url.pathname.startsWith("/report-bug/")) return null
+    if (bugReportRoutePatterns.some(pattern => matchPath(pattern, url.pathname))) return null
     await ensureSessionRestored()
 
     const user = store.getState().auth.user

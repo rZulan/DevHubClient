@@ -5,6 +5,7 @@ import {ErdPanel} from "./erd-panel"
 import {AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd} from "lucide-react"
 import {designFonts, framePresets, layerUnavailable, type ComponentPreset, type DesignDocument, type DesignLayer} from "./design-document"
 import {paletteDragProps} from "./canvas-palette"
+import {ConnectionLightning} from "./connections/connection-lightning"
 
 const layerIcons = {frame: Frame, rectangle: Square, ellipse: Circle, text: Type, button: RectangleHorizontal}
 const alignmentIcons = [AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd]
@@ -22,7 +23,7 @@ export function DesignLayersPanel({document, selectedIds, onSelect, canEdit, onP
         const Icon = layerIcons[layer.kind], children = document.layers.filter(l => l.parentId === layer.id), active = selectedIds.includes(layer.id)
         if (search && !found(layer) && !children.some(found)) return null
         return <div key={layer.id} role="treeitem" aria-selected={active} aria-expanded={layer.kind === "frame" ? !closed.has(layer.id) : undefined}>
-            <div className={`ui-layer-row ${active ? "active" : ""} ${nested ? "nested" : ""} ${layerUnavailable(document, layer, "hidden") ? "is-hidden" : ""} ${over === layer.id ? "drop-target" : ""}`}
+            <div className={`ui-layer-row connection-node-anchor ${active ? "active" : ""} ${nested ? "nested" : ""} ${layerUnavailable(document, layer, "hidden") ? "is-hidden" : ""} ${over === layer.id ? "drop-target" : ""}`}
                 draggable={canEdit && !layerUnavailable(document, layer, "locked") && rename !== layer.id}
                 onDragStart={e => {setDragged(layer.id); e.dataTransfer.setData("application/x-devhub-layer", layer.id); e.dataTransfer.effectAllowed = "move"}}
                 onDragEnd={() => {setDragged(null); setOver(null)}} onDragOver={e => {if (canEdit && dragged && dragged !== layer.id && !layerUnavailable(document, layer, "locked")) {e.preventDefault(); setOver(layer.id)}}}
@@ -35,6 +36,7 @@ export function DesignLayersPanel({document, selectedIds, onSelect, canEdit, onP
                 {document.startFrameId === layer.id && <Play className="ui-start-icon"/>}
                 <div className="ui-layer-actions"><button type="button" title={layer.hidden ? "Show layer" : "Hide layer"} aria-label={`${layer.hidden ? "Show" : "Hide"} ${layer.name}`} disabled={!canEdit || !!document.layers.find(p => p.id === layer.parentId)?.locked} onClick={() => onPatch(layer.id, {hidden: !layer.hidden})}>{layer.hidden ? <EyeOff/> : <Eye/>}</button>
                     <button type="button" title={layer.locked ? "Unlock layer" : "Lock layer"} aria-label={`${layer.locked ? "Unlock" : "Lock"} ${layer.name}`} disabled={!canEdit || !!document.layers.find(p => p.id === layer.parentId)?.locked} onClick={() => onPatch(layer.id, {locked: !layer.locked})}>{layer.locked ? <LockKeyhole/> : <UnlockKeyhole/>}</button></div>
+                <ConnectionLightning className="ms-auto" node={{kind: layer.kind === "frame" ? "ui-screen" : "ui-layer", id: layer.id, label: layer.name}}/>
             </div>
             {layer.kind === "frame" && (!closed.has(layer.id) || search) && <div role="group">{[...children].reverse().filter(l => !search || found(l)).map(l => row(l, true))}</div>}
         </div>

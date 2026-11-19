@@ -5,6 +5,7 @@ import {Button} from "@/components/ui/button"
 import {ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent} from "@/components/ui/context-menu"
 import {DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent} from "@/components/ui/dropdown-menu"
 import {TodoAssignees} from "./todo-assignees"
+import {ConnectionLightning} from "./connections/connection-lightning"
 import {todoDateLabel} from "./todo-schedule"
 import type {TodoTask, TodoColumn} from "./todo-api"
 import type {WorkshopMember} from "./workshop-types"
@@ -46,14 +47,18 @@ export function TodoTaskCard({task, columns, members, userId, canManage, disable
     }
     function closeMenu(event: Event) {if (openingDialog.current) {event.preventDefault(); openingDialog.current = false}}
     return <ContextMenu><ContextMenuTrigger asChild><Card tabIndex={0} aria-label={`Task: ${task.title}`}
-        id={`todo-task-${task.id}`} className={`workshop-task${dragging ? " workshop-task-dragging" : ""}`} draggable={canManage && !disabled}
+        id={`todo-task-${task.id}`} className={`ring-0 workshop-task connection-node-anchor${dragging ? " workshop-task-dragging" : ""}`} draggable={canManage && !disabled}
         onDragStart={event => {if ((event.target as HTMLElement).closest("button, input, textarea")) {event.preventDefault(); return}; onDragStart?.(event)}} onDragEnd={onDragEnd}
         onDoubleClick={event => {if (canManage && !disabled && !(event.target as HTMLElement).closest("button, input, textarea")) onEdit()}}
         onKeyDown={event => {if (event.target === event.currentTarget && canManage && !disabled && (event.key === "Enter" || event.key === "F2")) {event.preventDefault(); onEdit()}}}>
-        <DropdownMenu><DropdownMenuTrigger asChild><Button className="workshop-task-actions-trigger" variant="ghost" size="icon-sm" aria-label={`Actions for ${task.title}`}><Ellipsis/></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={closeMenu}>{items(true)}</DropdownMenuContent>
-        </DropdownMenu>
-        <h3>{task.title}</h3>{task.description && <p>{task.description}</p>}
+        <div className="connection-node-heading workshop-task-heading">
+            <h3 className="connection-node-title">{task.title}</h3>
+            <ConnectionLightning node={{kind: "todo-task", id: task.id, parentId: task.todoId, label: task.title}}/>
+            <DropdownMenu><DropdownMenuTrigger asChild><Button className="workshop-task-actions-trigger" variant="ghost" size="icon-sm" aria-label={`Actions for ${task.title}`}><Ellipsis/></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onCloseAutoFocus={closeMenu}>{items(true)}</DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+        {task.description && <p>{task.description}</p>}
         {task.targetDate && <span className="workshop-task-dates" data-completed={task.status === complete?.id}>{todoDateLabel(task)}</span>}
         <TodoAssignees ids={ids} members={members} editable={canManage} disabled={disabled} taskTitle={task.title}
             onAdd={id => onAssign(id, false)} onRemove={id => onAssign(id, true)}/>

@@ -1,6 +1,6 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {useId, useState} from "react"
-import {Bell, BellOff, Bug, Check, CheckCheck, ChevronRight, CircleCheck, Folder, LoaderCircle, RefreshCw, Users, X} from "lucide-react"
+import {Bell, BellOff, Bug, Check, CheckCheck, ChevronRight, CircleCheck, Folder, LoaderCircle, RefreshCw, Users, X, Zap} from "lucide-react"
 import {Popover} from "radix-ui"
 import {useNavigate} from "react-router-dom"
 import {Button} from "@/components/ui/button"
@@ -9,6 +9,7 @@ import {useNotificationsInfiniteQuery, useReadAllNotificationsMutation, useReadN
 import "./notifications.css"
 
 function ActivityIcon({kind}: {kind: string}) {
+    if (kind === "connection-triggered") return <Zap/>
     if (kind.startsWith("team-")) return <Users/>
     if (kind.startsWith("task-") || kind.startsWith("todo-")) return <CircleCheck/>
     if (kind.startsWith("bug-")) return <Bug/>

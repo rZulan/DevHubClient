@@ -5,7 +5,7 @@ import {Provider} from "react-redux"
 import {Link, MemoryRouter, Outlet, Route, Routes} from "react-router-dom"
 import {store} from "@/app/store"
 import {bugReportsApi} from "@/features/workshop/bug-reports-api"
-import type {BugCategory, BugDetail} from "@/features/workshop/bug-reports"
+import {bugReportLinkPaths, type BugCategory, type BugDetail} from "@/features/workshop/bug-reports"
 import {WorkshopBugReportsPage} from "@/pages/workshop/workshop-bug-reports-page"
 import {PublicBugReportPage} from "@/pages/general/public-bug-report-page"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -63,8 +63,8 @@ export function Preview() {
     useEffect(() => {const update = () => render(value => value + 1); window.addEventListener("bug-fixture-change", update); return () => window.removeEventListener("bug-fixture-change", update)}, [])
     useEffect(() => {document.documentElement.classList.toggle("dark", dark)}, [dark])
     const context: WorkshopOutletContext = {organization: {id: "bugs-preview", ownerUserId: "current", name: "Preview", description: "", initials: "PV", roles: [], members: [{id: "current", name: "Preview owner", username: "preview", initials: "PV", roleId: "owner", teamIds: [], online: true, isOwner: !viewOnly}], teams: [], projects: [project], tasks: []}, project, selectProject() {}, isPersistedOrganization: false, canInvite: false, openInviteDialog() {}, previewColorScheme() {}}
-    return <><nav style={{display: "flex", gap: 20, padding: "12px 24px", borderBottom: "1px solid var(--border)", fontSize: 12, alignItems: "center", flexWrap: "wrap"}}><span>Isolated bug report preview</span><Link to="/bug-reports">Project inbox</Link><Link to={`/report-bug/${portal.token}`}>Public form preview</Link><label><input type="checkbox" checked={viewOnly} onChange={event => setViewOnly(event.target.checked)}/> View only</label><label><input type="checkbox" checked={dark} onChange={event => setDark(event.target.checked)}/> Dark theme</label></nav><Outlet context={context}/></>
+    return <><nav style={{display: "flex", gap: 20, padding: "12px 24px", borderBottom: "1px solid var(--border)", fontSize: 12, alignItems: "center", flexWrap: "wrap"}}><span>Isolated bug report preview</span><Link to="/bug-reports">Project inbox</Link><Link to={`${bugReportLinkPaths.full}/${portal.token}`}>Public form preview</Link><label><input type="checkbox" checked={viewOnly} onChange={event => setViewOnly(event.target.checked)}/> View only</label><label><input type="checkbox" checked={dark} onChange={event => setDark(event.target.checked)}/> Dark theme</label></nav><Outlet context={context}/></>
 }
 const root = createRoot(document.getElementById("root")!)
-root.render(<Provider store={store}><MemoryRouter initialEntries={["/bug-reports"]}><Routes><Route element={<Preview/>}><Route path="bug-reports" element={<main className="workshop-content" style={{padding: 32}}><WorkshopBugReportsPage/></main>}/><Route path="report-bug/:token" element={<PublicBugReportPage/>}/></Route></Routes></MemoryRouter></Provider>)
+root.render(<Provider store={store}><MemoryRouter initialEntries={["/bug-reports"]}><Routes><Route element={<Preview/>}><Route path="bug-reports" element={<main className="workshop-content" style={{padding: 32}}><WorkshopBugReportsPage/></main>}/><Route path={`${bugReportLinkPaths.full}/:token`} element={<PublicBugReportPage/>}/></Route></Routes></MemoryRouter></Provider>)
 if (import.meta.hot) import.meta.hot.dispose(() => {root.unmount(); window.fetch = originalFetch})

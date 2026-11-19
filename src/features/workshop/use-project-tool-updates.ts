@@ -4,7 +4,7 @@ import {useAppSelector} from "@/app/hooks"
 import {realtimeConnection} from "@/services/realtime"
 import type {DocumentTool} from "./tool-documents"
 
-export function useProjectToolUpdates(key: {organizationId: string; projectId: string; tool: DocumentTool | "todo"}, enabled: boolean, onChange: (revision?: number) => void) {
+export function useProjectToolUpdates(key: {organizationId: string; projectId: string; tool: DocumentTool | "todo" | "bug-reports"}, enabled: boolean, onChange: (revision?: number) => void) {
     const userId = useAppSelector(state => state.auth.user?.id)
     const receive = useEffectEvent(onChange)
     useEffect(() => {

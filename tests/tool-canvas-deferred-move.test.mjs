@@ -52,7 +52,8 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
         if (name === '@/components/ui/button') return {Button: 'button'}
         return require(name)
     }})
-    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, querySelector: () => null, getBoundingClientRect: () => ({left: 0, top: 0})}
+    const root = {clientWidth: 1000, clientHeight: 800, focus() {}, addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, querySelector: () => null,
+        contains: target => !target.portaled, getBoundingClientRect: () => ({left: 0, top: 0})}
     const event = (x, type = 'pointermove', y = 100) => ({type, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {}, stopPropagation() {}})
     function all(node, result = []) {
         if (Array.isArray(node)) node.forEach(child => all(child, result))
@@ -84,12 +85,12 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
         release(x, y) {render().props.onPointerUp(event(x, 'pointerup', y))},
         cancel() {render().props.onPointerCancel()},
         capture(options = {}) {
-            const event = {...eventForPan(options), defaultPrevented: false, stopped: false, preventDefault() {this.defaultPrevented = true}, stopPropagation() {this.stopped = true}}
+            const event = {...eventForPan(options), currentTarget: root, defaultPrevented: false, stopped: false, preventDefault() {this.defaultPrevented = true}, stopPropagation() {this.stopped = true}}
             render().props.onPointerDownCapture(event)
             return {prevented: event.defaultPrevented, stopped: event.stopped}
         },
-        clickCapture(control = false, detail = 1, double = false) {
-            const event = {detail, target: {closest: () => control ? {} : null}, prevented: false, stopped: false, preventDefault() {this.prevented = true}, stopPropagation() {this.stopped = true}}
+        clickCapture(control = false, detail = 1, double = false, portaled = false) {
+            const event = {detail, currentTarget: root, target: {portaled, closest: () => control ? {} : null}, prevented: false, stopped: false, preventDefault() {this.prevented = true}, stopPropagation() {this.stopped = true}}
             render().props[double ? 'onDoubleClickCapture' : 'onClickCapture'](event)
             return {prevented: event.prevented, stopped: event.stopped}
         },
@@ -123,8 +124,8 @@ function canvas(deferMoves = true, overrides = {}, runEffects = false) {
     }
 }
 
-function eventForPan({button = 0, control = false} = {}) {
-    return {type: 'pointerdown', button, pointerId: 1, pointerType: 'mouse', clientX: 100, clientY: 100, target: {closest: () => control ? {} : null}}
+function eventForPan({button = 0, control = false, portaled = false} = {}) {
+    return {type: 'pointerdown', button, pointerId: 1, pointerType: 'mouse', clientX: 100, clientY: 100, target: {portaled, closest: () => control ? {} : null}}
 }
 
 test('each table has one header control for clicking, keyboard activation, and dragging to connect', () => {
@@ -240,6 +241,14 @@ test('Hand and Space capture panning before child controls while toolbar and key
     const cancelled = canvas()
     cancelled.capture({button: 1}); cancelled.cancel()
     assert.equal(cancelled.isPanning(), false); assert.equal(cancelled.isHand(), false)
+})
+
+test('the hand tool leaves clicks on a portaled dialog and its backdrop alone', () => {
+    const c = canvas()
+    c.key('h')
+    assert.deepEqual(c.capture({portaled: true}), {prevented: false, stopped: false})
+    assert.deepEqual(c.clickCapture(false, 1, false, true), {prevented: false, stopped: false})
+    assert.equal(c.isPanning(), false)
 })
 
 test('drag previews use one animation frame and commit the final release position once', () => {

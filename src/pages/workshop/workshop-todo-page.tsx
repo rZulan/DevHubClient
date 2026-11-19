@@ -16,6 +16,7 @@ import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {useProjectToolUpdates} from "@/features/workshop/use-project-tool-updates"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {ConnectionLightning} from "@/features/workshop/connections/connection-lightning"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
@@ -126,13 +127,16 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
     const todos = [...new Map(list.currentData?.pages.flatMap(page => page.items).map(todo => [todo.id, todo])).values()]
     const selected = detail.currentData
     const linkedTask = params.get("task")
+    const linkedColumn = params.get("column")
     const linkedTaskExists = selected?.tasks.some(task => task.id === linkedTask) ?? false
+    const linkedColumnExists = selected?.columns.some(column => column.id === linkedColumn) ?? false
     useEffect(() => {
-        if (!linkedTask || !linkedTaskExists) return
-        const card = document.getElementById(`todo-task-${linkedTask}`)
-        card?.scrollIntoView({block: "center", inline: "center"})
-        card?.focus({preventScroll: true})
-    }, [linkedTask, linkedTaskExists])
+        const id = linkedTaskExists ? `todo-task-${linkedTask}` : linkedColumnExists ? `todo-column-${linkedColumn}` : null
+        if (!id) return
+        const target = document.getElementById(id)
+        target?.scrollIntoView({block: "center", inline: "center"})
+        target?.focus({preventScroll: true})
+    }, [linkedTask, linkedTaskExists, linkedColumn, linkedColumnExists])
     const columns = selected?.columns ?? defaultTodoColumns
     const {isFetching, isError, refetch} = selectedId ? detail : list
     const loadMoreRef = useRef<HTMLDivElement>(null)
@@ -232,6 +236,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                 next.delete("todo");
                 next.delete("todoProject")
             }
+            next.delete("task")
+            next.delete("column")
             return next
         })
     }
@@ -356,13 +362,22 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
 
     return (
         <div className="workshop-page workshop-board-page">
-            <section className="workshop-page-heading workshop-todo-heading compact" ref={headingRef}>
-                <div>
+            <section className="workshop-page-heading workshop-todo-heading compact connection-node-anchor" ref={headingRef}>
+                <div className="workshop-todo-heading-main">
                     {selectedId &&
-                        <Button variant="ghost" onClick={() => openTodo(null)}><ArrowLeft/> All TODOs</Button>}
-                    <h2>{selected?.name ?? (selectedId ? "TODO board" : "TODOs")}</h2>
-                    {selected?.description && <p>{selected.description}</p>}
-                    {selected?.targetDate && <TodoTargetDate todo={selected} prefix="Target: "/>}
+                        <Button type="button" variant="ghost" size="icon" aria-label="Back to TODOs" title="Back to TODOs"
+                                onClick={() => openTodo(null)}><ArrowLeft aria-hidden="true"/></Button>}
+                    <div className="workshop-todo-heading-details">
+                        <div className="workshop-todo-title-row">
+                            <h2 className="flex items-center gap-1.5">
+                                <span className="connection-node-title">{selected?.name ?? (selectedId ? "TODO board" : "TODOs")}</span>
+                                {selected && <ConnectionLightning node={{kind: "todo-board", id: selected.id, label: selected.name}}/>}
+                                {!selectedId && <ConnectionLightning node={{kind: "todo", label: "TODOs"}}/>}
+                            </h2>
+                            {selected?.targetDate && <TodoTargetDate todo={selected} prefix="Target: "/>}
+                        </div>
+                        {selected?.description && <p>{selected.description}</p>}
+                    </div>
                 </div>
                 {canManage && !isError && (!selectedId || selected) &&
                     <div className="workshop-todo-actions">{selected && <Button variant="outline" disabled={busy} onClick={() => setDating(selected)}><CalendarDays/>Edit dates</Button>}{selected && <Button variant="outline" disabled={busy}
@@ -410,10 +425,11 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                             setDropColumn(null);
                                             if (draggedId) void changeStatus(draggedId, id)
                                         }}>
-                                        <header>
+                                        <header id={`todo-column-${id}`} tabIndex={-1} className="connection-node-anchor">
                                             <span><Icon/><strong>{name}</strong><b>{tasks.length}</b></span>{isComplete &&
                                             <small className="workshop-column-complete"
                                                    title="Tasks in this column count as complete">Complete</small>}
+                                            <ConnectionLightning node={{kind: "todo-column", id: id, parentId: selected.id, label: name}}/>
                                         </header>
                                         <div className="workshop-task-list" role="region" aria-label={`${name} tasks`} tabIndex={0}>
                                             {tasks.map(task => <TodoTaskCard key={task.id} task={task} columns={columns} members={members} userId={userId}
@@ -440,17 +456,17 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                             <div className="workshop-todo-grid" aria-busy={isFetching}>
                                 {todos.map(todo => {
                                     const completed = todo.tasks.filter(task => task.status === (todo.columns ?? defaultTodoColumns).at(-1)?.id).length
-                                    return <button className="workshop-todo-card" key={todo.id}
-                                                   onClick={() => openTodo(todo.id)}>
-                                        <span
-                                            className="workshop-todo-card-heading"><CheckCircle2/><strong>{todo.name}</strong><ArrowRight/></span>
-                                        {todo.description && <p>{todo.description}</p>}
-                                        <TodoTargetDate todo={todo}/>
-                                        <progress aria-label={`${todo.name} progress`}
-                                                  max={Math.max(todo.tasks.length, 1)} value={completed}/>
-                                        <span
-                                            className="workshop-todo-progress">{completed} of {todo.tasks.length} tasks done</span>
-                                    </button>
+                                    return <div className="workshop-todo-card-node connection-node-anchor" key={todo.id}>
+                                        <button className="workshop-todo-card" type="button" onClick={() => openTodo(todo.id)}>
+                                            <span className="workshop-todo-card-heading"><CheckCircle2/><strong>{todo.name}</strong><ArrowRight/></span>
+                                            {todo.description && <p>{todo.description}</p>}
+                                            <TodoTargetDate todo={todo}/>
+                                            <progress aria-label={`${todo.name} progress`} max={Math.max(todo.tasks.length, 1)} value={completed}/>
+                                            <span className="workshop-todo-progress">{completed} of {todo.tasks.length} tasks done</span>
+                                        </button>
+                                        <ConnectionLightning className="workshop-todo-card-connections"
+                                            node={{kind: "todo-board", id: todo.id, label: todo.name}}/>
+                                    </div>
                                 })}
                             </div>
                         ) : <WorkshopEmptyState icon={CheckCircle2} title="No TODOs yet"

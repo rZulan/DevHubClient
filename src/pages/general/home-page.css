@@ -172,7 +172,6 @@
 .landing-orbit-preview { position: relative; height: 450px; overflow: hidden; border: 1px solid #c4b5fd40; border-radius: 26px; background: radial-gradient(ellipse at center, #35294d 0%, #161523 54%, #11111b 100%); color: #e8e5f7; box-shadow: 0 25px 60px #00000028; }
 .landing-orbit-heading { position: absolute; top: 21px; left: 22px; right: 22px; display: flex; align-items: center; gap: 7px; font-size: 11px; }
 .landing-orbit-heading > svg { width: 15px; height: 15px; color: #c6b5f5; }
-.landing-orbit-heading > small { margin-left: auto; color: #b5accb; font-size: 9px; }
 .landing-orbit-system { position: absolute; left: 50%; top: 51%; width: 400px; height: 340px; transform: translate(-50%, -50%); }
 .landing-orbit-track { position: absolute; inset: 23px; border: 1px solid #c4b5fd36; border-radius: 50%; transform: rotate(-25deg); }
 .landing-orbit-track-inner { inset: 68px 76px; border-style: dashed; opacity: .6; transform: rotate(25deg); }

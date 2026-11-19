@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {bugError, bugFileError, bugFileLimits, bugFormData, bugStatuses, bugPriorities} from '../src/features/workshop/bug-reports.ts'
+import {matchPath} from 'react-router-dom'
+import {bugError, bugFileError, bugFileLimits, bugFormData, bugReportLinkPaths, bugReportRoutePatterns, bugStatuses, bugPriorities} from '../src/features/workshop/bug-reports.ts'
 import {grantsWorkshopPermission} from '../src/features/workshop/workshop-permissions.ts'
 
 test('field validation explains the specific failure before the generic detail', () => {
@@ -43,9 +44,14 @@ test('bug triage is a separate permission and does not expand project access', (
     assert.deepEqual(bugPriorities.map(priority=>priority.id),['low','medium','high','critical'])
 })
 
-test('public route stays outside authentication and has a submission-only API', () => {
+test('current, short, and legacy reporting links stay outside authentication', () => {
+    assert.equal(bugReportLinkPaths.full, '/report-issue')
+    for (const path of ['/report-issue/test-token', '/b/test-code', '/report-bug/test-token']) {
+        assert.ok(bugReportRoutePatterns.some(pattern => matchPath(pattern, path)), path)
+    }
+    assert.ok(!bugReportRoutePatterns.some(pattern => matchPath(pattern, '/report-issue/test-token/inbox')))
     const router = readFileSync(new URL('../src/app/router.tsx',import.meta.url),'utf8')
-    assert.ok(router.indexOf('path: "report-bug/:token"') < router.indexOf('id: "protected"'))
+    assert.match(router, /\.\.\.bugReportRoutePatterns\.map[\s\S]+id: "protected"/)
     const loaders = readFileSync(new URL('../src/app/route-loaders.ts',import.meta.url),'utf8')
-    assert.ok(loaders.indexOf('url.pathname.startsWith("/report-bug/")') < loaders.indexOf('await ensureSessionRestored()'))
+    assert.match(loaders.slice(0, loaders.indexOf('await ensureSessionRestored()')), /bugReportRoutePatterns\.some\(pattern => matchPath\(pattern, url\.pathname\)\)/)
 })

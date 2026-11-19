@@ -12,6 +12,7 @@ import {useListTodosQuery} from "@/features/workshop/todo-api"
 import {useProjectToolUpdates} from "@/features/workshop/use-project-tool-updates"
 import {ProjectCalendar} from "@/features/workshop/project-calendar"
 import {CalendarEventDialog} from "@/features/workshop/calendar-event-dialog"
+import {useConnectionNodeLink} from "@/features/workshop/connections/use-connection-node-link"
 import {calendarItems, type CalendarEvent} from "@/features/workshop/calendar-document"
 import {createClientId} from "@/lib/create-client-id"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -29,6 +30,15 @@ function CalendarContent() {
     const todos = useListTodosQuery(scope, {skip: !isPersistedOrganization, refetchOnFocus: true, refetchOnReconnect: true})
     useProjectToolUpdates({...scope, tool: "todo"}, isPersistedOrganization, () => {void todos.refetch()})
     const [editing, setEditing] = useState<{event: CalendarEvent; existing: boolean} | null>(null)
+    const [linkedDate, setLinkedDate] = useState<{date: string}>()
+    useConnectionNodeLink(scope.projectId, ({kind, id}) => {
+        if (kind !== "calendar-entry") return false
+        const event = editor.document.events.find(item => item.id === id)
+        if (!event) return false
+        setLinkedDate({date: event.startDate})
+        setEditing({event, existing: true})
+        return true
+    })
     function newEvent(date: string) {
         if (!editor.canEdit || editor.document.events.length >= 2000) return
         setEditing({existing: false, event: {id: createClientId(), title: "", description: "", kind: "meeting", startDate: date, endDate: date, allDay: false, startTime: "09:00", endTime: "10:00"}})
@@ -49,7 +59,7 @@ function CalendarContent() {
         {isPersistedOrganization && todos.isLoading && <p className="calendar-data-notice" role="status">Loading TODO deadlines…</p>}
         {isPersistedOrganization && todos.isError && <WorkshopToast variant="error">TODO deadlines could not be loaded.<Button size="sm" variant="ghost" onClick={() => void todos.refetch()}>Retry</Button></WorkshopToast>}
         {editor.document.events.length >= 2000 && <WorkshopToast variant="warning">This calendar has reached its 2,000-event limit.</WorkshopToast>}
-        <ProjectCalendar key={editor.document.timeZone} items={calendarItems(editor.document, todos.currentData ?? [])} timeZone={editor.document.timeZone} canEdit={editor.canEdit && editor.document.events.length < 2000} onAdd={newEvent} onOpen={item => {
+        <ProjectCalendar key={editor.document.timeZone} items={calendarItems(editor.document, todos.currentData ?? [])} timeZone={editor.document.timeZone} linkedDate={linkedDate} canEdit={editor.canEdit && editor.document.events.length < 2000} onAdd={newEvent} onOpen={item => {
             if (item.todoId) {navigate({pathname: `/workshop/${organization.id}/todo`, search: new URLSearchParams({project: project!.id, todoProject: project!.id, todo: item.todoId, ...(item.taskId ? {task: item.taskId} : {})}).toString()}); return}
             const event = editor.document.events.find(event => event.id === item.id)
             if (event) setEditing({event, existing: true})

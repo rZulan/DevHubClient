@@ -3,9 +3,10 @@ import {type CSSProperties, useEffect, useState} from "react"
 import {UserAvatar} from "@/components/user-avatar"
 import type {AuthUser} from "@/features/auth/auth-types"
 import {getUserHandle} from "@/features/auth/user-display"
+import {projectToolLabels} from "@/features/workshop/project-tools"
 
-type WorkshopTool = "todos" | "erd" | "notes"
-const tourTools: WorkshopTool[] = ["todos", "erd", "notes"]
+const tourTools = ["todo", "erd", "notes"] as const
+type WorkshopTool = typeof tourTools[number]
 
 export function WorkshopTour() {
     const [step, setStep] = useState(0)
@@ -22,13 +23,13 @@ const previewTodoColumns = [
     {name: "Done", state: "done", tasks: [{title: "Choose the stack", label: "Planning", assignee: "A"}]},
 ]
 
-export function WorkshopScene({hero = false, preview = false, tool = "todos"}: {hero?: boolean, preview?: boolean, tool?: WorkshopTool}) {
+export function WorkshopScene({hero = false, preview = false, tool = "todo"}: {hero?: boolean, preview?: boolean, tool?: WorkshopTool}) {
     return <div className={`landing-workshop-scene ${hero ? "landing-workshop-hero" : ""} ${preview ? "landing-workshop-playing" : ""}`} data-tool={tool} aria-hidden="true">
         <div className="landing-app-window">
-            <div className="landing-window-bar"><span/><span/><span/><small>Zevont Workshop</small><LayoutGrid/></div>
+            <div className="landing-window-bar"><span/><span/><span/><small>Zhimera Workshop</small><LayoutGrid/></div>
             <div className="landing-app-layout">
-                <div className="landing-app-sidebar"><strong><span>N</span>Northstar</strong><span><LayoutDashboard/>Dashboard</span><span><Users/>Teams</span><small>WEBSITE LAUNCH</small><span className={tool === "todos" ? "active" : ""}><ListTodo/>TODOs</span><span className={tool === "erd" ? "active" : ""}><Database/>ERD maker</span>{preview && <span className={tool === "notes" ? "active" : ""}><StickyNote/>Notes</span>}<div className="landing-app-members"><i>A</i><i>K</i><i>M</i></div></div>
-                <div className="landing-app-main"><div className="landing-app-heading"><span><small>{preview ? {todos: "01 / TODOs", erd: "02 / ERD MAKER", notes: "03 / NOTES"}[tool] : "PROJECT"}</small><strong>Website launch</strong></span><Plus/></div><div className="landing-tour-panel" key={tool}>{tool === "todos" ? <TodoBoardPreview playing={preview}/> : tool === "erd" ? <ErdBoardPreview/> : <NoteEditorPreview/>}</div></div>
+                <div className="landing-app-sidebar"><strong><span>N</span>Northstar</strong><span><LayoutDashboard/>Dashboard</span><span><Users/>Teams</span><small>WEBSITE LAUNCH</small><span className={tool === "todo" ? "active" : ""}><ListTodo/>{projectToolLabels.todo}</span><span className={tool === "erd" ? "active" : ""}><Database/>{projectToolLabels.erd}</span>{preview && <span className={tool === "notes" ? "active" : ""}><StickyNote/>{projectToolLabels.notes}</span>}<div className="landing-app-members"><i>A</i><i>K</i><i>M</i></div></div>
+                <div className="landing-app-main"><div className="landing-app-heading"><span><small>{preview ? `0${tourTools.indexOf(tool) + 1} / ${projectToolLabels[tool]}` : "PROJECT"}</small><strong>Website launch</strong></span><Plus/></div><div className="landing-tour-panel" key={tool}>{tool === "todo" ? <TodoBoardPreview playing={preview}/> : tool === "erd" ? <ErdBoardPreview/> : <NoteEditorPreview/>}</div></div>
             </div>
         </div>
         {hero && <>{!preview && <div className="landing-floating-cursor"><MousePointer2/></div>}<div className="landing-floating-people">{[3, 8, 13].map(index => <img key={index} src={`/avatars/discovery/profile-${String(index).padStart(2, "0")}.png`} alt=""/>)}</div></>}
@@ -49,9 +50,9 @@ function NoteEditorPreview() {
 }
 
 export function DiscoveryOrbitPreview({user}: {user?: AuthUser | null}) {
-    const name = user ? `${user.firstName} ${user.lastName}`.trim() || getUserHandle(user) : "Alex Chen"
+    const name = user ? `${user.firstName} ${user.lastName}`.trim() || getUserHandle(user) : "You"
     return <div className="landing-orbit-preview" aria-hidden="true">
-        <div className="landing-orbit-heading"><Compass/><span>Discovery</span><small>Find your people</small></div>
+        <div className="landing-orbit-heading"><Compass/><span>Discovery</span></div>
         {Array.from({length: 20}, (_, i) => <i className="landing-space-star" key={i} style={{left: `${(i * 43 + 9) % 95}%`, top: `${(i * 29 + 7) % 94}%`}}/>)}
         <div className="landing-orbit-system">
             <span className="landing-orbit-track"/><span className="landing-orbit-track landing-orbit-track-inner"/>

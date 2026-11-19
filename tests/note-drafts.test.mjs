@@ -10,12 +10,15 @@ function browserStorage() {
 
 test('untitled writing, unfinished code, colors, and new-note state survive a reload', () => {
     const storage = browserStorage(), key = noteDraftKey('user', 'org', 'project')
-    writeNoteDrafts(storage, key, keepNoteDraft([], note, true))
-    const reloaded = readNoteDrafts(storage, key)
-    assert.equal(reloaded.length, 1)
-    assert.deepEqual(reloaded[0].note, note)
-    assert.equal(reloaded[0].creating, true)
-    assert.ok(Number.isFinite(Date.parse(reloaded[0].savedAt)))
+    for (const color of [note.color, null]) {
+        const draft = {...note, color}
+        writeNoteDrafts(storage, key, keepNoteDraft([], draft, true))
+        const reloaded = readNoteDrafts(storage, key)
+        assert.equal(reloaded.length, 1)
+        assert.deepEqual(reloaded[0].note, draft)
+        assert.equal(reloaded[0].creating, true)
+        assert.ok(Number.isFinite(Date.parse(reloaded[0].savedAt)))
+    }
 })
 
 test('each edit replaces its own draft while other note drafts remain resumable', () => {

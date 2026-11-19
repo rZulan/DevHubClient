@@ -233,6 +233,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
         }
     }
     function blockPanClick(event: MouseEvent) {
+        if (!event.currentTarget.contains(event.target as Node)) return
         if (event.detail && (hand || space || suppressPanClick.current) && !(event.target as Element).closest(".tool-canvas-actions, .workshop-zoom-control")) {event.preventDefault(); event.stopPropagation()}
     }
     const handActive = hand || space || panning
@@ -249,6 +250,7 @@ export function ToolCanvas({nodes, selectedIds, onSelect, onMove, onResize, rend
     return <div className={`tool-canvas workshop-ideation ${handActive ? "hand-tool" : ""} ${panning ? "panning" : ""}`} ref={root} tabIndex={0} aria-label={label}
                 {...touch}
                 onPointerDownCapture={event => {
+                    if (!event.currentTarget.contains(event.target as Node)) return
                     suppressPanClick.current = false
                     touch.onPointerDownCapture?.(event)
                     if (event.defaultPrevented || gesture.current || (event.target as Element).closest(".tool-canvas-actions, .workshop-zoom-control")) return

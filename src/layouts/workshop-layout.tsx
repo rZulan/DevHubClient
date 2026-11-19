@@ -13,6 +13,7 @@ import {
     PanelRightOpen,
     Plus,
     Settings,
+    Workflow,
 } from "lucide-react"
 import {ArrowSquareOutIcon} from "@phosphor-icons/react/dist/csr/ArrowSquareOut"
 import {CaretRightIcon} from "@phosphor-icons/react/dist/csr/CaretRight"
@@ -22,6 +23,7 @@ import {Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams,} f
 import {useAppSelector} from "@/app/hooks"
 import {ChatDialog} from "@/features/chat/chat-dialog"
 import {WorkshopNotifications} from "@/features/workshop/workshop-notifications"
+import {ConnectionLightning, ConnectionLightningProvider} from "@/features/workshop/connections/connection-lightning"
 import {WorkshopStorageNotice} from "@/features/workshop/workshop-limit-notices"
 import {ThemeToggle} from "@/components/theme-toggle"
 import {UnderConstructionIndicator} from "@/components/under-construction-indicator"
@@ -77,8 +79,9 @@ import type {
 import {cn} from "@/lib/utils"
 import {ProjectToolsNavigation} from "@/features/workshop/project-tools-navigation"
 import {WorkshopNavigationGroup} from "@/features/workshop/workshop-navigation-group"
+import {WorkshopHistoryButtons} from "@/features/workshop/workshop-history-buttons"
 import {organizationNavigation} from "@/features/workshop/workshop-navigation"
-import {projectNavigationCategories} from "@/features/workshop/project-tools"
+import {projectNavigationCategories, projectToolLabels} from "@/features/workshop/project-tools"
 import {useCompactWorkshop, WorkshopContentWidthContext} from "@/hooks/use-compact-workshop"
 import "@/features/workshop/workshop-responsive.css"
 import {ResponsiveWorkshopPanel} from "@/features/workshop/responsive-workshop-panel"
@@ -113,21 +116,18 @@ const statusLabels: Record<Exclude<WorkshopPresenceStatus, "offline">, string> =
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const pageTitles: Record<string, string> = {
+    ...projectToolLabels,
     dashboard: "Dashboard",
-    "project-wiki": "Project Wiki",
-    "bug-reports": "Bug Reports",
-    todo: "TODOs",
-    uml: "UML",
-    calendar: "Calendar",
-    notes: "Notes",
-    erd: "ERD maker",
-    "ui-editor": "UI/UX Editor",
-    sdlc: "SDLC Roadmap",
+    connections: "Connections",
     projects: "Projects",
     "project-detail": "Project details",
     teams: "Teams",
     "org-chart": "Organization chart",
     settings: "Organization settings",
+}
+const connectableTools: Record<string, string> = {
+    todo: "todo", calendar: "calendar", "bug-reports": "bug-reports", sdlc: "sdlc", erd: "erd",
+    "ui-editor": "ui-editor", uml: "uml", "project-wiki": "wiki", notes: "notes",
 }
 const constructionPages = new Set(["dashboard", "ui-editor", "sdlc", "projects", "project-detail", "bug-reports"])
 
@@ -391,7 +391,7 @@ export function WorkshopLayout() {
         dashboardPickerDock,
     }
 
-    return (
+    return <ConnectionLightningProvider organizationId={activeOrganizationId} projectId={isPersistedOrganization ? project?.id : undefined}>
         <div className={cn("workshop-shell", (compactMembers || !membersOpen) && "members-collapsed")}>
             <ResponsiveWorkshopPanel compact={compact} open={navigationOpen} onOpenChange={setNavigationOpen} title="Workshop navigation" side="left">
             <aside className="workshop-sidebar">
@@ -431,8 +431,10 @@ export function WorkshopLayout() {
                 <nav aria-label="Workshop navigation" className="workshop-nav">
                     <WorkshopNavigationGroup title="Organization" items={organizationNavigation} activePath={activePath} underConstruction dashboardEditing={dashboardEditing}/>
                     {projectNavigationCategories.map(category => <ProjectToolsNavigation key={`${user?.id}:${activeOrganizationId}:${category.id}`} userId={user?.id ?? "current"}
-                        organizationId={activeOrganizationId} category={category} expanded={projectGroupsOpen[category.id] ?? true}
+                        organizationId={activeOrganizationId} projectId={project?.id} isPersistedOrganization={isPersistedOrganization}
+                        category={category} expanded={projectGroupsOpen[category.id] ?? true}
                         onToggle={() => setProjectGroupsOpen(current => ({...current, [category.id]: !current[category.id]}))}/>)}
+                    <NavLink className={({isActive}) => cn("workshop-nav-link", isActive && "active")} to="connections"><Workflow aria-hidden="true"/>Connections</NavLink>
                     <div className={cn("workshop-nav-group workshop-projects-group", projectsOpen && "open")}>
                         <div className="workshop-projects-heading">
                             <NavLink
@@ -508,7 +510,7 @@ export function WorkshopLayout() {
                 </nav>
 
                 <div className="workshop-sidebar-footer">
-                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft aria-hidden="true"/><span>Back to Zevont</span></Link>
+                    <Link onClick={clearWorkshopResumePath} to="/"><ArrowLeft aria-hidden="true"/><span>Back to Zhimera</span></Link>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button className={`workshop-sidebar-user status-${currentStatus} h-auto`} type="button"
@@ -554,9 +556,16 @@ export function WorkshopLayout() {
             <section ref={mainColumn} className="workshop-main-column">
                 <header className="workshop-topbar">
                     {compact && <Button variant="outline" size="icon" className="workshop-navigation-toggle" aria-label="Open workshop navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu aria-hidden="true"/></Button>}
-                    <div className="workshop-topbar-title">
+                    <div className="workshop-topbar-title connection-node-anchor">
                         <small title={organization.name}>{organization.name}</small>
-                        <h1 className="workshop-construction-label" title={pageTitles[activePath] ?? "Workshop"}><span>{pageTitles[activePath] ?? "Workshop"}</span>{constructionPages.has(activePath) && <UnderConstructionIndicator/>}</h1>
+                        <div className="workshop-topbar-heading">
+                            <WorkshopHistoryButtons/>
+                            <h1 className="workshop-construction-label" title={pageTitles[activePath] ?? "Workshop"}><span>{pageTitles[activePath] ?? "Workshop"}</span>{constructionPages.has(activePath) && <UnderConstructionIndicator/>}
+                                {connectableTools[activePath] && <ConnectionLightning key={`${project?.id}:${activePath}`}
+                                    node={{kind: connectableTools[activePath], label: pageTitles[activePath]}}
+                                    scope={{organizationId: activeOrganizationId, projectId: project?.id, isPersistedOrganization}}/>}
+                            </h1>
+                        </div>
                     </div>
                     <div className="workshop-topbar-actions">
                         <div className="workshop-project-select">
@@ -693,5 +702,5 @@ export function WorkshopLayout() {
                 onSubmitJoin={setup.handleJoin}
             />
         </div>
-    )
+    </ConnectionLightningProvider>
 }

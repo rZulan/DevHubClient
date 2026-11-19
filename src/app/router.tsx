@@ -3,6 +3,7 @@ import {createBrowserRouter, redirect} from "react-router-dom"
 import {accountLoader, anonymousOnlyLoader, protectedLoader, rootLoader,} from "@/app/route-loaders"
 import {RouterFallback} from "@/components/router-fallback"
 import {ProtectedLayout} from "@/features/auth/protected-layout"
+import {bugReportRoutePatterns} from "@/features/workshop/bug-reports"
 import {AccountRootLayout} from "@/layouts/account-root-layout"
 import {DiscoveryLayout} from "@/layouts/discovery-layout"
 import {RootLayout} from "@/layouts/root-layout"
@@ -16,14 +17,10 @@ export const router = createBrowserRouter([
         HydrateFallback: RouterFallback,
         children: [
             {path: "github-connected", lazy: async () => ({Component: (await import("@/pages/general/github-connected-page")).GitHubConnectedPage})},
-            {
-                path: "b/:token",
+            ...bugReportRoutePatterns.map(path => ({
+                path,
                 lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
-            },
-            {
-                path: "report-bug/:token",
-                lazy: async () => ({Component: (await import("@/pages/general/public-bug-report-page")).PublicBugReportPage}),
-            },
+            })),
             {
                 element: <RootLayout/>,
                 children: [
@@ -69,6 +66,12 @@ export const router = createBrowserRouter([
                 loader: protectedLoader,
                 element: <ProtectedLayout/>,
                 children: [
+                    {
+                        path: "users/:username",
+                        lazy: async () => ({
+                            Component: (await import("@/pages/discovery/discovery-profile-page")).DiscoveryProfilePage,
+                        }),
+                    },
                     {
                         path: "discovery",
                         element: <DiscoveryLayout/>,
@@ -124,6 +127,10 @@ export const router = createBrowserRouter([
                                     {
                                         path: "calendar",
                                         lazy: async () => ({Component: (await import("@/pages/workshop/workshop-calendar-page")).WorkshopCalendarPage}),
+                                    },
+                                    {
+                                        path: "connections",
+                                        lazy: async () => ({Component: (await import("@/pages/workshop/workshop-connections-page")).WorkshopConnectionsPage}),
                                     },
                                     // Archived Playground links lead to the universal UML directory.
                                     {path: "ideation", loader: () => redirect("../uml")},

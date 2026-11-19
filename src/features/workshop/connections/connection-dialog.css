@@ -1,0 +1,242 @@
+.connection-dialog[data-slot="dialog-content"] {
+    display: grid;
+    gap: 0;
+    width: calc(100% - 2rem);
+    max-width: 71rem;
+    max-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    padding: 0;
+    box-shadow: none;
+    container: connection-dialog / inline-size;
+}
+
+.connection-dialog [data-slot="dialog-close"] {
+    z-index: 2;
+    top: .65rem;
+    right: .65rem;
+    color: var(--muted-foreground);
+    opacity: .7;
+}
+.connection-dialog [data-slot="dialog-close"]:is(:hover, :focus-visible) {opacity: 1}
+
+.connection-dialog > :is(.connection-inline-error, .connection-muted) {margin: 1rem 3.4rem 1rem 1rem}
+.connection-dialog:has(> :is(.connection-graph, .connection-dialog-workspace)) {
+    height: min(78dvh, 44rem);
+    grid-template-rows: minmax(0, 1fr);
+}
+.connection-dialog:has(> .connection-dialog-workspace) {background: transparent}
+
+.connection-dialog-workspace {
+    display: grid;
+    grid-template-columns: minmax(19rem, 29%) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "sidebar canvas";
+    min-width: 0;
+    gap: .7rem;
+}
+
+.connection-dialog-sidebar {
+    grid-area: sidebar;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    background: var(--popover);
+}
+
+.connection-dialog-sidebar-heading {padding: .65rem .55rem; border-bottom: 1px solid var(--border)}
+.connection-dialog-sidebar-body {
+    display: grid;
+    align-content: start;
+    gap: .75rem;
+    padding: .7rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+.connection-dialog-fields {min-width: 0; margin: 0; padding: 0; border: 0}
+.connection-dialog-picker {display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; align-items: end}
+.connection-dialog-picker select {
+    width: 100%;
+    min-height: 2rem;
+    padding: .25rem .45rem;
+    border: 1px solid var(--input);
+    border-radius: .5rem;
+    background: var(--background);
+    color: var(--foreground);
+}
+
+.connection-dialog-picker select:focus-visible {outline: 2px solid var(--ring); outline-offset: 1px}
+.connection-dialog .connection-editor {gap: .85rem; padding: 0; border: 0; background: transparent}
+.connection-dialog .connection-node-list {grid-template-columns: minmax(0, 1fr)}
+.connection-dialog .connection-node-section {padding-bottom: .8rem}
+.connection-dialog :is(.connection-picker-filter, .connection-arguments, .connection-step-controls, .connection-step-controls.with-control) {
+    grid-template-columns: minmax(0, 1fr);
+}
+.connection-dialog .connection-step-controls.with-control > button {justify-self: end}
+.connection-dialog .connection-editor-footer {gap: .15rem}
+.connection-dialog .connection-save {justify-self: stretch}
+
+.connection-graph {
+    --graph-accent: light-dark(#7251bf, #ac97ff);
+    --graph-action: light-dark(#187e6c, #62d9b5);
+    --graph-condition: light-dark(#9a640c, #e9b966);
+    position: relative;
+    display: grid;
+    isolation: isolate;
+    grid-template: "canvas" minmax(0, 1fr) / minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    contain: paint;
+    background: radial-gradient(color-mix(in oklab, var(--muted-foreground) 26%, transparent) .65px, transparent .85px), var(--background);
+    box-shadow: inset 0 0 1.25rem color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+.connection-dialog-workspace > .connection-graph {grid-area: canvas}
+
+.connection-graph-header, .connection-graph-footer {
+    grid-area: canvas;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    pointer-events: none;
+    padding: .78rem;
+}
+
+.connection-graph-header {align-self: start; padding-inline-end: 3.4rem}
+.connection-graph-header h3 {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--foreground);
+    font-size: .85rem;
+    font-weight: 650;
+}
+.connection-graph-header :is(button, a), .connection-graph-tools button {pointer-events: auto}
+.connection-graph-header :is(button, a) {flex: none}
+.connection-overview-action {width: auto; min-width: 2rem; padding-inline: .4375rem; cursor: pointer}
+.connection-overview-action-label {
+    display: grid;
+    grid-template-columns: 0fr;
+    margin-inline-start: 0;
+    opacity: 0;
+    transition: grid-template-columns 180ms ease, margin-inline-start 180ms ease, opacity 140ms ease;
+}
+.connection-overview-action-label > span {min-width: 0; overflow: hidden}
+.connection-overview-action:is(:hover, :focus-visible) .connection-overview-action-label {
+    grid-template-columns: 1fr;
+    margin-inline-start: .375rem;
+    opacity: 1;
+}
+.connection-graph-footer {align-self: end; align-items: end}
+.connection-graph-canvas {
+    grid-area: canvas;
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+.connection-graph-canvas[data-dragging="true"],
+.connection-graph-canvas[data-dragging="true"] .connection-graph-node {cursor: grabbing}
+
+.connection-graph [data-tone="source"] {--vertex: var(--graph-accent)}
+.connection-graph [data-tone="connection"] {--vertex: light-dark(#546fc1, #91a5ff)}
+.connection-graph [data-tone="condition"] {--vertex: var(--graph-condition)}
+.connection-graph [data-tone="action"] {--vertex: var(--graph-action)}
+.connection-graph [data-tone="muted"] {--vertex: var(--muted-foreground)}
+.connection-graph [data-tool="todo"]:not([data-tone]) {--vertex: light-dark(#2b806a, #70d7ba)}
+.connection-graph [data-tool="erd"]:not([data-tone]) {--vertex: light-dark(#356ba5, #8ec7ff)}
+.connection-graph [data-tool="calendar"]:not([data-tone]) {--vertex: light-dark(#a46b1a, #f2c478)}
+.connection-graph [data-tool="bug-reports"]:not([data-tone]) {--vertex: light-dark(#b34963, #f08fa8)}
+.connection-graph [data-tool="ui-editor"]:not([data-tone]) {--vertex: light-dark(#9f53b3, #dfa1fa)}
+.connection-graph [data-tool="sdlc"]:not([data-tone]) {--vertex: light-dark(#3c829b, #81d6e4)}
+.connection-graph [data-tool="uml"]:not([data-tone]) {--vertex: light-dark(#5466bd, #9aaeff)}
+
+.connection-graph-edge {fill: none; stroke: color-mix(in oklab, var(--muted-foreground) 46%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke}
+.connection-graph-edge[data-tone="muted"] {opacity: .4}
+.connection-graph-edge:is([data-tone="connection"], [data-tone="condition"], [data-tone="action"]) {
+    stroke: color-mix(in oklab, var(--vertex) 76%, transparent);
+    stroke-width: 1.4;
+}
+.connection-graph-edge[data-tone="condition"] {stroke-dasharray: 4 4}
+.connection-graph-edge[data-emphasis="selected"] {stroke-width: 2}
+.connection-graph :is(.connection-graph-edge, .connection-graph-node)[data-emphasis="dim"] {opacity: .25}
+.connection-graph-node[data-emphasis="selected"] .connection-graph-dot {stroke: var(--foreground); stroke-width: 1.2}
+.connection-graph-node {cursor: grab}
+.connection-graph-node[data-graph-control] {outline: none}
+.connection-graph-dot {fill: var(--vertex, var(--muted-foreground))}
+.connection-graph-canvas[data-dragging="false"] .connection-graph-node[data-graph-control]:is(:hover, :focus-visible) .connection-graph-hit-area {
+    stroke: var(--vertex);
+    stroke-width: 1;
+}
+.connection-graph-node[data-tone="muted"] :is(.connection-graph-dot, .connection-graph-label) {opacity: .59}
+.connection-graph-label, .connection-graph-role {fill: var(--foreground); font-size: 13px; font-weight: 550}
+.connection-graph-label {paint-order: stroke; stroke: var(--background); stroke-width: 2.5px; stroke-linejoin: round}
+.connection-graph-node:is([data-root], [data-graph-control]) .connection-graph-label {font-weight: 675}
+.connection-graph-role {fill: var(--vertex); font-size: 10px}
+
+.connection-graph-message {
+    grid-area: canvas;
+    z-index: 1;
+    align-self: end;
+    justify-self: center;
+    max-width: 85%;
+    margin: 0 0 4.1rem;
+    color: var(--muted-foreground);
+    font-size: .8rem;
+    text-align: center;
+    pointer-events: none;
+}
+.connection-graph-message p {margin: 0; overflow-wrap: anywhere}
+.connection-graph-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .3rem .7rem;
+    color: var(--muted-foreground);
+    font-size: .72rem;
+}
+.connection-graph-legend span {display: inline-flex; align-items: center; gap: .3rem}
+.connection-graph-legend span[data-tone]::before {
+    content: "";
+    width: .42rem;
+    height: .42rem;
+    border-radius: 50%;
+    background: var(--vertex);
+}
+.connection-graph-tools {
+    display: flex;
+    flex: none;
+    gap: .1rem;
+    margin-inline-start: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .connection-overview-action-label {transition: none}
+}
+
+@container connection-dialog (max-width: 43rem) {
+    .connection-dialog-workspace {
+        grid-template: "sidebar" minmax(0, 1fr) "canvas" minmax(0, .85fr) / minmax(0, 1fr);
+    }
+    .connection-dialog-workspace .connection-graph-header {padding-inline-end: .78rem}
+}
+
+@media (max-width: 480px) {
+    .connection-dialog[data-slot="dialog-content"] {
+        inset: auto 0 0;
+        translate: none;
+        width: 100%;
+        border-radius: .85rem .85rem 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .connection-graph-header, .connection-graph-footer {padding-block: .55rem; padding-inline-start: .55rem}
+    .connection-graph-footer, .connection-dialog-workspace .connection-graph-header {padding-inline-end: .55rem}
+}

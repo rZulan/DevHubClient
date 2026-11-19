@@ -1,6 +1,7 @@
 import {emptyUmlLibrary, validUmlLibrary, type UmlLibrary} from "./uml-library.ts"
 import {createClientId} from "../../lib/create-client-id.ts"
 import {validNoteEmoji} from "./note-emojis.ts"
+import {validNoteColor} from "./sticky-notes.ts"
 import {validSdlcDocument, type SdlcDocument} from "./sdlc-document.ts"
 import {validDesignDocument, type DesignDocument} from "./design-document.ts"
 import {validWikiDocument, type WikiDocument} from "./wiki-document.ts"
@@ -27,7 +28,7 @@ export type ErdEdge = "left" | "right" | "top" | "bottom"
 export type ErdAnchor = {edge: ErdEdge; offset: number}
 export type ErdRelationship = {id: string; fromTable: string; fromField: string; toTable: string; toField: string; fromFields?: string[]; toFields?: string[]; cardinality: "1:1" | "1:N" | "N:1" | "N:M"; leftEnd?: RelationshipEnd; rightEnd?: RelationshipEnd; fromAnchor?: ErdAnchor; toAnchor?: ErdAnchor; onDelete: "RESTRICT" | "CASCADE" | "SET NULL"}
 export type ErdDocument = {dialect?: ErdDialect; tables: ErdTable[]; relationships: ErdRelationship[]}
-export type StickyNote = {id: string; title: string; body: string; color: string; updatedAt: string; emoji?: string | null}
+export type StickyNote = {id: string; title: string; body: string; color: string | null; updatedAt: string; emoji?: string | null}
 export type NotesDocument = {notes: StickyNote[]}
 export type ToolDocumentMap = {erd: ErdDocument; "ui-editor": DesignDocument; sdlc: SdlcDocument; notes: NotesDocument; wiki: WikiDocument; calendar: CalendarDocument; uml: UmlLibrary}
 export type DocumentTool = keyof ToolDocumentMap
@@ -45,9 +46,9 @@ export function validToolDocument(tool: DocumentTool, value: unknown): boolean {
     if (tool === "notes") {
         const ids = new Set<string>()
         return Array.isArray(value.notes) && value.notes.length <= 1000 && value.notes.every(note => {
-            if (!record(note) || !["id", "title", "body", "color", "updatedAt"].every(key => text(note, key))) return false
+            if (!record(note) || !["id", "title", "body", "updatedAt"].every(key => text(note, key))) return false
             const {id, title, body, color, updatedAt} = note as StickyNote
-            if (!id.trim() || id.length > 100 || ids.has(id) || !title.trim() || title.length > 150 || body.length > 10000 || !/^#[a-fA-F0-9]{6}$/.test(color) || !validNoteEmoji(note.emoji) || updatedAt.length > 100 || !Number.isFinite(Date.parse(updatedAt))) return false
+            if (!id.trim() || id.length > 100 || ids.has(id) || !title.trim() || title.length > 150 || body.length > 10000 || !validNoteColor(color) || !validNoteEmoji(note.emoji) || updatedAt.length > 100 || !Number.isFinite(Date.parse(updatedAt))) return false
             ids.add(id)
             return true
         })
@@ -107,8 +108,8 @@ export function removeField(document: ErdDocument, tableId: string, fieldId: str
         relationships: document.relationships.filter(relation => !(relation.fromTable === tableId && relationshipFieldIds(relation, "from").includes(fieldId) || relation.toTable === tableId && relationshipFieldIds(relation, "to").includes(fieldId)))}
 }
 export function tableHeight(table: ErdTable) {return 50 + Math.max(1, table.fields.length) * 32}
-export function downloadFile(text: string, name: string, mime: string) {
-    const url = URL.createObjectURL(new Blob([text], {type: mime}))
+export function downloadFile(content: BlobPart, name: string, mime: string) {
+    const url = URL.createObjectURL(new Blob([content], {type: mime}))
     const link = document.createElement("a"); link.href = url; link.download = name; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

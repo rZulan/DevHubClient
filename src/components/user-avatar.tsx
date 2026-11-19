@@ -1,20 +1,21 @@
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import type {AuthUser} from "@/features/auth/auth-types"
-import {getUserInitials} from "@/features/auth/user-display"
+import {getUserInitials, type UserAvatarIdentity} from "@/features/auth/user-display"
 import {cn} from "@/lib/utils"
 
 export function UserAvatar({
                                className,
+                               draggable,
                                user,
                            }: {
     className?: string
-    user: AuthUser
+    draggable?: boolean
+    user: UserAvatarIdentity
 }) {
     const fullName = `${user.firstName} ${user.lastName}`.trim()
 
     return (
         <Avatar className={cn("size-8", className)}>
-            {user.avatarUrl && <AvatarImage alt={fullName} src={user.avatarUrl}/>}
+            {user.avatarUrl && <AvatarImage alt={fullName} draggable={draggable} src={user.avatarUrl}/>}
             <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
         </Avatar>
     )

@@ -3,6 +3,7 @@ import {useState, type FormEvent} from "react"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Button} from "@/components/ui/button"
 import {WorkshopSelect} from "./workshop-select"
+import {ConnectionLightning} from "./connections/connection-lightning"
 import {calendarEventError, calendarEventKinds, calendarKindLabels, type CalendarEvent} from "./calendar-document"
 
 export function CalendarEventDialog({event, existing, canEdit, timeZone, onSave, onDelete, onClose}: {
@@ -17,7 +18,13 @@ export function CalendarEventDialog({event, existing, canEdit, timeZone, onSave,
         const saveError = onSave(next); if (saveError) {setError(saveError); return}; onClose()
     }
     return <Dialog open onOpenChange={open => {if (!open) onClose()}}><DialogContent className="calendar-event-dialog">
-        <DialogHeader><DialogTitle>{existing ? canEdit ? "Edit event" : "Event details" : "New event"}</DialogTitle><DialogDescription>Times are shown in {timeZone.replaceAll("_", " ")}.</DialogDescription></DialogHeader>
+        <DialogHeader className="connection-node-anchor">
+            <div className="connection-node-heading pe-7">
+                <DialogTitle className="connection-node-title">{existing ? canEdit ? "Edit event" : "Event details" : "New event"}</DialogTitle>
+                {existing && <ConnectionLightning node={{kind: "calendar-entry", id: event.id, label: event.title}}/>}
+            </div>
+            <DialogDescription>Times are shown in {timeZone.replaceAll("_", " ")}.</DialogDescription>
+        </DialogHeader>
         <form onSubmit={submit}><fieldset disabled={!canEdit}>
             <label>Title<input autoFocus required maxLength={150} value={draft.title} onChange={event => update({title: event.target.value})} placeholder="e.g. Sprint planning"/></label>
             <label>Type<WorkshopSelect value={draft.kind} disabled={!canEdit} onValueChange={value => update({kind: value as CalendarEvent["kind"]})}>{calendarEventKinds.map(kind => <option key={kind} value={kind}>{calendarKindLabels[kind]}</option>)}</WorkshopSelect></label>

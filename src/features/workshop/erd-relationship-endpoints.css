@@ -6,7 +6,7 @@
 .erd-properties-panel .erd-endpoint-preview > button { display: grid; gap: 5px; min-width: 0; min-height: 78px; padding: 10px 8px; border: 1px solid var(--border); border-radius: 8px; text-align: left; background: var(--background); cursor: pointer; }
 .erd-endpoint-preview > button:first-child { grid-column: 1; grid-row: 1; }
 .erd-endpoint-preview > button:nth-child(2) { grid-column: 3; grid-row: 1; }
-.erd-properties-panel .erd-endpoint-preview > button[aria-selected="true"] { background: color-mix(in oklab, var(--primary) 7%, var(--background)); border-color: color-mix(in oklab, var(--primary) 55%, var(--border)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 15%, transparent); }
+.erd-properties-panel .erd-endpoint-preview > button[aria-selected="true"] { background: color-mix(in oklab, var(--primary) 14%, var(--background)); }
 .erd-endpoint-preview > button > small { justify-self: start; color: var(--muted-foreground); font: 10px var(--workshop-font-code); }
 .erd-endpoint-preview > button[aria-selected="true"] > small { color: var(--primary); }
 .erd-endpoint-preview > button > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px var(--workshop-font-code); }

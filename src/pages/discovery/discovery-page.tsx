@@ -5,7 +5,9 @@ import {
     type PointerEvent,
     type RefObject,
     useCallback,
+    useEffect,
     useLayoutEffect,
+    useMemo,
     useRef,
     useState,
 } from "react"
@@ -14,65 +16,22 @@ import {Link} from "react-router-dom"
 
 import {useAppSelector} from "@/app/hooks"
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
+import {UserAvatar} from "@/components/user-avatar"
 import {getUserHandle, getUserInitials} from "@/features/auth/user-display"
+import {type DiscoveryProfile, useDiscoveryProfilesInfiniteQuery} from "@/features/discovery/discovery-api"
+import {nextTravelerWave} from "@/features/discovery/traveler-schedule"
 
-const placeholderProfilePictures = Array.from(
-    {length: 24},
-    (_, index) => `/avatars/discovery/profile-${String(index + 1).padStart(2, "0")}.png`,
-)
 const randomAt = (seed: number) => {
     const value = Math.sin(seed * 12.9898) * 43758.5453
     return value - Math.floor(value)
 }
-const travelerFirstNames = [
-    "Mina",
-    "Theo",
-    "Amara",
-    "Jules",
-    "Kenji",
-    "Nia",
-    "Soren",
-    "Lina",
-    "Ravi",
-    "Maeve",
-]
-const travelerLastNames = [
-    "Park",
-    "Rivera",
-    "Okafor",
-    "Dubois",
-    "Tanaka",
-    "Santos",
-    "Nielsen",
-    "Kovac",
-    "Sharma",
-    "Byrne",
-]
-const travelerTechStacks = [
-    ["React", "TypeScript", "Node.js"],
-    ["Vue", "Go", "Postgres"],
-    ["Next.js", "Python", "AWS"],
-    ["Svelte", "Rust", "GraphQL"],
-    ["Angular", ".NET", "Azure"],
-    ["React Native", "Expo", "Firebase"],
-    ["Nuxt", "Laravel", "MySQL"],
-    ["SolidJS", "Bun", "Redis"],
-]
-const travelers = Array.from({length: 100}, (_, id) => ({
-    avatarUrl: placeholderProfilePictures[id % placeholderProfilePictures.length],
-    id,
-    duration: 0.82 + randomAt(id + 1) * 0.42,
-    fullName: `${travelerFirstNames[id % travelerFirstNames.length]} ${travelerLastNames[Math.floor(id / travelerFirstNames.length) % travelerLastNames.length]}`,
-    techStack: travelerTechStacks[id % travelerTechStacks.length],
-    username: `${travelerFirstNames[id % travelerFirstNames.length].toLowerCase()}${String(id + 7).padStart(2, "0")}`,
-    x: (randomAt(id + 13) * 2 - 1) * 80,
-    y: (randomAt(id + 37) * 2 - 1) * 68,
-}))
 const defaultFlightSpeed = 30
 const flightSpeedStorageKey = "devhub.discovery.flight-speed.v2"
 const controlledFlightAnimations = new Set([
+    "discovery-arrival",
     "discovery-flyby",
     "discovery-mesh-forward",
+    "discovery-stationary",
 ])
 const meshSpeedMultiplier = 5
 const profileHoverExitDelay = 140
@@ -99,12 +58,14 @@ type BeginDrag = (
     event: PointerEvent<HTMLElement>,
     onPositionChange?: (deltaX: number, deltaY: number) => void,
 ) => void
-type Traveler = (typeof travelers)[number]
+type Traveler = DiscoveryProfile & {duration: number; fullName: string; x: number; y: number}
+type TravelerStreamState = {active: Traveler[]; nextIndex: number; waveNumber: number}
 type HoveredTraveler = {
     avatarSize: number
     element: HTMLElement
     left: number
     profileOffset: number
+    profileExtraWidth: number
     profileTop: number
     side: "left" | "right"
     top: number
@@ -112,8 +73,9 @@ type HoveredTraveler = {
 }
 
 export function DiscoveryPage() {
+    const viewerId = useAppSelector((state) => state.auth.user?.id)
     const sceneRef = useRef<HTMLElement>(null)
-    const dragOffsetsRef = useRef<Record<string, DragOffset>>({})
+    const dragOffsetsRef = useRef(new WeakMap<HTMLElement, DragOffset>())
     const dragSessionRef = useRef<DragSession | null>(null)
 
     const beginDrag = useCallback<BeginDrag>((id, event, onPositionChange) => {
@@ -131,7 +93,7 @@ export function DiscoveryPage() {
             pointerId: event.pointerId,
             screenDragScale: id === "pilot" ? 1 : null,
             startLeft: startBounds.left,
-            startOffset: dragOffsetsRef.current[id] ?? {x: 0, y: 0},
+            startOffset: dragOffsetsRef.current.get(event.currentTarget) ?? {x: 0, y: 0},
             startTop: startBounds.top,
             startX: event.clientX,
             startY: event.clientY,
@@ -190,7 +152,7 @@ export function DiscoveryPage() {
 
         session.element.style.setProperty(`--${variablePrefix}-drag-x`, `${offset.x}px`)
         session.element.style.setProperty(`--${variablePrefix}-drag-y`, `${offset.y}px`)
-        dragOffsetsRef.current[session.id] = offset
+        dragOffsetsRef.current.set(session.element, offset)
     }, [])
 
     const endDrag = useCallback((event: PointerEvent<HTMLElement>) => {
@@ -221,10 +183,7 @@ export function DiscoveryPage() {
             </Link>
 
             <FlightSpeedControl sceneRef={sceneRef}/>
-            <p aria-hidden="true" className="discovery-mobile-hint">
-                Tap a traveler <span>•</span> Drag to reposition
-            </p>
-            <TravelerStream beginDrag={beginDrag} sceneRef={sceneRef}/>
+            {viewerId && <TravelerStream beginDrag={beginDrag} key={viewerId} sceneRef={sceneRef} viewerId={viewerId}/>}
             <DiscoveryPilot beginDrag={beginDrag}/>
         </section>
     )
@@ -233,7 +192,7 @@ export function DiscoveryPage() {
 function FlightSpeedControl({sceneRef}: { sceneRef: RefObject<HTMLElement | null> }) {
     const [speed, setSpeed] = useState(getInitialFlightSpeed)
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         const scene = sceneRef.current
         if (!scene) return
         const travelerPlaybackRate = speed / 50
@@ -311,17 +270,32 @@ function getInitialFlightSpeed() {
 function TravelerStream({
                             beginDrag,
                             sceneRef,
+                            viewerId,
                         }: {
     beginDrag: BeginDrag
     sceneRef: RefObject<HTMLElement | null>
+    viewerId: string
 }) {
+    const {data, direction, fetchNextPage, hasNextPage, isError, isFetching, refetch} =
+        useDiscoveryProfilesInfiniteQuery(viewerId)
+    const isFetchNextPageError = isError && direction === "forward"
+    const profiles = useMemo(() => {
+        const uniqueProfiles = new Map<string, DiscoveryProfile>()
+        for (const page of data?.pages ?? []) {
+            for (const profile of page.items) uniqueProfiles.set(profile.id, profile)
+        }
+        return [...uniqueProfiles.values()]
+    }, [data])
     const activeTravelerElementRef = useRef<HTMLElement | null>(null)
     const deactivateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const nextTravelerIndex = useRef(12)
     const [hoveredTraveler, setHoveredTraveler] = useState<HoveredTraveler | null>(null)
-    const [travelerSlots, setTravelerSlots] = useState(() =>
-        Array.from({length: 12}, (_, index) => ({delay: -index * 1.8, index})),
-    )
+    const [stream, setStream] = useState<TravelerStreamState>({active: [], nextIndex: 0, waveNumber: 0})
+
+    useEffect(() => {
+        if (hasNextPage && !isFetching && !isError && profiles.length - stream.nextIndex <= 14) {
+            void fetchNextPage()
+        }
+    }, [fetchNextPage, hasNextPage, isError, isFetching, profiles.length, stream.nextIndex])
 
     const setScenePaused = useCallback((paused: boolean) => {
         const scene = sceneRef.current
@@ -340,7 +314,7 @@ function TravelerStream({
         deactivateTimerRef.current = null
     }, [])
 
-    const scheduleDeactivation = useCallback((travelerId: number, element: HTMLElement) => {
+    const scheduleDeactivation = useCallback((travelerId: string, element: HTMLElement) => {
         cancelDeactivation()
         deactivateTimerRef.current = window.setTimeout(() => {
             delete element.dataset.profileHover
@@ -391,7 +365,7 @@ function TravelerStream({
     }, [dismissActiveTraveler, hoveredTraveler])
 
     const moveHoveredTraveler = useCallback((
-        travelerId: number,
+        travelerId: string,
         deltaX: number,
         deltaY: number,
     ) => {
@@ -420,7 +394,14 @@ function TravelerStream({
             window.getComputedStyle(document.documentElement).fontSize,
         )
         const compactViewport = window.matchMedia(compactDiscoveryQuery).matches
-        const tabletWidth = 18.5 * rootFontSize
+        const baseTabletWidth = 18.5 * rootFontSize
+        const profileOffset = bounds.width * (2.6 / 3.5)
+        const desiredExtraWidth = Math.max(0, bounds.width - 3.5 * rootFontSize)
+        const rightSpace = window.innerWidth - bounds.left - profileOffset - rootFontSize
+        const leftSpace = bounds.right - profileOffset - rootFontSize
+        const side = !compactViewport && rightSpace < baseTabletWidth + desiredExtraWidth && leftSpace > rightSpace
+            ? "left" : "right"
+        const availableSpace = side === "left" ? leftSpace : rightSpace
         element.dataset.profileHover = "true"
         activeTravelerElementRef.current = element
         setScenePaused(true)
@@ -429,12 +410,10 @@ function TravelerStream({
             avatarSize: bounds.width,
             element,
             left: bounds.left,
-            profileOffset: bounds.width * (2.6 / 3.5),
+            profileOffset,
+            profileExtraWidth: Math.max(0, Math.min(desiredExtraWidth, availableSpace - baseTabletWidth)),
             profileTop: (bounds.height - 9 * rootFontSize) / 2,
-            side:
-                !compactViewport && bounds.right + tabletWidth > window.innerWidth
-                    ? "left"
-                    : "right",
+            side,
             top: bounds.top,
             traveler,
         })
@@ -445,29 +424,78 @@ function TravelerStream({
         setScenePaused(false)
     }, [cancelDeactivation, setScenePaused])
 
-    const replaceTraveler = useCallback((slotToReplace: number) => {
-        const nextIndex = nextTravelerIndex.current
-        nextTravelerIndex.current = (nextIndex + 1) % travelers.length
-        setTravelerSlots((slots) =>
-            slots.map((slot, index) =>
-                index === slotToReplace ? {delay: 0, index: nextIndex} : slot,
-            ),
-        )
+    const spawnTravelers = () => {
+        if (sceneRef.current?.dataset.profileActive === "true") return
+
+        setStream((current) => {
+            const {active, nextIndex, waveNumber} = current
+            const activeIds = new Set(active.map(({id}) => id))
+            const wave = nextTravelerWave(profiles, activeIds, nextIndex, waveNumber, hasNextPage)
+            if (!wave) return current
+
+            const rotation = randomAt(waveNumber + 1)
+            const arrivals = wave.arrivals.map((profile, index) => {
+                const angle = (rotation + index / wave.arrivals.length) * 2 * Math.PI
+                const distance = 0.55 + randomAt(waveNumber * 7 + index + 37) * 0.45
+                return {
+                    ...profile,
+                    duration: 0.82 + randomAt(waveNumber * 7 + index + 13) * 0.42,
+                    fullName: `${profile.firstName} ${profile.lastName}`.trim() || profile.username,
+                    x: Math.cos(angle) * distance * 80,
+                    y: Math.sin(angle) * distance * 68,
+                }
+            })
+            return {active: [...active, ...arrivals], nextIndex: wave.nextIndex, waveNumber: waveNumber + 1}
+        })
+    }
+
+    const finishTraveler = useCallback((travelerId: string) => {
+        setStream((current) => ({...current, active: current.active.filter(({id}) => id !== travelerId)}))
     }, [])
 
     return (
         <>
-            {travelerSlots.map((slot, slotIndex) => (
+            {profiles.length > 0 && (
+                <>
+                    <span
+                        aria-hidden="true"
+                        className="discovery-arrival-clock"
+                        onAnimationIteration={spawnTravelers}
+                        onAnimationStart={spawnTravelers}
+                        style={{"--arrival-interval": profiles.length < 40 ? "6s" : "8s"} as CSSProperties}
+                    />
+                    <p aria-hidden="true" className="discovery-mobile-hint">
+                        Tap a traveler <span>•</span> Drag to reposition
+                    </p>
+                </>
+            )}
+            {(!profiles.length || isError) && (
+                <div className="absolute top-1/3 left-1/2 z-10 w-max max-w-[85%] -translate-x-1/2 text-center text-sm text-cyan-100/80">
+                    {isError ? (
+                        <>
+                            <p role="status">{isFetchNextPageError ? "Couldn’t load more travelers." : "Couldn’t load travelers."}</p>
+                            <button
+                                className="mt-2 cursor-pointer underline"
+                                onClick={() => void (isFetchNextPageError ? fetchNextPage() : refetch())}
+                                type="button"
+                            >
+                                Try again
+                            </button>
+                        </>
+                    ) : (
+                        <p role="status">{isFetching ? "Loading travelers…" : "No other travelers yet."}</p>
+                    )}
+                </div>
+            )}
+            {stream.active.map((traveler) => (
                 <TravelerAvatar
                     beginDrag={beginDrag}
-                    delay={slot.delay}
-                    key={travelers[slot.index].id}
+                    key={traveler.id}
                     onActivate={activateTraveler}
+                    onFinish={finishTraveler}
                     onMove={moveHoveredTraveler}
                     onScheduleDeactivate={scheduleDeactivation}
-                    onReplace={replaceTraveler}
-                    slotIndex={slotIndex}
-                    traveler={travelers[slot.index]}
+                    traveler={traveler}
                 />
             ))}
             {hoveredTraveler &&
@@ -497,29 +525,28 @@ function TravelerStream({
 
 const TravelerAvatar = memo(function TravelerAvatar({
                                                         beginDrag,
-                                                        delay,
                                                         onActivate,
+                                                        onFinish,
                                                         onMove,
                                                         onScheduleDeactivate,
-                                                        onReplace,
-                                                        slotIndex,
                                                         traveler,
                                                     }: {
     beginDrag: BeginDrag
-    delay: number
     onActivate: (traveler: Traveler, element: HTMLElement) => void
-    onMove: (travelerId: number, deltaX: number, deltaY: number) => void
-    onScheduleDeactivate: (travelerId: number, element: HTMLElement) => void
-    onReplace: (slotIndex: number) => void
-    slotIndex: number
+    onFinish: (travelerId: string) => void
+    onMove: (travelerId: string, deltaX: number, deltaY: number) => void
+    onScheduleDeactivate: (travelerId: string, element: HTMLElement) => void
     traveler: Traveler
 }) {
     const travelerKey = `traveler-${traveler.id}`
 
     return (
         <div
-            aria-label={`${traveler.fullName}, @${traveler.username}. ${traveler.techStack.join(", ")}`}
+            aria-label={`${traveler.fullName}, @${traveler.username}`}
             className="discovery-traveler"
+            onAnimationEnd={(event) => {
+                if (event.target === event.currentTarget) onFinish(traveler.id)
+            }}
             onBlur={(event) => {
                 if (window.matchMedia(compactDiscoveryQuery).matches) return
                 if (event.currentTarget.dataset.dragging === "true") return
@@ -539,7 +566,6 @@ const TravelerAvatar = memo(function TravelerAvatar({
                 event.preventDefault()
                 onActivate(traveler, event.currentTarget)
             }}
-            onAnimationIteration={() => onReplace(slotIndex)}
             onPointerDown={(event) => {
                 beginDrag(travelerKey, event, (deltaX, deltaY) =>
                     onMove(traveler.id, deltaX, deltaY),
@@ -572,11 +598,11 @@ const TravelerAvatar = memo(function TravelerAvatar({
                 }
                 onActivate(traveler, event.currentTarget)
             }}
+            role="button"
             style={
                 {
                     "--travel-drag-x": "0px",
                     "--travel-drag-y": "0px",
-                    "--travel-delay": `${delay}s`,
                     "--travel-duration": `${traveler.duration}`,
                     "--travel-end-x": `${traveler.x * 1.25}vw`,
                     "--travel-end-y": `${traveler.y * 1.25}vh`,
@@ -586,12 +612,9 @@ const TravelerAvatar = memo(function TravelerAvatar({
             }
             tabIndex={0}
         >
-            <img
-                alt=""
-                className="discovery-traveler-avatar"
-                draggable={false}
-                src={traveler.avatarUrl}
-            />
+            <div aria-hidden="true" className="discovery-traveler-avatar">
+                <UserAvatar className="size-full" draggable={false} user={traveler}/>
+            </div>
         </div>
     )
 })
@@ -611,6 +634,7 @@ function TravelerHoverOverlay({
         avatarSize,
         left,
         profileOffset,
+        profileExtraWidth,
         profileTop,
         side,
         top,
@@ -629,6 +653,7 @@ function TravelerHoverOverlay({
                 {
                     "--discovery-hover-avatar-size": `${avatarSize}px`,
                     "--discovery-profile-offset": `${profileOffset}px`,
+                    "--discovery-profile-extra-width": `${profileExtraWidth}px`,
                     "--discovery-profile-top": `${profileTop}px`,
                     left,
                     top,
@@ -641,12 +666,9 @@ function TravelerHoverOverlay({
             />
             <div className="discovery-hover-content">
                 <TravelerProfileTablet onDismiss={onDismiss} traveler={traveler}/>
-                <img
-                    alt=""
-                    className="discovery-hover-avatar"
-                    draggable={false}
-                    src={traveler.avatarUrl}
-                />
+                <div aria-hidden="true" className="discovery-hover-avatar">
+                    <UserAvatar className="size-full" draggable={false} user={traveler}/>
+                </div>
             </div>
         </div>
     )
@@ -672,20 +694,14 @@ function TravelerProfileTablet({
                     <X aria-hidden="true"/>
                 </button>
                 <div className="discovery-profile-status">
-                    <span>Traveler // linked</span>
-                    <i aria-hidden="true"/>
+                    <span>Traveler</span>
                 </div>
                 <p className="discovery-profile-name">{traveler.fullName}</p>
                 <p className="discovery-profile-handle">@{traveler.username}</p>
-                <ul className="discovery-profile-stack">
-                    {traveler.techStack.map((technology) => (
-                        <li key={technology}>{technology}</li>
-                    ))}
-                </ul>
                 <Link
                     aria-label={`Visit ${traveler.fullName}'s profile`}
                     className="discovery-profile-visit"
-                    to={`/users/${traveler.username}`}
+                    to={`/users/${encodeURIComponent(traveler.username)}`}
                 >
                     Visit profile <ArrowUpRight aria-hidden="true"/>
                 </Link>

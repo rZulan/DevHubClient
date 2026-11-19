@@ -8,6 +8,7 @@ import {Textarea} from "@/components/ui/textarea"
 import {NoteMarkdown} from "./note-markdown"
 import {bugApiBase, bugError, bugFileSize, bugPriorities, bugStatuses, type BugAttachment, type BugCategory, type BugDetail} from "./bug-reports"
 import {bugReportsPath, useGetBugReportQuery, useTriageBugReportMutation, type BugScope} from "./bug-reports-api"
+import {ConnectionLightning} from "./connections/connection-lightning"
 
 export function BugReportDetail({scope, reportId, categories, canManage, onClose}: {scope: BugScope; reportId: string; categories: BugCategory[]; canManage: boolean; onClose: () => void}) {
     const query = useGetBugReportQuery({...scope, reportId}, {refetchOnMountOrArgChange: true})
@@ -35,9 +36,10 @@ function DetailEditor({scope, report, categories, canManage, onClose, onReload}:
         } catch (failure) {setError(bugError(failure, "The attachment could not be downloaded. Refresh your session and try again."))}
         finally {setDownloading(null)}
     }
-    return <section className="bug-detail" aria-label="Bug report details">
+    return <section className="bug-detail connection-node-anchor" aria-label="Bug report details">
         <header><span className="bug-reference">{report.reference}</span><Button size="icon-sm" variant="ghost" aria-label="Close report details" onClick={onClose}><X/></Button></header>
-        <h3>{report.title}</h3><div className="bug-detail-sender"><Mail/><a href={`mailto:${report.email}`}>{report.email}</a><span>Email supplied by reporter · unverified</span></div><p className="bug-detail-date">{new Date(report.createdAtUtc).toLocaleString()} · {report.source === "public" ? "Public submission" : "Team report"}</p>
+        <div className="connection-node-heading"><h3 className="connection-node-title">{report.title}</h3><ConnectionLightning node={{kind: "bug-report", id: report.id, label: report.title}}/></div>
+        <div className="bug-detail-sender"><Mail/><a href={`mailto:${report.email}`}>{report.email}</a><span>Email supplied by reporter · unverified</span></div><p className="bug-detail-date">{new Date(report.createdAtUtc).toLocaleString()} · {report.source === "public" ? "Public submission" : "Team report"}</p>
         <div className="bug-description"><h4>Description</h4><NoteMarkdown body={report.description}/>{report.steps && <><h4>Steps to reproduce</h4><p className="bug-preformatted">{report.steps}</p></>}{report.environment && <><h4>Environment</h4><p className="bug-preformatted">{report.environment}</p></>}</div>
         <div className="bug-attachments"><h4><Paperclip/>Attachments <span>{report.attachments.length}</span></h4>{report.attachments.length ? report.attachments.map(attachment => <button type="button" key={attachment.id} disabled={!!downloading} onClick={() => void download(attachment)}><Paperclip/><span>{attachment.fileName}<small>{bugFileSize(attachment.size)}</small></span>{downloading === attachment.id ? <LoaderCircle className="animate-spin"/> : <Download/>}</button>) : <p>No attachments.</p>}</div>
         <form className="bug-triage" onSubmit={submit}><h4>Triage</h4><fieldset disabled={!canManage || mutation.isLoading || conflict}>

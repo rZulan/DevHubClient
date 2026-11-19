@@ -1,5 +1,5 @@
 import type {CSSProperties} from "react"
-import {contrastRatio} from "./appearance/color-schemes.ts"
+import {contrastRatio, isHexColor} from "./appearance/color-schemes.ts"
 
 export const noteColors = [
     {name: "Butter", color: "#f6e7a6"},
@@ -10,6 +10,10 @@ export const noteColors = [
     {name: "Mint", color: "#cce5ce"},
 ] as const
 
+export function validNoteColor(color: unknown): color is string | null {
+    return color === null || isHexColor(color)
+}
+
 // Keep text readable when a member chooses a custom sticky-note color.
 export function noteTextColor(color: string) {
     if (contrastRatio(color, "#191714") >= 4.5) return "#191714"
@@ -17,7 +21,14 @@ export function noteTextColor(color: string) {
 }
 
 // Store the chosen color unchanged; CSS resolves the paper and ink for the active theme.
-export function noteStyle(color: string): CSSProperties {
+export function noteStyle(color: string | null): CSSProperties {
+    if (color === null) return {
+        "--note-base-color": "var(--card)",
+        "--note-light-ink": "var(--card-foreground)",
+        "--note-dark-color": "var(--card)",
+        "--note-dark-ink": "var(--card-foreground)",
+    } as CSSProperties
+
     // Keep most of the chosen color, with a little charcoal to soften it at night.
     // Resolve an exact color so custom hues get contrast-checked text as well.
     const darkColor = "#" + [1, 3, 5].map(start =>

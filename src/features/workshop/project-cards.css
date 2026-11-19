@@ -3,7 +3,6 @@
     isolation: isolate;
     gap: 14px;
     padding: 20px;
-    border-color: var(--border);
     box-shadow: none;
 }
 .workshop-project-grid > .project-summary-card.current {

@@ -8,7 +8,12 @@ export function getUserHandle(user: AuthUser) {
     return `@${createUsernameFallback(emailPrefix.toLowerCase())}`
 }
 
-export function getUserInitials(user: AuthUser) {
+export type UserAvatarIdentity = Pick<AuthUser, "firstName" | "lastName" | "username"> & {
+    avatarUrl?: string | null
+    email?: string
+}
+
+export function getUserInitials(user: UserAvatarIdentity) {
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.trim()
-    return initials.toUpperCase() || user.email.charAt(0).toUpperCase()
+    return (initials || (user.email || user.username || "").charAt(0)).toUpperCase()
 }

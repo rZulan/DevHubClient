@@ -1,6 +1,25 @@
 .erd-table-card { position: relative; width: 100%; height: 100%; }
 .tool-node:has(> .tool-connect-handle) .erd-table > header { padding-right: 48px; }
-.tool-node:has(> .tool-connect-handle) .erd-table > header > small { flex-shrink: 0; }
+.erd-table-card-meta { display: flex; align-items: center; flex-shrink: 0; margin-inline-start: auto; white-space: nowrap; }
+.erd-table-card-meta > :is(i, .connection-lightning-trigger) { margin-inline-start: .25rem; }
+@media (hover: hover) and (pointer: fine) {
+    .erd-table-card-meta > .connection-lightning-trigger {
+        inline-size: 0;
+        min-inline-size: 0;
+        margin-inline-start: 0;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition: inline-size 140ms ease, margin-inline-start 140ms ease, opacity 120ms ease, background-color 120ms ease;
+    }
+    :where(.erd-table > :is(header, .erd-field-row):is(:hover, :focus-visible, :has(:focus-visible))) > .erd-table-card-meta > .connection-lightning-trigger {
+        inline-size: var(--connection-trigger-size, 1.75rem);
+        margin-inline-start: .25rem;
+        opacity: .7;
+        pointer-events: auto;
+    }
+    .erd-table-card-meta > .connection-lightning-trigger:is(:hover, :focus-visible) { opacity: 1; }
+}
 .erd-workspace .tool-node { z-index: 3; }
 .erd-workspace .erd-connections, .erd-workspace .erd-connections:has(.erd-relationship.selected) { z-index: 1; }
 .erd-table-overview > .erd-table { box-shadow: none; }
@@ -19,4 +38,4 @@
     .erd-add-column { opacity: 1; pointer-events: auto; height: 40px; }
     .erd-table-card:has(> .erd-add-column) > .erd-table { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 }
-@media (prefers-reduced-motion: reduce) { .erd-add-column { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .erd-add-column, .erd-table-card-meta > .connection-lightning-trigger { transition: none; } }

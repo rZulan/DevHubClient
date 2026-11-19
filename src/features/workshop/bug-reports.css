@@ -1,53 +1,52 @@
-.bug-page { max-width: 1500px; margin-inline: auto; }
-.bug-page-heading { gap: 16px; align-items: center; }
+.bug-page { display: flex; flex-direction: column; gap: 16px; max-width: 1500px; margin-inline: auto; container: issue-page / inline-size; }
+.bug-page > .bug-page-heading { flex-direction: row; flex-wrap: wrap; gap: 12px; align-items: center; }
+.bug-page-title { flex: 1 1 90px; }
+.bug-page-title p { margin-top: .35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bug-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--muted-foreground); font-size: 10px; font-weight: 600; letter-spacing: .1em; margin-bottom: 8px; }
 .bug-eyebrow svg { width: 14px; height: 14px; }
-.bug-page-heading p > span { margin-inline: 7px; opacity: .4; }
 .bug-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.bug-portal { padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-bottom: 20px; }
-.bug-portal-heading { display: flex; align-items: center; gap: 12px; }
-.bug-portal-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 9px; background: var(--background); flex-shrink: 0; }
-.bug-portal-icon svg { width: 16px; height: 16px; }
-.bug-portal-heading h3 { font-size: 13px; font-weight: 600; }
-.bug-portal-heading p { color: var(--muted-foreground); font-size: 11px; line-height: 1.6; margin-top: 3px; }
-.bug-portal-switch { width: 36px; height: 21px; padding: 3px; background: var(--muted); border: 1px solid var(--border); border-radius: 20px; margin-left: auto; flex-shrink: 0; cursor: pointer; }
-.bug-portal-switch span { display: block; width: 13px; height: 13px; border-radius: 50%; background: var(--muted-foreground); transition: transform .15s; }
+.bug-portal { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 16px; padding: 10px 12px; border-radius: 12px; background: var(--workshop-card-surface); }
+.bug-portal-heading { display: flex; align-items: center; gap: 9px; }
+.bug-portal-icon { display: grid; flex-shrink: 0; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--secondary); color: var(--foreground); }
+.bug-portal-icon svg { width: 15px; height: 15px; }
+.bug-portal-heading h3 { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.bug-portal-switch { width: 32px; height: 20px; padding: 3px; background: var(--muted); border: 1px solid var(--border); border-radius: 20px; flex-shrink: 0; cursor: pointer; }
+.bug-portal-switch span { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--muted-foreground); transition: transform .15s; }
 .bug-portal-switch[aria-checked="true"] { background: var(--primary); border-color: var(--primary); }
-.bug-portal-switch[aria-checked="true"] span { transform: translateX(15px); background: var(--primary-foreground); }
+.bug-portal-switch[aria-checked="true"] span { transform: translateX(12px); background: var(--primary-foreground); }
 .bug-portal-switch:disabled { opacity: .5; cursor: wait; }
-.bug-portal-switch:focus-visible, .bug-report-row:focus-visible, .bug-attachments button:focus-visible, .bug-replace-link:focus-visible, .bug-portal-link a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.bug-portal-state { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 11px; margin: 16px 0 0 48px; }
-.bug-portal-state > span { height: 6px; width: 6px; border-radius: 50%; background: var(--muted-foreground); }
-.bug-portal-state > span.enabled { background: #22a06b; }
-.bug-portal-state svg { height: 12px; width: 12px; }
-.bug-portal-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
-.bug-portal-urls { display: grid; gap: 16px; margin-top: 16px; }
-.bug-portal-urls .bug-portal-link { margin-top: 0; }
-.bug-portal-link input { flex: 1 1 220px; font-size: 11px; min-width: 0; font-family: "IBM Plex Mono", monospace; background: var(--background); }
+.bug-portal-switch:focus-visible, .bug-report-row:focus-visible, .bug-attachments button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.bug-report-row:focus-visible { outline-offset: -2px; }
+.bug-portal-link { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bug-portal-link input { flex: 1 1 0; font-size: 11px; min-width: 0; font-family: "IBM Plex Mono", monospace; background: var(--background); text-overflow: ellipsis; }
 .bug-portal-link button { flex-shrink: 0; }
-.bug-portal-link a { display: grid; place-items: center; padding: 8px; color: var(--muted-foreground); }
-.bug-portal-link a svg { height: 15px; width: 15px; }
-.bug-replace-link { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted-foreground); margin-top: 11px; cursor: pointer; }
-.bug-replace-link svg { height: 11px; width: 11px; }
-.bug-stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-block: 20px; }
-.bug-stat-grid > div { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: var(--card); }
-.bug-stat-grid > div > span { display: flex; align-items: center; gap: 7px; color: var(--muted-foreground); font-size: 11px; }
-.bug-stat-grid svg { height: 13px; width: 13px; }
-.bug-stat-grid strong { display: block; font-size: 28px; line-height: 1.2; letter-spacing: -.04em; margin-top: 12px; font-weight: 600; }
-.bug-stat-grid small { display: block; color: var(--muted-foreground); font-size: 10px; margin-top: 5px; }
-.bug-filter-bar { display: flex; gap: 8px; margin-block: 22px 14px; }
-.bug-search { position: relative; flex: 1; min-width: 120px; }
+.bug-portal-copy { min-width: 76px; }
+.bug-portal-loading { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 12px; }
+.bug-portal-loading svg { width: 13px; height: 13px; }
+.bug-portal-message { grid-column: 1 / -1; }
+.bug-stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 12px; background: var(--workshop-card-surface); }
+.bug-stat-strip > div { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; min-width: 0; min-height: 54px; padding: 10px 14px; }
+.bug-stat-strip > div + div { border-inline-start: 1px solid var(--border); }
+.bug-stat-strip dt { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted-foreground); font-size: 12px; font-weight: 500; line-height: 1.25; }
+.bug-stat-strip dt svg { flex-shrink: 0; width: 15px; height: 15px; }
+.bug-stat-strip [data-tone="new"] svg { color: color-mix(in oklch, var(--primary) 72%, var(--foreground)); }
+.bug-stat-strip [data-tone="done"] svg { color: color-mix(in oklch, #27956d 70%, var(--foreground)); }
+.bug-stat-strip dd { margin: 0; font-size: 20px; font-weight: 650; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.bug-filter-bar { display: grid; grid-template-columns: minmax(120px, 1fr) clamp(106px, 15cqi, 136px) clamp(118px, 18cqi, 164px) auto; align-items: center; gap: 6px; min-width: 0; }
+.bug-search { position: relative; display: block; min-width: 0; }
 .bug-search > svg { position: absolute; height: 13px; width: 13px; left: 10px; top: 10px; color: var(--muted-foreground); pointer-events: none; }
-.bug-search input { padding-left: 30px; font-size: 12px; height: 34px; background: var(--card); }
+.bug-search input { padding-left: 30px; font-size: 12px; height: 34px; background: var(--background); }
 .bug-filter-bar :is(select, [data-workshop-select]), .bug-submit-form :is(select, [data-workshop-select]), .bug-triage :is(select, [data-workshop-select]) { border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--foreground); font-size: 12px; padding: 7px 25px 7px 10px; min-width: 0; max-width: 100%; }
+.bug-filter-bar [data-workshop-select] { width: 100%; padding: 0 8px 0 10px; height: 34px; }
 .bug-filter-bar :is(select, [data-workshop-select]):focus-visible, .bug-submit-form :is(select, [data-workshop-select]):focus-visible, .bug-triage :is(select, [data-workshop-select]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .bug-inbox-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 .bug-inbox-layout.has-detail { grid-template-columns: minmax(280px, .9fr) minmax(340px, 1.1fr); }
-.bug-report-list { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); min-width: 0; }
-.bug-report-list > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 18px; border-bottom: 1px solid var(--border); }
-.bug-report-list h3 { font-size: 12px; font-weight: 600; }
-.bug-report-list h3 > span { margin-left: 5px; background: var(--secondary); color: var(--muted-foreground); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
-.bug-report-list > header small { font-size: 10px; color: var(--muted-foreground); }
+.bug-report-list { border-radius: 12px; overflow: hidden; background: var(--workshop-card-surface); min-width: 0; container: issue-inbox / inline-size; }
+.bug-inbox-toolbar { display: grid; grid-template-columns: minmax(135px, auto) minmax(0, 1fr); align-items: center; gap: 10px 18px; padding: 11px 13px; border-bottom: 1px solid var(--border); }
+.bug-inbox-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bug-inbox-title h3 { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 650; }
+.bug-inbox-title h3 > span { padding: 2px 6px; border-radius: 5px; background: var(--secondary); color: var(--muted-foreground); font-size: 10px; font-variant-numeric: tabular-nums; }
+.bug-inbox-title small { font-size: 11px; color: var(--muted-foreground); white-space: nowrap; }
 .bug-report-row { display: block; text-align: left; width: 100%; padding: 17px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
 .bug-report-row:last-child { border-bottom: 0; }
 .bug-report-row:hover { background: var(--secondary); }
@@ -71,15 +70,15 @@
 .bug-report-email { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted-foreground); margin-top: 12px; overflow-wrap: anywhere; }
 .bug-report-email > svg { height: 11px; width: 11px; flex-shrink: 0; }
 .bug-report-email > small { margin-left: auto; font-size: 9px; }
-.bug-list-empty { display: flex; min-height: 275px; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 35px 24px; }
-.bug-list-empty > span { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--border); border-radius: 13px; background: var(--background); margin-bottom: 17px; }
-.bug-list-empty svg { height: 21px; width: 21px; color: var(--muted-foreground); }
-.bug-list-empty h3 { font-size: 17px; letter-spacing: -.02em; }
-.bug-list-empty > p { max-width: 345px; line-height: 1.7; font-size: 12px; color: var(--muted-foreground); margin-top: 10px; }
+.bug-list-empty { display: flex; min-height: 216px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px; }
+.bug-list-empty > span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--secondary); color: var(--muted-foreground); }
+.bug-list-empty svg { height: 17px; width: 17px; }
+.bug-list-empty h4 { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
 .bug-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted-foreground); }
-.bug-detail { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 20px; min-width: 0; }
+.bug-detail { border-radius: 12px; background: var(--workshop-card-surface); padding: 20px; min-width: 0; }
 .bug-detail > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.bug-detail > h3 { font-size: 19px; line-height: 1.5; font-weight: 600; letter-spacing: -.025em; margin: 11px 0; overflow-wrap: anywhere; }
+.bug-detail > .connection-node-heading { margin-block: 11px; }
+.bug-detail h3 { font-size: 19px; line-height: 1.5; font-weight: 600; letter-spacing: -.025em; }
 .bug-detail-sender { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: 11px; }
 .bug-detail-sender svg { height: 12px; width: 12px; }
 .bug-detail-sender a { overflow-wrap: anywhere; }
@@ -116,10 +115,9 @@
 .bug-category-row > div { display: flex; align-items: center; gap: 5px; }
 .bug-category-row input { font-size: 12px; min-width: 0; }
 .bug-category-row small { color: var(--muted-foreground); font-size: 10px; }
-.bug-team-form { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 24px; margin-block: 20px; }
+.bug-team-form { border-radius: 12px; background: var(--workshop-card-surface); padding: 24px; }
 .bug-team-form[hidden] { display: none; }
 .bug-team-form > header h3 { font-size: 18px; font-weight: 600; }
-.bug-team-form > header p { font-size: 12px; line-height: 1.6; color: var(--muted-foreground); margin-top: 6px; }
 .bug-submit-form { min-width: 0; }
 .bug-submit-form label > span { font-size: 10px; color: var(--muted-foreground); font-weight: 400; margin-left: auto; }
 .bug-submit-form input { font-size: 13px; min-height: 38px; }
@@ -162,22 +160,27 @@
 .public-bug-result small { font-size: 10px; color: var(--muted-foreground); }
 .public-bug-result > button { margin-top: 25px; }
 @media (max-width: 1100px) { .bug-inbox-layout.has-detail { grid-template-columns: minmax(0, 1fr); } }
+@container issue-page (max-width: 540px) {
+    .bug-portal { grid-template-columns: minmax(0, 1fr); }
+    .bug-portal-switch { margin-inline-start: auto; }
+}
+@container issue-page (max-width: 400px) {
+    .bug-stat-strip > div { display: grid; align-content: space-between; min-height: 62px; padding: 8px 9px; }
+    .bug-stat-strip dt { gap: 5px; font-size: 11px; }
+    .bug-stat-strip dt svg { width: 12px; height: 12px; }
+    .bug-stat-strip dd { font-size: 18px; }
+}
+@container issue-inbox (max-width: 640px) {
+    .bug-inbox-toolbar { grid-template-columns: minmax(0, 1fr); }
+}
+@container issue-inbox (max-width: 440px) {
+    .bug-filter-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+    .bug-filter-bar [data-workshop-select] { gap: 4px; padding-inline: 8px 6px; }
+    .bug-search { grid-column: 1 / -1; }
+    .bug-list-empty { min-height: 178px; }
+}
 @media (max-width: 680px) {
-    .bug-page-heading { align-items: flex-start; }
-    .bug-portal { padding: 16px; }
-    .bug-portal-heading { gap: 9px; }
-    .bug-portal-heading p { font-size: 10px; }
-    .bug-portal-icon { width: 30px; height: 30px; }
-    .bug-portal-state { margin-left: 39px; font-size: 10px; }
-    .bug-portal-link { gap: 5px; }
-    .bug-stat-grid { gap: 7px; }
-    .bug-stat-grid > div { padding: 12px; }
-    .bug-stat-grid strong { font-size: 24px; }
-    .bug-stat-grid small { display: none; }
-    .bug-stat-grid > div > span { font-size: 10px; gap: 4px; flex-wrap: wrap; }
-    .bug-filter-bar { flex-wrap: wrap; }
-    .bug-search { flex-basis: calc(100% - 42px); }
-    .bug-filter-bar :is(select, [data-workshop-select]) { flex: 1; order: 2; width: calc(50% - 5px); }
+    .bug-page { gap: 12px; }
     .bug-detail { padding: 16px; }
     .bug-team-form { padding: 18px; }
     .public-bug-page { padding-inline: 14px; }

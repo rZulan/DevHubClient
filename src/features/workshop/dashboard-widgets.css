@@ -84,7 +84,7 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
-    background: var(--dashboard-widget-fill, var(--card));
+    background: var(--dashboard-widget-fill, var(--workshop-card-surface));
     color: var(--dashboard-widget-ink, var(--card-foreground));
     overflow: hidden;
 }

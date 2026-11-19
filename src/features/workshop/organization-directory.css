@@ -6,7 +6,7 @@
 .directory-text-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; white-space: nowrap; }
 .directory-text-link:hover { color: var(--foreground); }
 .directory-text-link svg { width: 14px; height: 14px; }
-.directory-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-bottom: 28px; padding-block: 20px; }
+.directory-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-radius: 12px; background: var(--workshop-card-surface); margin-bottom: 28px; padding-block: 20px; }
 .directory-summary > div { padding-inline: 24px; border-right: 1px solid var(--border); }
 .directory-summary > div:last-child { border: 0; }
 .directory-summary dt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground); }
@@ -18,7 +18,7 @@
 .directory-chart-grouping { padding: 0; border: 0; background: transparent; }
 .directory-segment button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 29px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; }
 .directory-segment button:hover { color: var(--foreground); }
-.directory-segment button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px #0000000d, 0 0 0 1px var(--border); }
+.directory-segment button[aria-pressed="true"] { background: var(--muted); color: var(--foreground); box-shadow: 0 1px 4px #0000000d; }
 .directory-segment button > span { padding: 0 5px; border-radius: 4px; background: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .directory-segment svg { width: 14px; height: 14px; }
 .directory-search { position: relative; flex: 1; min-width: 120px; max-width: 340px; margin-left: auto; }
@@ -32,8 +32,8 @@
 .directory-section-caption h3 { font-size: 13px; font-weight: 600; }
 .directory-section-caption > span { font-size: 11px; color: var(--muted-foreground); }
 .directory-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr)); gap: 18px; }
-.directory-team-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
-.directory-team-card:hover { border-color: color-mix(in srgb, var(--directory-color) 45%, var(--border)); box-shadow: 0 5px 18px #00000005; }
+.directory-team-card { display: flex; flex-direction: column; min-width: 0; border-radius: 12px; background: var(--workshop-card-surface); overflow: hidden; transition: background .15s, box-shadow .15s; }
+.directory-team-card:hover { box-shadow: 0 5px 18px #00000005; background: color-mix(in oklab, var(--directory-color) 4%, var(--workshop-card-surface)); }
 .directory-team-card > header { display: flex; align-items: center; gap: 7px; padding: 20px 20px 0; }
 .directory-team-symbol { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid color-mix(in srgb, var(--directory-color) 23%, transparent); border-radius: 11px; background: color-mix(in srgb, var(--directory-color) 10%, transparent); color: color-mix(in srgb, var(--directory-color) 65%, var(--foreground)); }
 .directory-team-symbol svg { width: 20px; height: 20px; }
@@ -81,7 +81,7 @@
 .directory-chart-meta svg { width: 14px; height: 14px; }
 .directory-chart-meta > span:nth-child(2) { margin-left: auto; }
 .directory-chart-meta > button { font-size: 11px; min-height: 30px; }
-.directory-chart-root { position: relative; display: flex; align-items: center; gap: 14px; width: fit-content; max-width: 100%; margin: 20px 0 24px; padding: 18px 24px 18px 18px; border: 1px solid var(--border); border-radius: 11px; background: var(--card); box-shadow: 0 3px 8px #00000004; }
+.directory-chart-root { position: relative; display: flex; align-items: center; gap: 14px; width: fit-content; max-width: 100%; margin: 20px 0 24px; padding: 18px 24px 18px 18px; border-radius: 11px; background: var(--workshop-card-surface); box-shadow: 0 3px 8px #00000004; }
 .directory-chart-root > span { display: grid; place-items: center; background: var(--primary); color: var(--primary-foreground); width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
 .directory-chart-root > span svg { width: 22px; height: 22px; }
 .directory-chart-root > div { min-width: 0; }
@@ -103,8 +103,8 @@
 .directory-branch-heading > svg { width: 14px; height: 14px; color: var(--muted-foreground); margin-right: 4px; }
 .directory-branch-heading > svg.is-collapsed { transform: rotate(-90deg); }
 .directory-branch-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
-.directory-person { display: flex; position: relative; align-items: flex-start; min-width: 0; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 9px; background: var(--card); text-align: left; cursor: pointer; }
-.directory-person:hover { border-color: var(--muted-foreground); }
+.directory-person { display: flex; position: relative; align-items: flex-start; min-width: 0; gap: 10px; padding: 16px; border-radius: 9px; background: var(--workshop-card-surface); text-align: left; cursor: pointer; }
+.directory-person:hover { background: var(--accent); }
 .directory-person-copy { display: flex; flex-direction: column; min-width: 0; flex: 1; padding-right: 10px; }
 .directory-person-copy > strong { font-size: 12px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
 .directory-person-copy > small { font-size: 10px; color: var(--muted-foreground); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
@@ -206,4 +206,4 @@
     .directory-modal-actions > .directory-delete-button { flex-basis: 100%; justify-content: flex-start; }
     .directory-picker-heading { flex-wrap: wrap; gap: 4px; }
 }
-@media (prefers-reduced-motion: reduce) { .directory-team-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .directory-team-card { transition: background .15s, box-shadow .15s; } }

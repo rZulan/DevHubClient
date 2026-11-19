@@ -2,6 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {notificationAction, notificationHref} from '../src/features/workshop/notifications.ts'
 
+test('an automation notification opens the matching Connections run', () => {
+    const href = notificationHref('org-1', {kind: 'connection-triggered', projectId: 'project-1', contextId: 'connection-2', targetId: 'run-3'})
+    const url = new URL(href, 'https://example.test')
+    assert.equal(url.pathname, '/workshop/org-1/connections')
+    assert.deepEqual(Object.fromEntries(url.searchParams), {project: 'project-1', view: 'runs', connection: 'connection-2', run: 'run-3'})
+    assert.equal(notificationAction('connection-triggered'), 'triggered a rule')
+})
+
 const item = {id: 1, kind: 'task-assigned', title: 'Review release', actorName: 'Nina', projectId: 'project-2', projectName: 'Atlas', contextId: 'board-1', targetId: 'task-4', createdAtUtc: '2026-10-27T01:00:00Z', readAtUtc: null}
 test('assignment links identify the project, board and task even when a different project is selected', () => {
     const url = new URL(notificationHref('org-1', item), 'https://example.test')

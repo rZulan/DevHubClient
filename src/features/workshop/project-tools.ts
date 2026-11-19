@@ -2,6 +2,17 @@
 export const projectToolIds = ["todo", "notes", "erd", "ui-editor", "sdlc", "calendar", "bug-reports", "project-wiki", "uml"] as const
 export type ProjectToolId = typeof projectToolIds[number]
 export type ToolPreferences = { order: ProjectToolId[]; hidden: ProjectToolId[] }
+export const projectToolLabels: Record<ProjectToolId, string> = {
+    todo: "To-do",
+    notes: "Notes",
+    erd: "ERD",
+    "ui-editor": "UI/UX",
+    sdlc: "SDLC Roadmap",
+    calendar: "Calendar",
+    "bug-reports": "Issue",
+    "project-wiki": "Project Wiki",
+    uml: "UML",
+}
 export const projectNavigationCategories: readonly {id: string; title: string; tools: readonly ProjectToolId[]}[] = [
     {id: "planning", title: "Tracking", tools: ["todo", "calendar", "bug-reports", "sdlc"]},
     {id: "design", title: "Design", tools: ["erd", "ui-editor", "uml"]},

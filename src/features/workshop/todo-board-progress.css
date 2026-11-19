@@ -1,6 +1,6 @@
 .todo-board-progress { display: grid; gap: 8px; flex-shrink: 0; }
-.workshop-todo-heading:has(+ .todo-board-progress) { margin-bottom: 12px; }
-.todo-board-progress + .workshop-todo-board { margin-top: 16px; }
+.workshop-todo-heading:has(+ .todo-board-progress) { margin-bottom: 8px; }
+.todo-board-progress + .workshop-todo-board { margin-top: 12px; }
 .todo-board-progress-caption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; font-size: 11px; color: var(--muted-foreground); }
 .todo-board-progress-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; min-width: 0; }
 .todo-board-progress-legend > span { display: inline-flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }

@@ -1,3 +1,6 @@
+export const bugReportLinkPaths = {full: "/report-issue", short: "/b", legacy: "/report-bug"} as const
+export const bugReportRoutePatterns = Object.values(bugReportLinkPaths).map(path => `${path}/:token`)
+
 export const bugStatuses = [{id: "new", label: "New"}, {id: "triaged", label: "Triaged"}, {id: "in-progress", label: "In progress"}, {id: "resolved", label: "Resolved"}, {id: "closed", label: "Closed"}] as const
 export const bugPriorities = [{id: "low", label: "Low"}, {id: "medium", label: "Medium"}, {id: "high", label: "High"}, {id: "critical", label: "Critical"}] as const
 export type BugCategory = {id: string; name: string; archived: boolean}

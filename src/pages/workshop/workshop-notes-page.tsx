@@ -6,6 +6,8 @@ import {Check, Download, Eye, LoaderCircle, Pencil, Plus, StickyNote as StickyNo
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {ConnectionLightning} from "@/features/workshop/connections/connection-lightning"
+import {useConnectionNodeLink} from "@/features/workshop/connections/use-connection-node-link"
 import {Input} from "@/components/ui/input"
 import {createClientId} from "@/lib/create-client-id"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
@@ -54,7 +56,7 @@ function NotesBoard() {
         previewSource.current = null
         setCreating(true)
         setMode("write")
-        setDraft({id: createClientId(), title: "", body: "", color: noteColors[0].color, updatedAt: new Date().toISOString()})
+        setDraft({id: createClientId(), title: "", body: "", color: null, updatedAt: new Date().toISOString()})
     }
     function updateDraft(note: StickyNote) {
         setDraft(note)
@@ -76,6 +78,13 @@ function NotesBoard() {
         setAnimatePreview(true)
         setCreating(false); setMode("read"); setDraft({...note})
     }
+    useConnectionNodeLink(project!.id, ({kind, id}) => {
+        if (kind !== "sticky-note") return false
+        const note = document.notes.find(candidate => candidate.id === id)
+        if (!note) return false
+        openNote(note, null)
+        return true
+    })
     function saveNote(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!canEdit || !draft || !draft.title.trim()) return
@@ -117,10 +126,10 @@ function NotesBoard() {
         {atLimit && <p className="notes-board-limit">This board has reached 1,000 notes. Delete a note to make room for a new one.</p>}
         {status === "loading" ? <div className="notes-board-loading" aria-label="Loading notes">{Array.from({length: 6}, (_, index) => <div key={index} className="animate-pulse"/>)}</div>
             : status !== "load-error" && (document.notes.length ? <div className="workshop-notes-grid">
-                {[...document.notes].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).map(note => <article key={note.id} className="workshop-sticky-note" style={noteStyle(note.color)}
+                {[...document.notes].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).map(note => <article key={note.id} className="workshop-sticky-note connection-node-anchor" style={noteStyle(note.color)}
                     onPointerEnter={event => {if (event.pointerType === "mouse") beginNoteHover(event.currentTarget)}} onPointerLeave={event => endNoteHover(event.currentTarget)}>
                     <button type="button" className="sticky-note-open" onClick={event => openNote(note, event.currentTarget.closest("article"))} aria-label={`Open note: ${note.title}`}/>
-                    <span className="sticky-note-heading">{noteEmoji(note) && <span className="note-emoji" aria-hidden="true">{noteEmoji(note)}</span>}<strong>{note.title}</strong>{canWrite && <button type="button" className="sticky-note-delete" disabled={!canEdit} aria-label={`Delete note: ${note.title}`} title="Delete note" onClick={event => {event.stopPropagation(); setDeleting(note)}}><X aria-hidden="true"/></button>}</span>
+                    <span className="sticky-note-heading">{noteEmoji(note) && <span className="note-emoji" aria-hidden="true">{noteEmoji(note)}</span>}<strong>{note.title}</strong><ConnectionLightning className="pointer-events-auto relative z-10" node={{kind: "sticky-note", id: note.id, label: note.title}}/>{canWrite && <button type="button" className="sticky-note-delete" disabled={!canEdit} aria-label={`Delete note: ${note.title}`} title="Delete note" onClick={event => {event.stopPropagation(); setDeleting(note)}}><X aria-hidden="true"/></button>}</span>
                     <div className={`sticky-note-body ${note.body ? "" : "empty"}`}>{note.body ? <NoteMarkdown body={note.body} compact/> : "No details yet."}</div>
                     <span className="sticky-note-footer"><time dateTime={note.updatedAt}>{new Date(note.updatedAt).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}</time></span>
                 </article>)}
@@ -146,8 +155,15 @@ function NotesBoard() {
                         </> : <div className="notes-editor-preview" role="region" aria-label="Markdown preview"><h3>{noteEmoji(draft) && <span className="note-emoji" aria-hidden="true">{noteEmoji(draft)}</span>}{draft.title || "Untitled note"}</h3>{draft.body ? <NoteMarkdown body={draft.body}/> : <p className="notes-reader-empty">Your formatted note will appear here.</p>}</div>}
                     </div>
                     {canWrite && <fieldset className="note-color-picker" disabled={!canEdit}><legend>Note color</legend><div>
-                        {noteColors.map(({name, color}) => <button type="button" key={color} style={noteStyle(color)} aria-label={`${name} note color`} aria-pressed={draft.color.toLowerCase() === color} title={name} onClick={() => updateDraft({...draft, color})}>{draft.color.toLowerCase() === color && <Check/>}</button>)}
-                        <label className="note-custom-color"><span className="note-custom-color-swatch" style={noteStyle(draft.color)}><input type="color" aria-label="Custom note color" value={draft.color} onInput={event => updateDraft({...draft, color: event.currentTarget.value})}/></span><span>Custom</span></label>
+                        <button type="button" className="note-no-color" aria-label="No color" aria-pressed={draft.color === null}
+                            onClick={() => updateDraft({...draft, color: null})}>
+                            {draft.color === null && <Check aria-hidden="true"/>}
+                        </button>
+                        {noteColors.map(({name, color}) => {
+                            const selected = draft.color?.toLowerCase() === color
+                            return <button type="button" key={color} style={noteStyle(color)} aria-label={`${name} note color`} aria-pressed={selected} title={name} onClick={() => updateDraft({...draft, color})}>{selected && <Check/>}</button>
+                        })}
+                        <label className="note-custom-color"><span className="note-custom-color-swatch" style={noteStyle(draft.color ?? noteColors[0].color)}><input type="color" aria-label="Custom note color" value={draft.color ?? noteColors[0].color} onInput={event => updateDraft({...draft, color: event.currentTarget.value})}/></span><span>Custom</span></label>
                     </div></fieldset>}
                     {canWrite && !canEdit && <p className="notes-editor-blocked">{status === "conflict" ? "Resolve the save conflict before editing this note. Your draft is still here." : "Editing is temporarily unavailable."}</p>}
                     <DialogFooter className="notes-editor-footer">

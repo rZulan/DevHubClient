@@ -1,0 +1,252 @@
+.connection-node-heading {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+    min-inline-size: 0;
+}
+
+.connection-node-title {
+    flex: 1;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+}
+
+.connection-lightning-trigger {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    inline-size: var(--connection-trigger-size, 1.75rem);
+    block-size: var(--connection-trigger-size, 1.75rem);
+    padding: 0;
+    border: 0;
+    border-radius: .45rem;
+    background: transparent;
+    color: var(--primary);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+button.connection-lightning-trigger > svg[aria-hidden] {
+    display: block;
+    width: .875rem;
+    height: .875rem;
+    margin: 0;
+    opacity: 1;
+    stroke-width: 1.5;
+}
+:where(:has(> .connection-lightning-trigger):hover) > .connection-lightning-trigger,
+:where(.connection-node-anchor:hover, .connection-node-anchor:has(:focus-visible)) .connection-lightning-trigger {opacity: .65}
+.connection-lightning-trigger:hover, .connection-lightning-trigger:focus-visible {opacity: 1; background: var(--muted)}
+.connection-lightning-trigger:focus-visible {outline: 2px solid var(--ring); outline-offset: 2px}
+
+.connections-page {display: grid; align-content: start; gap: 1.15rem; min-width: 0}
+.connections-page-navigation {display: grid; gap: 1.15rem; min-width: 0}
+.connections-page-header {display: flex; align-items: center; gap: .85rem}
+.connections-page-header h1 {margin: 0; font-size: clamp(1.55rem, 2.6vw, 2rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.15}
+.connections-page-header p {margin: .2rem 0 0; color: var(--muted-foreground); font-size: .875rem}
+.connections-page-icon {display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: .65rem; color: var(--primary); background: color-mix(in oklab, var(--primary) 11%, var(--card))}
+.connections-page-icon svg {width: 1.15rem; height: 1.15rem}
+.connections-tabs {display: flex; gap: .25rem; border-bottom: 1px solid var(--border); overflow-x: auto}
+.connections-tabs a {position: relative; flex: none; padding: .65rem .8rem; color: var(--muted-foreground); text-decoration: none; font-size: .875rem; border-bottom: 2px solid transparent}
+.connections-tabs a:hover {color: var(--foreground)}
+.connections-tabs a[aria-current] {border-bottom-color: var(--primary); color: var(--foreground); font-weight: 600}
+
+.connections-page-map {
+    --connection-map-inset: 1rem;
+    --connection-map-panel-width: min(18rem, calc(100% - 2 * var(--connection-map-inset)));
+    height: 100%;
+    grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
+    gap: 0;
+    isolation: isolate;
+    overflow: hidden;
+    container: connections-map / inline-size;
+}
+.connections-page-map > .connection-graph {grid-area: 1 / 1 / 3 / 2; box-shadow: none}
+.connections-page-map > :is(.connections-page-navigation, .connection-index) {
+    align-self: start;
+    justify-self: start;
+    z-index: 1;
+    width: var(--connection-map-panel-width);
+    margin-inline-start: var(--connection-map-inset);
+    border-radius: .7rem;
+    background: var(--workshop-card-surface);
+    box-shadow: 0 .2rem .85rem color-mix(in oklab, #000 16%, transparent);
+}
+.connections-page-map > .connections-page-navigation {
+    grid-area: 1 / 1;
+    gap: .4rem;
+    margin-block: var(--connection-map-inset) .65rem;
+}
+.connections-page-map .connections-page-header {padding: .75rem .75rem 0; gap: .6rem}
+.connections-page-map .connections-page-header h1 {font-size: 1.25rem}
+.connections-page-map .connections-page-header p {margin-top: .1rem; font-size: .8rem; overflow-wrap: anywhere}
+.connections-page-map .connections-page-icon {flex: none; width: 2rem; height: 2rem}
+.connections-page-map .connections-tabs {padding-inline: .4rem; border-bottom: 0}
+.connections-page-map .connections-tabs a {padding: .5rem; font-size: .8rem}
+.connections-page-map > :is(.connection-muted, .connection-inline-error) {
+    grid-area: 2 / 1;
+    align-self: start;
+    margin-inline: var(--connection-map-inset);
+}
+.connection-main-editor, .connection-catalog, .connection-runs-list {min-width: 0; display: grid; gap: .85rem; align-content: start}
+.connection-index {
+    grid-area: 2 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    min-height: 0;
+    max-height: calc(100% - 3.5rem);
+    padding: .6rem .75rem .75rem;
+}
+.connection-index:has(.connection-index-body[hidden]) {padding-block-end: .6rem}
+.connection-index-body:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .6rem;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: .15rem;
+}
+.connection-index-body > button {align-self: start}
+.connection-index-filter {display: grid; gap: .45rem}
+.connection-index-list, .connection-rule-list, .connection-node-list, .connection-node-group ul {display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none}
+.connection-index-list button, .connection-rule-list button, .connection-node-group button {
+    display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; min-width: 0; padding: .5rem .6rem;
+    border-radius: .5rem; border: 1px solid transparent; background: var(--background); text-align: left; cursor: pointer;
+}
+.connection-node-group button {border-color: var(--border)}
+.connection-index-list button:hover, .connection-rule-list button:hover, .connection-node-group button:hover:not(:disabled) {background: var(--muted)}
+.connection-index-list button[aria-pressed="true"], .connection-rule-list .connection-rule-selected {background: color-mix(in oklab, var(--primary) 15%, var(--background))}
+.connection-index-list strong, .connection-rule-list strong, .connection-node-card strong, .connection-node-group strong {display: block; font-weight: 600; font-size: .82rem; overflow-wrap: anywhere}
+.connection-index-list small, .connection-rule-list small, .connection-node-card small, .connection-node-group small {display: block; color: var(--muted-foreground); font-size: .73rem; overflow-wrap: anywhere}
+.connection-index-list button > small, .connection-rule-list button > small {flex: none; white-space: nowrap}
+.connection-index-list li {min-width: 0}
+
+.connections-page-map > .connection-graph :is(.connection-graph-header, .connection-graph-footer) {padding-inline: var(--connection-map-inset)}
+.connections-page-map > .connection-graph .connection-graph-header {justify-content: flex-end}
+.connection-map-actions {display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem}
+.connection-page-editor-dialog[data-slot="dialog-content"] {
+    max-width: min(50rem, calc(100% - 2rem));
+    max-height: 90dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+.connection-page-editor-dialog [data-slot="dialog-header"] {padding-inline-end: 2rem; overflow-wrap: anywhere}
+.connection-section-title h3 {font-size: .91rem; font-weight: 650}
+.connection-muted {margin: 0; color: var(--muted-foreground); font-size: .82rem; overflow-wrap: anywhere}
+.connection-section-title {display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .55rem}
+.connection-section-title h3 {display: flex; align-items: center; gap: .45rem; margin: 0}
+.connection-section-title h3 svg {width: 1rem; height: 1rem; color: var(--primary)}
+.connection-catalog .connection-section-title input {width: min(100%, 18rem)}
+
+.connection-editor {display: grid; gap: 1rem; padding: 1rem; border-radius: .7rem; background: var(--workshop-card-surface); min-width: 0}
+.connection-editor-top {display: grid; gap: .5rem; min-width: 0}
+.connection-field {display: grid; align-content: start; gap: .3rem; min-width: 0; font-size: .8rem}
+.connection-field > span {display: flex; flex-wrap: wrap; gap: .4rem; font-weight: 550}
+.connection-field small, .connection-step h4 small {font-size: .72rem; color: var(--muted-foreground); font-weight: 400}
+.connection-argument {display: grid; align-content: start; gap: .35rem; min-width: 0}
+.connection-argument > select {font-size: .73rem; color: var(--muted-foreground)}
+.connection-node-section, .connection-rule-section {display: grid; gap: .65rem; min-width: 0}
+.connection-node-section {border-bottom: 1px solid var(--border); padding-bottom: .85rem}
+.connection-node-list {grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr))}
+.connection-node-card {
+    display: flex; align-items: center; gap: .35rem; min-width: 0; padding: .44rem .48rem .44rem .6rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--background);
+}
+.connection-node-card > a {display: flex; flex: 1; min-width: 0; color: var(--foreground); text-decoration: none; gap: .45rem; align-items: center; justify-content: space-between}
+.connection-node-card a:hover strong {text-decoration: underline; text-underline-offset: .15em}
+.connection-node-card a svg, .connection-node-group svg {flex: none; width: .9rem; height: .9rem; color: var(--muted-foreground)}
+.connection-deleted-node {flex: 1; min-width: 0}
+
+.connection-node-picker {display: grid; gap: .6rem; min-width: 0; padding: .6rem; border-radius: .55rem; background: color-mix(in oklab, var(--muted) 42%, var(--workshop-card-surface))}
+.connection-picker-filter, .connection-step-controls, .connection-arguments {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; min-width: 0}
+.connection-step-controls.with-control {grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center}
+.connection-search {position: relative; min-width: 0; display: block}
+.connection-search > svg {position: absolute; z-index: 1; left: .6rem; top: 50%; width: .84rem; height: .84rem; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none}
+.connection-search > input {padding-left: 1.8rem}
+.connection-index select, .connection-node-picker select, .connection-editor :is(select, [data-workshop-select]), .connection-runs-list select {
+    width: 100%; min-width: 0; min-height: 2rem; padding: .28rem .42rem; border: 1px solid var(--input); border-radius: .5rem;
+    color: var(--foreground); background: var(--background); font: inherit; font-size: .8rem;
+}
+.connection-index select:focus-visible, .connection-node-picker select:focus-visible, .connection-editor select:focus-visible, .connection-runs-list select:focus-visible {outline: 2px solid var(--ring); outline-offset: 1px}
+.connection-node-group h4 {margin: .1rem 0 .3rem; font-size: .75rem; font-weight: 600; color: var(--muted-foreground)}
+.connection-node-group button:disabled {cursor: default; color: var(--muted-foreground); opacity: .78}
+
+.connection-rules-layout, .connection-rule-editor {display: grid; min-width: 0; gap: .62rem}
+.connection-rule-preview {padding: .64rem; border-radius: .5rem; background: var(--muted); color: var(--foreground); font-size: .8rem; overflow-wrap: anywhere}
+.connection-rule-preview p {margin: 0 0 .25rem}
+.connection-flow {display: grid; align-items: center; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: .55rem; padding: .65rem; border-radius: .6rem; background: radial-gradient(var(--border) 1px, transparent 1px) 0 0 / .75rem .75rem, var(--workshop-card-surface)}
+.connection-flow-node {display: grid; gap: .14rem; padding: .45rem .6rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--background); font-size: .79rem; overflow-wrap: anywhere}
+.connection-flow-node strong {font-weight: 650}
+.connection-flow-node small, .connection-flow-node span {color: var(--muted-foreground); font-size: .73rem}
+.connection-flow-arrow {width: 1rem; color: var(--primary)}
+.connection-flow ol {display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; counter-reset: connection-step}
+.connection-flow ol li {counter-increment: connection-step}
+.connection-flow ol li small::after {content: ' ' counter(connection-step)}
+.connection-rule-editor {padding: .75rem; border-radius: .6rem; background: color-mix(in oklab, var(--muted) 30%, var(--workshop-card-surface))}
+.connection-step {display: grid; gap: .48rem; padding: .62rem 0 0; border-top: 1px solid var(--border); min-width: 0}
+.connection-step h4 {display: flex; align-items: center; gap: .35rem; margin: 0; font-size: .85rem; font-weight: 650}
+.connection-step h4 svg {width: .9rem; height: .9rem; color: var(--primary)}
+.connection-step-heading {display: flex; justify-content: space-between; align-items: center; gap: .5rem}
+.connection-substep {display: grid; gap: .4rem; min-width: 0}
+.connection-substep + .connection-substep {border-top: 1px solid var(--border); padding-top: .4rem}
+.connection-action-heading {display: flex; justify-content: flex-end; align-items: center; gap: .15rem; margin-block: -.2rem}
+.connection-action-heading small {margin-right: auto; font-size: .73rem; color: var(--muted-foreground)}
+.connection-rule-toggles {display: flex; flex-wrap: wrap; gap: .55rem .9rem; color: var(--muted-foreground); font-size: .8rem}
+.connection-rule-toggles label {display: inline-flex; align-items: start; gap: .35rem}
+.connection-rule-toggles input {accent-color: var(--primary); margin-top: .16rem}
+.connection-remove-rule {justify-self: start}
+.connection-save {justify-self: end}
+.connection-row, .connection-editor-footer {display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; min-width: 0}
+.connection-runs-list .connection-row select {width: auto; max-width: 100%}
+.connection-inline-error, .connection-notice {border: 1px solid var(--border); border-radius: .5rem; padding: .58rem; margin: 0; font-size: .82rem; overflow-wrap: anywhere}
+.connection-inline-error {color: var(--destructive); border-color: color-mix(in oklab, var(--destructive) 27%, var(--border))}
+.connection-inline-error > button {text-decoration: underline; cursor: pointer}
+.connection-notice {background: var(--muted)}
+.connection-validation-result {display: grid; gap: .4rem}
+.connection-validation-result h3 {margin: 0; font-weight: 650}
+.connection-validation-result ul {margin: .25rem 0 0; padding-inline-start: 1.25rem; list-style: disc}
+.connection-remove-confirm {display: grid; gap: .4rem}
+
+.connection-catalog-item, .connection-run { border-radius: .62rem; background: var(--workshop-card-surface); min-width: 0}
+.connection-catalog-item summary, .connection-run summary {display: list-item; cursor: pointer; padding: .7rem .8rem; font-size: .84rem; overflow-wrap: anywhere}
+.connection-catalog-item summary strong, .connection-run summary strong {font-weight: 650}
+.connection-catalog-item summary > span {margin-left: .55rem; color: var(--muted-foreground); font-size: .75rem}
+.connection-catalog-grid {display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding: .8rem; border-top: 1px solid var(--border)}
+.connection-catalog-column {min-width: 0}
+.connection-catalog-column h4 {display: flex; align-items: center; gap: .35rem; margin: 0 0 .45rem; font-size: .83rem; font-weight: 650}
+.connection-catalog-column h4 svg {width: .9rem; height: .9rem; color: var(--primary)}
+.connection-catalog-column ul {display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; font-size: .8rem; overflow-wrap: anywhere}
+.connection-catalog-column small {display: block; color: var(--muted-foreground); font-size: .72rem}
+.connection-run summary small, .connection-run-meta {color: var(--muted-foreground); font-size: .75rem}
+.connection-run summary small {display: block; margin-left: .8rem}
+.connection-run-meta {display: inline-flex; flex-wrap: wrap; gap: .35rem .65rem; margin-left: .8rem}
+.connection-run-body {display: grid; gap: .6rem; margin: 0; padding: .7rem .8rem; border-top: 1px solid var(--border); font-size: .82rem}
+.connection-run-body p {margin: 0; overflow-wrap: anywhere}
+.connection-run-body ol {display: grid; gap: .65rem; margin: 0; padding-inline-start: 1.2rem}
+.connection-run-body li > div {display: flex; flex-wrap: wrap; gap: .25rem .65rem}
+.connection-run-body li > div span {color: var(--muted-foreground)}
+
+@container connections-map (max-width: 36rem) {
+    .connections-page-map > .connection-graph .connection-graph-header {align-self: end; padding-block-end: 3.5rem}
+    .connections-page-map > .connection-index {max-height: calc(100% - 6rem)}
+}
+
+@media (max-width: 580px) {
+    .connection-step-controls, .connection-step-controls.with-control, .connection-arguments, .connection-picker-filter, .connection-catalog-grid {grid-template-columns: minmax(0, 1fr)}
+    .connection-step-controls.with-control > button {justify-self: end}
+    .connection-editor {padding: .68rem}
+    .connection-flow {grid-template-columns: minmax(0, 1fr); gap: .35rem}
+    .connection-flow-arrow {justify-self: center; transform: rotate(90deg)}
+}
+
+@media (hover: none), (pointer: coarse) {
+    .connection-lightning-trigger {opacity: .72; min-width: 2rem; min-height: 2rem}
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .connection-lightning-trigger {transition: none}
+}

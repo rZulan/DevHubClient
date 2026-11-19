@@ -26,13 +26,13 @@
 .tornado-toolbar button:focus-visible, .tornado-layer-legend button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .tornado-layer-legend { position: absolute; bottom: 10px; left: 20px; right: 20px; display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none; }
 .tornado-layer-legend button { display: flex; align-items: center; gap: 5px; padding: 4px 7px; min-height: 28px; border: 1px solid transparent; border-radius: 6px; background: color-mix(in oklab, var(--background) 94%, transparent); font-size: 11px; cursor: pointer; pointer-events: auto; }
-.tornado-layer-legend button[aria-pressed="true"] { border-color: currentColor; }
+.tornado-layer-legend button[aria-pressed="true"] { background: color-mix(in oklab, currentColor 15%, var(--background)); }
 .tornado-layer-legend i { width: 14px; height: 2px; border-radius: 2px; background: currentColor; box-shadow: 0 0 6px currentColor; }
 .tornado-layer-legend svg { width: 10px; height: 10px; }
 .tornado-view.mode-pan { cursor: grab; }
 .tornado-view.mode-orbit { cursor: move; }
 .tornado-view.is-dragging, .tornado-view.is-dragging * { cursor: grabbing; }
-.sdlc-iteration-decision { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in oklab, var(--secondary) 45%, transparent); }
+.sdlc-iteration-decision { display: grid; gap: 10px; padding: 14px; border-radius: 10px; background: color-mix(in oklab, var(--secondary) 45%, transparent); }
 .sdlc-iteration-decision > strong { font-size: 13px; }
 .sdlc-iteration-decision > p { margin: 0 0 3px; font-size: 12px; line-height: 1.7; color: var(--muted-foreground); }
 .sdlc-iteration-decision > button { width: 100%; }
