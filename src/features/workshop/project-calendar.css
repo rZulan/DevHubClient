@@ -109,7 +109,7 @@
 .calendar-day > .calendar-more:hover { color: var(--foreground); text-decoration: underline; }
 .calendar-grid-caption { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 12px 2px; color: var(--muted-foreground); font-size: 10px; }
 .calendar-grid-caption button { color: var(--foreground); cursor: pointer; text-decoration: underline; }
-.calendar-day-agenda { min-width: 0; border-radius: 10px; background: var(--workshop-card-surface); overflow: hidden; position: sticky; top: 18px; }
+.calendar-day-agenda { min-width: 0; border-radius: 10px; background: var(--workshop-gradient-container, none) var(--workshop-card-surface); overflow: hidden; position: sticky; top: 18px; }
 .calendar-day-agenda > header { display: flex; align-items: center; gap: 12px; padding: 18px 16px; }
 .calendar-detail-date { display: grid; place-items: center; width: 42px; height: 46px; border: 1px solid var(--border); background: var(--background); border-radius: 8px; font-size: 23px; font-weight: 500; letter-spacing: -.06em; }
 .calendar-detail-date[data-today=true] { border-color: transparent; color: var(--primary-foreground); background: var(--primary); }
@@ -147,7 +147,7 @@
 .calendar-empty > strong { font-size: 12px; font-weight: 500; }
 .calendar-empty p { color: var(--muted-foreground); font-size: 11px; line-height: 1.7; max-width: 250px; }
 .calendar-empty > button:not([data-slot]) { color: var(--foreground); font-size: 11px; text-decoration: underline; cursor: pointer; }
-.calendar-month-agenda { border-radius: 10px; padding: 20px; background: var(--workshop-card-surface); }
+.calendar-month-agenda { border-radius: 10px; padding: 20px; background: var(--workshop-gradient-container, none) var(--workshop-card-surface); }
 .calendar-agenda-day { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 20px; }
 .calendar-agenda-day + .calendar-agenda-day { padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--border); }
 .calendar-agenda-day > header { display: flex; align-items: flex-start; gap: 10px; padding-top: 4px; }

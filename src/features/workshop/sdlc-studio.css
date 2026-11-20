@@ -54,7 +54,7 @@
 .sdlc-attention-summary > span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .sdlc-attention-summary svg { width: 12px; height: 12px; }
 .sdlc-overview-list { display: grid; gap: 9px; }
-.sdlc-overview-phase { display: flex; align-items: flex-start; gap: 14px; width: 100%; border: 1px solid transparent; background: var(--workshop-card-surface); border-radius: 9px; padding: 16px; cursor: pointer; text-align: left; transition: background .15s; }
+.sdlc-overview-phase { display: flex; align-items: flex-start; gap: 14px; width: 100%; border: 1px solid transparent; background: var(--workshop-gradient-container, none) var(--workshop-card-surface); border-radius: 9px; padding: 16px; cursor: pointer; text-align: left; transition: background .15s; }
 .sdlc-overview-phase:hover { background: var(--accent); }
 .sdlc-overview-phase.selected { border-color: color-mix(in oklab, var(--primary) 42%, var(--border)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 6%, transparent); }
 .sdlc-overview-number { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 8px; border: 1px solid var(--border); color: var(--muted-foreground); font-size: 11px; flex-shrink: 0; font-variant-numeric: tabular-nums; }

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  allGradientTargets,
   buildColorSchemeCss,
   contrastRatio,
   findColorScheme,
@@ -13,6 +14,7 @@ import {
 const light = { accent: '#2563eb', background: '#f8fafc', surface: '#ffffff', sidebar: '#f1f5f9', text: '#0f172a' }
 const dark = { accent: '#60a5fa', background: '#0b1220', surface: '#111b2e', sidebar: '#0d1627', text: '#e2e8f0' }
 const ocean = { id: 'ocean', name: 'Ocean', isPreset: true, light, dark }
+const gradient = { layout: 'aurora', placement: 'both', first: '#0879e8', second: '#4125c9', third: '#a328d4' }
 
 test('contrast math matches WCAG reference values', () => {
   assert.equal(contrastRatio('#000000', '#ffffff'), 21)
@@ -50,6 +52,69 @@ test('the default scheme and unsafe palettes keep stylesheet defaults', () => {
   assert.equal(buildColorSchemeCss(undefined), '')
   assert.equal(buildColorSchemeCss({ ...ocean, light: { ...light, accent: 'red;}body{display:none' } }), '')
   assert.equal(isValidPalette({ ...dark, text: '#fff' }), false)
+})
+
+test('gradient layouts and placement are independent for each mode, with a flat fallback', () => {
+  const aurora = paletteTokens({ ...dark, gradient }, 'dark')
+  const horizon = paletteTokens({ ...dark, gradient: { ...gradient, layout: 'horizon', placement: 'background' } }, 'dark')
+  const corners = paletteTokens({ ...dark, gradient: { ...gradient, layout: 'corners', placement: 'buttons' } }, 'dark')
+  assert.equal(aurora['--workshop-gradient-background'].match(/radial-gradient/g).length, 3)
+  assert.equal(aurora['--workshop-gradient-sidebar'], 'none', 'legacy both affects background and buttons only')
+  assert.equal(aurora['--workshop-gradient-container'], 'none')
+  assert.match(horizon['--workshop-gradient-background'], /^linear-gradient\(152deg/)
+  assert.equal(horizon['--workshop-gradient-button'], 'none')
+  assert.equal(corners['--workshop-gradient-background'], 'none')
+  assert.match(corners['--workshop-gradient-button'], /^linear-gradient\(73deg/)
+  assert.equal(paletteTokens(dark, 'dark')['--workshop-gradient-button'], 'none')
+
+  const css = buildColorSchemeCss({ ...ocean, id: 'default', dark: { ...dark, gradient } })
+  assert.match(css, /:root\[data-workshop-scheme\]\{--workshop-gradient-background:none;/)
+  assert.match(css, /:root\.dark\[data-workshop-scheme\]\{--workshop-gradient-background:radial-gradient/)
+  assert.ok(!css.includes('--background:'))
+})
+
+test('sidebar and container gradients work independently without painting other surfaces', () => {
+  const sidebars = paletteTokens({ ...dark, gradient: { ...gradient, placement: 'sidebars' } }, 'dark')
+  const containers = paletteTokens({ ...dark, gradient: { ...gradient, placement: 'containers' } }, 'dark')
+  const both = paletteTokens({ ...dark, gradient: { ...gradient, placement: 'sidebars,containers' } }, 'dark')
+  assert.match(sidebars['--workshop-gradient-sidebar'], /^radial-gradient/)
+  assert.equal(sidebars['--workshop-gradient-container'], 'none')
+  assert.equal(containers['--workshop-gradient-sidebar'], 'none')
+  assert.match(containers['--workshop-gradient-container'], /^radial-gradient/)
+  assert.equal(both['--workshop-gradient-sidebar'], sidebars['--workshop-gradient-sidebar'])
+  assert.equal(both['--workshop-gradient-container'], containers['--workshop-gradient-container'])
+  assert.notEqual(both['--workshop-gradient-sidebar'], both['--workshop-gradient-container'])
+  assert.equal(both['--workshop-gradient-background'], 'none')
+  assert.equal(both['--workshop-gradient-button'], 'none')
+})
+
+test('top bars and switch controls can be themed independently or with every surface', () => {
+  const topbars = paletteTokens({ ...dark, gradient: { ...gradient, placement: 'topbars' } }, 'dark')
+  const switches = paletteTokens({ ...dark, gradient: { ...gradient, placement: 'switches' } }, 'dark')
+  assert.match(topbars['--workshop-gradient-topbar'], /^radial-gradient/)
+  assert.equal(topbars['--workshop-gradient-switch'], 'none')
+  assert.equal(switches['--workshop-gradient-topbar'], 'none')
+  assert.match(switches['--workshop-gradient-switch'], /^linear-gradient/)
+  assert.equal(switches['--workshop-gradient-button'], 'none')
+  const all = { ...dark, gradient: { ...gradient, placement: allGradientTargets } }
+  assert.equal(isValidPalette(all), true)
+  const everything = paletteTokens(all, 'dark')
+  for (const surface of ['background', 'sidebar', 'container', 'topbar', 'button', 'switch']) {
+    assert.notEqual(everything['--workshop-gradient-' + surface], 'none')
+  }
+})
+
+test('gradient color stops keep button labels readable and reject unsupported values', () => {
+  const tokens = paletteTokens({ ...dark, gradient: { ...gradient, first: '#ffffff', second: '#ffff00', third: '#ff00ff' } }, 'dark')
+  for (const token of ['--workshop-gradient-button', '--workshop-gradient-button-hover']) {
+    const colors = tokens[token].match(/#[a-f0-9]{6}/g)
+    assert.equal(colors.length, 3)
+    for (const color of colors) assert.ok(contrastRatio(color, tokens['--workshop-gradient-button-text']) >= 4.5)
+  }
+  for (const invalid of [{ ...gradient, layout: 'custom' }, { ...gradient, placement: 'all' },
+    { ...gradient, placement: 'sidebars,sidebars' }, { ...gradient, third: '#abcdef\n' }]) {
+    assert.equal(buildColorSchemeCss({ ...ocean, dark: { ...dark, gradient: invalid } }), '')
+  }
 })
 
 test('contrast warnings flag unreadable text per mode', () => {

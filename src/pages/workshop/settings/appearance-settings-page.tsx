@@ -99,12 +99,15 @@ export function AppearanceSettingsPage() {
     async function save(draft: SaveColorSchemeInput) {
         setEditorError("")
         try {
-            if (editor?.scheme) await updateScheme({
-                organizationId: organization.id,
-                schemeId: editor.scheme.id,
-                scheme: draft
-            }).unwrap()
-            else await createScheme({organizationId: organization.id, scheme: draft}).unwrap()
+            const saved = editor?.scheme
+                ? await updateScheme({organizationId: organization.id, schemeId: editor.scheme.id, scheme: draft}).unwrap()
+                : await createScheme({organizationId: organization.id, scheme: draft}).unwrap()
+            if ((["light", "dark"] as const).some((mode) => draft[mode].gradient && !saved[mode].gradient)) {
+                // If a legacy API accepted a create, retry against that scheme rather than creating a duplicate.
+                setEditor((current) => current === editor ? {scheme: saved, draft} : current)
+                setEditorError("This API saved the scheme without its gradients. Your gradient edits are still here. Save again after the API is updated.")
+                return
+            }
             setEditor(null)
         } catch (saveError) {
             setEditorError(getApiErrorMessage(saveError))
@@ -166,8 +169,7 @@ export function AppearanceSettingsPage() {
                         <h3>Your custom schemes</h3>
                         <p>{appearance.customSchemes.length} of {appearance.maxCustomSchemes} used</p>
                     </div>
-                    <Button disabled={atLimit} onClick={() => openEditor(undefined, activeScheme, "")} type="button"
-                            variant="outline">
+                    <Button disabled={atLimit} onClick={() => openEditor(undefined, activeScheme, "")} type="button">
                         <Plus/> New scheme
                     </Button>
                 </header>

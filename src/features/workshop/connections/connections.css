@@ -70,7 +70,7 @@ button.connection-lightning-trigger > svg[aria-hidden] {
     width: var(--connection-map-panel-width);
     margin-inline-start: var(--connection-map-inset);
     border-radius: .7rem;
-    background: var(--workshop-card-surface);
+    background: var(--workshop-gradient-container, none) var(--workshop-card-surface);
     box-shadow: 0 .2rem .85rem color-mix(in oklab, #000 16%, transparent);
 }
 .connections-page-map > .connections-page-navigation {
@@ -143,7 +143,7 @@ button.connection-lightning-trigger > svg[aria-hidden] {
 .connection-section-title h3 svg {width: 1rem; height: 1rem; color: var(--primary)}
 .connection-catalog .connection-section-title input {width: min(100%, 18rem)}
 
-.connection-editor {display: grid; gap: 1rem; padding: 1rem; border-radius: .7rem; background: var(--workshop-card-surface); min-width: 0}
+.connection-editor {display: grid; gap: 1rem; padding: 1rem; border-radius: .7rem; background: var(--workshop-gradient-container, none) var(--workshop-card-surface); min-width: 0}
 .connection-editor-top {display: grid; gap: .5rem; min-width: 0}
 .connection-field {display: grid; align-content: start; gap: .3rem; min-width: 0; font-size: .8rem}
 .connection-field > span {display: flex; flex-wrap: wrap; gap: .4rem; font-weight: 550}
@@ -211,7 +211,7 @@ button.connection-lightning-trigger > svg[aria-hidden] {
 .connection-validation-result ul {margin: .25rem 0 0; padding-inline-start: 1.25rem; list-style: disc}
 .connection-remove-confirm {display: grid; gap: .4rem}
 
-.connection-catalog-item, .connection-run { border-radius: .62rem; background: var(--workshop-card-surface); min-width: 0}
+.connection-catalog-item, .connection-run { border-radius: .62rem; background: var(--workshop-gradient-container, none) var(--workshop-card-surface); min-width: 0}
 .connection-catalog-item summary, .connection-run summary {display: list-item; cursor: pointer; padding: .7rem .8rem; font-size: .84rem; overflow-wrap: anywhere}
 .connection-catalog-item summary strong, .connection-run summary strong {font-weight: 650}
 .connection-catalog-item summary > span {margin-left: .55rem; color: var(--muted-foreground); font-size: .75rem}

@@ -1,4 +1,4 @@
-import type {ColorScheme, ColorSchemeMode, ColorSchemePalette,} from "@/features/workshop/workshop-types"
+import type {ColorScheme, ColorSchemeGradient, ColorSchemeMode, ColorSchemePalette} from "@/features/workshop/workshop-types"
 
 export const defaultColorSchemeId = "default"
 export const colorSchemeStyleId = "workshop-color-scheme"
@@ -12,6 +12,30 @@ export const paletteFields = [
     {key: "text", label: "Text", hint: "Headings and body copy"},
 ] as const satisfies readonly { key: keyof ColorSchemePalette; label: string; hint: string }[]
 
+export const gradientLayouts = [
+    {value: "aurora", label: "Aurora", hint: "Overlapping pools of color"},
+    {value: "horizon", label: "Horizon", hint: "A soft diagonal sweep"},
+    {value: "corners", label: "Corners", hint: "Color blooms from the edges"},
+] as const satisfies readonly {value: ColorSchemeGradient["layout"]; label: string; hint: string}[]
+
+export const gradientTargets = [
+    {value: "background", label: "Background"},
+    {value: "buttons", label: "Buttons"},
+    {value: "sidebars", label: "Sidebars"},
+    {value: "containers", label: "Containers"},
+    {value: "topbars", label: "Top bars"},
+    {value: "switches", label: "Switches and tabs"},
+] as const
+
+export const allGradientTargets = gradientTargets.map(({value}) => value).join(",")
+
+export function selectedGradientTargets(placement: unknown) {
+    if (placement === "both") return ["background", "buttons"]
+    return typeof placement === "string" && placement.length <= allGradientTargets.length ? placement.split(",") : []
+}
+
+export const gradientStops = ["first", "second", "third"] as const
+
 const hexColorPattern = /^#[0-9a-f]{6}$/i
 const lightForeground = "#ffffff"
 const darkForeground = "#0a0a0a"
@@ -23,11 +47,18 @@ const strengths: Record<ColorSchemeMode, Record<"secondary" | "muted" | "mutedTe
 }
 
 export function isHexColor(value: unknown): value is string {
-    return typeof value === "string" && hexColorPattern.test(value)
+    return typeof value === "string" && value.length === 7 && hexColorPattern.test(value)
 }
 
 export function isValidPalette(palette: ColorSchemePalette | undefined): palette is ColorSchemePalette {
-    return Boolean(palette && paletteFields.every(({key}) => isHexColor(palette[key])))
+    if (!palette || !paletteFields.every(({key}) => isHexColor(palette[key]))) return false
+    const {gradient} = palette
+    if (gradient == null) return true
+    const targets = selectedGradientTargets(gradient.placement)
+    return gradientLayouts.some(({value}) => value === gradient.layout) &&
+        targets.length > 0 && new Set(targets).size === targets.length &&
+        targets.every((target) => gradientTargets.some(({value}) => value === target)) &&
+        gradientStops.every((key) => isHexColor(gradient[key]))
 }
 
 export function relativeLuminance(hex: string) {
@@ -52,6 +83,97 @@ export function readableForeground(background: string) {
 
 function mix(color: string, percent: number, base: string) {
     return `color-mix(in oklab, ${color} ${percent}%, ${base})`
+}
+
+function blendHex(base: string, color: string, amount: number) {
+    const channels = [1, 3, 5].map((start) => {
+        const from = Number.parseInt(base.slice(start, start + 2), 16)
+        const to = Number.parseInt(color.slice(start, start + 2), 16)
+        return Math.round(from + (to - from) * amount).toString(16).padStart(2, "0")
+    })
+    return `#${channels.join("")}`
+}
+
+function contrastTint(base: string, color: string, amount: number, text: string, target: number) {
+    const textLightness = relativeLuminance(text)
+    const isLighterThanText = relativeLuminance(base) > textLightness
+    const minimum = Math.min(target, contrastRatio(base, text))
+    for (let strength = amount; strength >= .01; strength *= .8) {
+        const tint = blendHex(base, color, strength)
+        if ((relativeLuminance(tint) > textLightness) === isLighterThanText && contrastRatio(tint, text) >= minimum)
+            return tint
+    }
+    return base
+}
+
+const gradientSurfaces = {
+    background: {base: "background", light: .38, dark: .86},
+    sidebar: {base: "sidebar", light: .22, dark: .48},
+    surface: {base: "surface", light: .16, dark: .29},
+    topbar: {base: "background", light: .21, dark: .42},
+} as const
+
+export function gradientBackground(
+    palette: ColorSchemePalette,
+    mode: ColorSchemeMode,
+    gradient: ColorSchemeGradient,
+    surface: keyof typeof gradientSurfaces = "background",
+) {
+    const style = gradientSurfaces[surface]
+    const background = palette[style.base]
+    const {text} = palette
+    const strength = style[mode]
+    const [first, second, third] = gradientStops.map((key) => contrastTint(background, gradient[key], strength, text, 5))
+    const base = contrastTint(background, gradient.second, strength * (mode === "dark" ? .28 : .18), text, 5)
+
+    switch (gradient.layout) {
+        case "aurora":
+            return `radial-gradient(ellipse at 60% -12%, ${first} 0%, transparent 58%), ` +
+                `radial-gradient(ellipse at 82% 40%, ${second} 0%, transparent 55%), ` +
+                `radial-gradient(ellipse at 72% 110%, ${third} 0%, transparent 65%), linear-gradient(${base}, ${base})`
+        case "horizon":
+            return `linear-gradient(152deg in srgb, ${base} 7%, ${first} 32%, ${second} 65%, ${third} 100%)`
+        case "corners":
+            return `radial-gradient(ellipse at 1% 4%, ${first} 0%, transparent 65%), ` +
+                `radial-gradient(ellipse at 98% 3%, ${second} 0%, transparent 58%), ` +
+                `radial-gradient(ellipse at 96% 100%, ${third} 0%, transparent 69%), linear-gradient(${base}, ${base})`
+    }
+}
+
+function gradientTokens(palette: ColorSchemePalette, mode: ColorSchemeMode) {
+    const {gradient} = palette
+    const targets = selectedGradientTargets(gradient?.placement)
+    const paintButtons = targets.includes("buttons")
+    const paintSwitches = targets.includes("switches")
+    let control = "none"
+    let buttonHover = "none"
+    let secondaryButton = "none"
+
+    if (gradient && (paintButtons || paintSwitches)) {
+        const angle = {aurora: 114, horizon: 148, corners: 73}[gradient.layout]
+        const stops = gradientStops.map((key) =>
+            contrastTint("#000000", blendHex(palette.accent, gradient[key], .82), 1, lightForeground, 5.2))
+        const controlGradient = (colors: string[]) =>
+            `linear-gradient(${angle}deg in srgb, ${colors[0]} 0%, ${colors[1]} 52%, ${colors[2]} 100%)`
+        control = controlGradient(stops)
+        if (paintButtons) {
+            buttonHover = controlGradient(stops.map((color) => contrastTint(color, lightForeground, .10, lightForeground, 4.6)))
+            secondaryButton = controlGradient(stops.map((color) => `${color}${mode === "dark" ? "5c" : "24"}`))
+        }
+    }
+
+    return {
+        "--workshop-gradient-background": gradient && targets.includes("background") ? gradientBackground(palette, mode, gradient) : "none",
+        "--workshop-gradient-sidebar": gradient && targets.includes("sidebars") ? gradientBackground(palette, mode, gradient, "sidebar") : "none",
+        "--workshop-gradient-container": gradient && targets.includes("containers") ? gradientBackground(palette, mode, gradient, "surface") : "none",
+        "--workshop-gradient-topbar": gradient && targets.includes("topbars") ? gradientBackground(palette, mode, gradient, "topbar") : "none",
+        "--workshop-gradient-button": paintButtons ? control : "none",
+        "--workshop-gradient-button-hover": buttonHover,
+        "--workshop-gradient-button-soft": secondaryButton,
+        "--workshop-gradient-button-text": paintButtons ? lightForeground : "var(--primary-foreground)",
+        "--workshop-gradient-switch": paintSwitches ? control : "none",
+        "--workshop-gradient-switch-text": paintSwitches ? lightForeground : "initial",
+    }
 }
 
 export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode): Record<string, string> {
@@ -86,6 +208,7 @@ export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode
         "--sidebar-accent-foreground": text,
         "--sidebar-border": border,
         "--sidebar-ring": mix(text, 50, sidebar),
+        ...gradientTokens(palette, mode),
     }
 }
 
@@ -95,11 +218,14 @@ export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode
  * injected into a style element.
  */
 export function buildColorSchemeCss(scheme: ColorScheme | undefined | null) {
-    if (!scheme || scheme.id === defaultColorSchemeId) return ""
-    if (!isValidPalette(scheme.light) || !isValidPalette(scheme.dark)) return ""
+    if (!scheme || !isValidPalette(scheme.light) || !isValidPalette(scheme.dark)) return ""
+    const isDefault = scheme.id === defaultColorSchemeId
+    if (isDefault && !scheme.light.gradient && !scheme.dark.gradient) return ""
 
-    const declarations = (mode: ColorSchemeMode) =>
-        Object.entries(paletteTokens(scheme[mode], mode)).map(([name, value]) => `${name}:${value};`).join("")
+    const declarations = (mode: ColorSchemeMode) => {
+        const tokens = isDefault ? gradientTokens(scheme[mode], mode) : paletteTokens(scheme[mode], mode)
+        return Object.entries(tokens).map(([name, value]) => `${name}:${value};`).join("")
+    }
 
     return `:root[${colorSchemeAttribute}]{${declarations("light")}}` +
         `:root.dark[${colorSchemeAttribute}]{${declarations("dark")}}`
@@ -127,7 +253,7 @@ export function paletteContrastIssues(scheme: Pick<ColorScheme, "light" | "dark"
             })
         }
         const accentRatio = contrastRatio(palette.accent, readableForeground(palette.accent))
-        if (accentRatio < 4.5) {
+        if (accentRatio < 4.5 && !selectedGradientTargets(palette.gradient?.placement).includes("buttons")) {
             issues.push({
                 mode,
                 message: `Button labels are hard to read on the accent (${formatRatio(accentRatio)}:1).`

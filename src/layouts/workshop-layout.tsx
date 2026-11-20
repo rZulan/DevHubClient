@@ -557,7 +557,6 @@ export function WorkshopLayout() {
                 <header className="workshop-topbar">
                     {compact && <Button variant="outline" size="icon" className="workshop-navigation-toggle" aria-label="Open workshop navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu aria-hidden="true"/></Button>}
                     <div className="workshop-topbar-title connection-node-anchor">
-                        <small title={organization.name}>{organization.name}</small>
                         <div className="workshop-topbar-heading">
                             <WorkshopHistoryButtons/>
                             <h1 className="workshop-construction-label" title={pageTitles[activePath] ?? "Workshop"}><span>{pageTitles[activePath] ?? "Workshop"}</span>{constructionPages.has(activePath) && <UnderConstructionIndicator/>}

@@ -49,4 +49,4 @@ body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollba
 .task-edit-select:has(> [data-workshop-select]) > svg { display: none; }
 .note-code-header .note-code-theme { font: inherit; }
 /* This horizontal tab strip intentionally remains scrollbar-free. */
-.workshop-settings-sidebar nav { scrollbar-width: none; }
+.workshop-settings-links { scrollbar-width: none; }

@@ -12,15 +12,6 @@
     min-width: 0;
 }
 
-.workshop-topbar .workshop-topbar-title > small {
-    display: block;
-    overflow: hidden;
-    color: var(--muted-foreground);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .workshop-topbar-heading {
     display: flex;
     align-items: center;
@@ -64,7 +55,7 @@
     min-width: 0;
     min-height: 0;
     border-inline-start: 1px solid var(--border);
-    background: var(--sidebar);
+    background: var(--workshop-gradient-sidebar, none) var(--sidebar);
     color: var(--sidebar-foreground);
 }
 .workshop-shell:has(> .workshop-dashboard-picker-slot:not(:empty)) {
@@ -142,7 +133,7 @@
     .workshop-shell .workshop-settings { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .workshop-shell .workshop-settings-sidebar { position: static; }
     .workshop-shell .workshop-settings-sidebar > header { display: none; }
-    .workshop-shell .workshop-settings-sidebar nav {
+    .workshop-shell .workshop-settings-links {
         display: flex;
         gap: 4px;
         overflow-x: auto;
@@ -221,7 +212,6 @@
 
 @media (max-height: 500px) and (max-width: 1100px) {
     .workshop-shell .workshop-topbar { grid-template-columns: 40px minmax(0, 1fr) auto; padding-block: 4px; gap: 8px; min-height: 52px; }
-    .workshop-topbar .workshop-topbar-title > small { display: none; }
     .workshop-topbar .workshop-topbar-actions { grid-column: auto; width: auto; }
     .workshop-topbar .workshop-project-select { flex: none; width: clamp(110px, 22vw, 180px); }
     .workshop-topbar .workshop-topbar-actions > button { width: 40px; height: 40px; }

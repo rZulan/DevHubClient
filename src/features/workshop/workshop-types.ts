@@ -168,12 +168,22 @@ export type ApiOrganizationMember = {
 
 export type ColorSchemeMode = "light" | "dark"
 
+export type ColorSchemeGradient = {
+    layout: "aurora" | "horizon" | "corners"
+    /** Comma-separated surface names. Older palettes may use "both" for background and buttons. */
+    placement: string
+    first: string
+    second: string
+    third: string
+}
+
 export type ColorSchemePalette = {
     accent: string
     background: string
     surface: string
     sidebar: string
     text: string
+    gradient?: ColorSchemeGradient | null
 }
 
 export type ColorScheme = {
