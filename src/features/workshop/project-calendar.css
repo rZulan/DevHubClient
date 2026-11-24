@@ -71,7 +71,7 @@
 .project-calendar[data-view=agenda] .calendar-day-agenda { display: none; }
 .calendar-main-panel { min-width: 0; }
 .project-calendar[data-view=month] .calendar-main-panel { display: flex; flex-direction: column; align-self: stretch; }
-.calendar-month-grid { display: grid; flex: 1 0 auto; border-radius: 10px; overflow: hidden; background: var(--background); }
+.calendar-month-grid { display: grid; flex: 1 0 auto; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--background); }
 .project-calendar[data-view=week] .calendar-month-grid { display: block; }
 .project-calendar[data-view=month] .calendar-week-bars { top: 30px; grid-auto-rows: 21px; row-gap: 3px; }
 .project-calendar[data-view=month] .calendar-day-select { padding-top: 3px; }

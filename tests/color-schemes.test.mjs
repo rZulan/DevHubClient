@@ -9,6 +9,7 @@ import {
   paletteContrastIssues,
   paletteTokens,
   readableForeground,
+  relativeLuminance,
 } from '../src/features/workshop/appearance/color-schemes.ts'
 
 const light = { accent: '#2563eb', background: '#f8fafc', surface: '#ffffff', sidebar: '#f1f5f9', text: '#0f172a' }
@@ -31,10 +32,35 @@ test('accent labels pick whichever foreground reads better', () => {
 
 test('schemes emit light and dark rules scoped to the workshop attribute', () => {
   const css = buildColorSchemeCss(ocean)
-  assert.match(css, /^:root\[data-workshop-scheme\]\{--background:#f8fafc;/)
+  const tokens = paletteTokens(light, 'light')
+  assert.ok(css.startsWith(`:root[data-workshop-scheme]{--background:${tokens['--background']};`))
   assert.match(css, /:root\.dark\[data-workshop-scheme\]\{--background:#0b1220;/)
-  assert.ok(css.includes('--muted-foreground:color-mix(in oklab, #0f172a 57%, #f8fafc);'))
+  assert.ok(css.includes(`--muted-foreground:color-mix(in oklab, #0f172a 68%, ${tokens['--background']});`))
   assert.equal(css.split('{').length - 1, 2)
+})
+
+test('bright light presets reduce glare and separate cards from their canvas', () => {
+  const palettes = [light,
+    { accent: '#15803d', background: '#f7faf8', surface: '#ffffff', sidebar: '#eef5f0', text: '#10231a' },
+    { accent: '#c2410c', background: '#fffaf5', surface: '#ffffff', sidebar: '#fdf2e9', text: '#2b1a10' },
+    { accent: '#7c3aed', background: '#faf9ff', surface: '#ffffff', sidebar: '#f3f0fd', text: '#1d1733' },
+  ]
+  for (const palette of palettes) {
+    const tokens = paletteTokens(palette, 'light')
+    assert.ok(relativeLuminance(tokens['--background']) < .85)
+    assert.ok(relativeLuminance(tokens['--card']) < .95)
+    assert.ok(relativeLuminance(tokens['--card']) > relativeLuminance(tokens['--background']))
+    assert.ok(contrastRatio(tokens['--card'], tokens['--background']) >= 1.12)
+    for (const key of ['--background', '--card', '--sidebar']) {
+      assert.ok(contrastRatio(palette.text, tokens[key]) >= 4.5)
+    }
+  }
+  for (const mode of ['light', 'dark']) {
+    const tokens = paletteTokens(dark, mode)
+    assert.equal(tokens['--background'], dark.background)
+    assert.equal(tokens['--card'], dark.surface)
+    assert.equal(tokens['--sidebar'], dark.sidebar)
+  }
 })
 test('sidebar states stay neutral when the workspace accent changes', () => {
   for (const [palette, mode] of [[light, 'light'], [dark, 'dark']]) {

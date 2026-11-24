@@ -8,45 +8,45 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: oklch(1 0 0);
+    --background: oklch(0.93 0 0);
     --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
+    --card: oklch(0.98 0 0);
     --card-foreground: oklch(0.145 0 0);
     --workshop-card-surface: var(--card);
-    --popover: oklch(1 0 0);
+    --popover: oklch(0.985 0 0);
     --popover-foreground: oklch(0.145 0 0);
     --primary: oklch(0.205 0 0);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
+    --secondary: oklch(0.90 0 0);
     --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
+    --muted: oklch(0.91 0 0);
+    --muted-foreground: oklch(0.47 0 0);
+    --accent: oklch(0.88 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.82 0 0);
+    --input: oklch(0.80 0 0);
+    --ring: oklch(0.50 0 0);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
+    --sidebar: oklch(0.95 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent: oklch(0.88 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-border: oklch(0.82 0 0);
+    --sidebar-ring: oklch(0.50 0 0);
     --workshop-members-width: 17rem;
 }
 
-/* Give borderless cards a visible fill when the default light theme shares the canvas color. */
-:root:not(.dark, [data-workshop-scheme]) :is(.workshop-shell, .workshop-entry) {
-    --workshop-card-surface: oklch(0.975 0 0);
+/* Separate nested task cards from their columns in the default light palette. */
+:root:not(.dark, [data-workshop-scheme]) .workshop-board-column {
+    background: var(--muted);
 }
 
 @media (forced-colors: none) {

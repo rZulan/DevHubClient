@@ -102,6 +102,11 @@
     font-weight: 650;
 }
 .dashboard-link-chip:hover { background: var(--dashboard-widget-fill, var(--accent)); }
+
+/* Keep light dashboard surfaces legible even when a custom fill matches the canvas. */
+:root:not(.dark) :is(.dashboard-widget-face, .dashboard-link-chip, .workshop-single-quick-action > :is(a, button)) {
+    box-shadow: inset 0 0 0 1px var(--border), 0 2px 5px color-mix(in oklab, var(--foreground) 6%, transparent);
+}
 .dashboard-link-chip > svg { width: 1rem; height: 1rem; flex: none; color: var(--dashboard-widget-ink, var(--primary)); }
 .dashboard-link-chip > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workshop-widget .workshop-single-quick-action > a {

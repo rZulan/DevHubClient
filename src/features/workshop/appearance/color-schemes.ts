@@ -42,7 +42,7 @@ const darkForeground = "#0a0a0a"
 
 // Per-mode mix strengths tuned so derived tokens track the neutral shadcn palette.
 const strengths: Record<ColorSchemeMode, Record<"secondary" | "muted" | "mutedText" | "hover" | "border" | "input", number>> = {
-    light: {secondary: 6, muted: 4, mutedText: 57, hover: 10, border: 11, input: 14},
+    light: {secondary: 8, muted: 4, mutedText: 68, hover: 10, border: 20, input: 22},
     dark: {secondary: 8, muted: 11, mutedText: 63, hover: 16, border: 11, input: 15},
 }
 
@@ -177,7 +177,19 @@ function gradientTokens(palette: ColorSchemePalette, mode: ColorSchemeMode) {
 }
 
 export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode): Record<string, string> {
-    const {accent, background, surface, sidebar, text} = palette
+    // Bright presets need the same canvas/surface separation as the default light theme.
+    // Keep deliberately dim custom colors and dark palettes as authored.
+    const soften = (color: string, amount: number) =>
+        mode === "light" && relativeLuminance(color) > .85 && relativeLuminance(palette.text) < .35
+            ? blendHex(color, palette.text, amount)
+            : color
+    const effectivePalette = {
+        ...palette,
+        background: soften(palette.background, .10),
+        surface: soften(palette.surface, .035),
+        sidebar: soften(palette.sidebar, .065),
+    }
+    const {accent, background, surface, sidebar, text} = effectivePalette
     const strength = strengths[mode]
     const onAccent = readableForeground(accent)
     const border = mix(text, strength.border, "transparent")
@@ -208,7 +220,7 @@ export function paletteTokens(palette: ColorSchemePalette, mode: ColorSchemeMode
         "--sidebar-accent-foreground": text,
         "--sidebar-border": border,
         "--sidebar-ring": mix(text, 50, sidebar),
-        ...gradientTokens(palette, mode),
+        ...gradientTokens(effectivePalette, mode),
     }
 }
 
