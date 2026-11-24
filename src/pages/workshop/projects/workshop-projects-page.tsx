@@ -26,7 +26,6 @@ import {Textarea} from "@/components/ui/textarea"
 import {getApiErrorMessage} from "@/features/auth/api-error"
 import {hasWorkshopPermission} from "@/features/workshop/workshop-access"
 import {useWorkshop} from "@/features/workshop/workshop-context"
-import {sdlcModelIds, sdlcModels} from "@/features/workshop/sdlc-models"
 import {ProjectFormField as ProjectField} from "@/features/workshop/project-form-field"
 import type {ProjectStatus, SaveProjectInput, WorkshopMember,} from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
@@ -307,15 +306,6 @@ export function WorkshopProjectsPage() {
                                 </section>
                                 <section className="project-create-step" data-wizard-step="2" hidden={wizardStep !== 2}>
                                     <div className="project-create-grid">
-                                        <ProjectField id={`${wizardId}-method`} label="SDLC method" hint="Optional" wide>
-                                            <Select name="sdlcMethod" defaultValue="unspecified">
-                                                <SelectTrigger id={`${wizardId}-method`}><SelectValue/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="unspecified">Not specified</SelectItem>
-                                                    {sdlcModelIds.map(id => <SelectItem key={id} value={sdlcModels[id].title}>{sdlcModels[id].title}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </ProjectField>
                                         <ProjectField id={`${wizardId}-start`} label="Start date" hint="Optional">
                                             <Input id={`${wizardId}-start`} name="startDate" type="date"/>
                                         </ProjectField>
@@ -494,7 +484,6 @@ function readProjectInput(
         documentationUrl: optional("documentationUrl"),
         designUrl: optional("designUrl"),
         liveUrl: optional("liveUrl"),
-        sdlcMethod: form.get("sdlcMethod") === "unspecified" ? undefined : optional("sdlcMethod"),
         databaseDetails: optional("databaseDetails"),
         environments: list("environments"),
         startDate: optional("startDate"),

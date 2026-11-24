@@ -346,6 +346,7 @@ export function mapApiProject(project: ApiProject) {
         techStack: project.techStack,
         repository: project.repositoryUrl ?? "Not linked",
         githubRepositories: project.gitHubRepositories ?? [],
+        todoCalendarEnabled: project.todoCalendarEnabled,
         sdlc: project.sdlcMethod ?? "Not specified",
         database: project.databaseDetails ?? "Not specified",
         documentationUrl: project.documentationUrl ?? undefined,

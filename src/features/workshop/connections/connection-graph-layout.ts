@@ -1,5 +1,5 @@
-import type {ConnectionCapability, ConnectionDefinition, ConnectionNode, ConnectionRule} from "./connections-api"
-import {actionOutputTargets, nodeKey, nodeTool, sameNode} from "./connections-model"
+import type {ConnectionCapability, ConnectionNode, ConnectionRule} from "./connections-api"
+import {actionOutputTargets, nodeKey, nodeTool, sameNode, type ConnectionSummary} from "./connections-model"
 
 export type Point = {x: number; y: number}
 type NodeTone = "source" | "connection" | "condition" | "action" | "muted"
@@ -19,9 +19,9 @@ export function projectVertex(node: ConnectionNode, id: string, position: Point)
         tool: nodeTool(node.reference.kind), tone: node.unavailable ? "muted" : undefined}
 }
 
-export function overviewGraph(source: ConnectionNode, connections: ConnectionDefinition[], open: (id: string) => void): Graph {
+export function overviewGraph(source: ConnectionNode, connections: ConnectionSummary[], open: (id: string) => void): Graph {
     const root = {...projectVertex(source, nodeKey(source.reference), origin), tone: "source"} satisfies Vertex
-    const targets = new Map<string, {node: ConnectionNode; matches: ConnectionDefinition[]}>()
+    const targets = new Map<string, {node: ConnectionNode; matches: ConnectionSummary[]}>()
     for (const connection of connections) {
         for (const node of connection.nodes) {
             const id = nodeKey(node.reference)

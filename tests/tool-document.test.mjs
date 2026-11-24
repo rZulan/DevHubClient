@@ -13,7 +13,7 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/features/works
 const document = {model: 'waterfall', currentPhase: 2, completed: false, notes: {implementation: 'saved'}}
 function harness({tool = 'sdlc', saved = {revision: 4, document}, draft, canWrite = true, persisted = true, loadError = false, storageError = false} = {}) {
     let index = 0, dirty = false, value, timerId = 0, notify, serverDocument = saved, now = Date.now()
-    const slots = [], effects = [], timers = new Map(), storage = new Map(), saves = [], events = new Map()
+    const slots = [], effects = [], timers = new Map(), storage = new Map(), saves = [], initializations = [], invalidations = [], events = new Map()
     const storageKey = `devhub.tool-document:user:org:project:${tool}`
     if (draft) storage.set(storageKey, JSON.stringify(draft))
     const react = {
@@ -22,7 +22,11 @@ function harness({tool = 'sdlc', saved = {revision: 4, document}, draft, canWrit
         useEffect(fn) {const i = index++; if (!slots[i]) {slots[i] = true; effects.push(fn)}},
         useEffectEvent(fn) {const i = index++; slots[i] ??= {}; slots[i].fn = fn; return (...args) => slots[i].fn(...args)},
     }
-    const dispatch = action => ({unwrap: () => action.type === 'get' ? loadError ? Promise.reject(new Error('offline')) : Promise.resolve(serverDocument) : new Promise((resolve, reject) => saves.push({...action.args, resolve, reject}))})
+    function dispatch(action) {
+        if (action.type === 'invalidate') {invalidations.push(...action.tags); return}
+        return {unwrap: () => action.type === 'get' ? loadError ? Promise.reject(new Error('offline')) : Promise.resolve(serverDocument) :
+            new Promise((resolve, reject) => (action.type === 'initialize' ? initializations : saves).push({...action.args, resolve, reject}))}
+    }
     const exports = {}
     vm.runInNewContext(source, {exports, require: name => {
         if (name === 'react') return react
@@ -30,21 +34,69 @@ function harness({tool = 'sdlc', saved = {revision: 4, document}, draft, canWrit
         if (name === './workshop-limits-api') return {useGetWorkshopLimitsQuery: () => ({data: undefined})}
         if (name === './use-retry-countdown') return {useRetryCountdown: until => Math.max(0, Math.ceil((until - now) / 1000))}
         if (name === '@/app/hooks') return {useAppDispatch: () => dispatch}
+        if (name === '@/lib/create-client-id') return {createClientId: () => '00000000-0000-4000-8000-000000000001'}
         if (name === './use-project-tool-updates') return {useProjectToolUpdates: (_key, _enabled, callback) => {notify = callback}}
         if (name === './sdlc-document') return {normalizeSdlcDocument}
         if (name === './tool-documents') return {emptyDocuments, validToolDocument}
-        if (name === './tool-documents-api') return {toolDocumentsApi: {endpoints: {getToolDocument: {initiate: args => ({type: 'get', args})}, saveToolDocument: {initiate: args => ({type: 'save', args})}}}}
+        if (name === './todo-api') return {todoApi: {util: {invalidateTags: tags => ({type: 'invalidate', tags})}}}
+        if (name === './tool-documents-api') return {toolDocumentStorageKey: () => storageKey, toolDocumentsApi: {endpoints: {
+            getToolDocument: {initiate: args => ({type: 'get', args})}, saveToolDocument: {initiate: args => ({type: 'save', args})},
+            initializeSdlc: {initiate: args => ({type: 'initialize', args})},
+        }}}
         throw Error(name)
     }, localStorage: {getItem: key => storage.get(key) ?? null, setItem: (key, text) => {if (storageError) throw Error('blocked'); storage.set(key, text)}},
     window: {addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name)},
     Date: class extends Date {static now() {return now}}, setTimeout: fn => {timers.set(++timerId, fn); return timerId}, clearTimeout: id => timers.delete(id)})
     function render() {index = 0; dirty = false; value = exports.useToolDocument({organizationId: 'org', projectId: 'project', tool}, 'user', canWrite, persisted)}
     render(); const cleanup = effects[0]()
-    return {get value() {if (dirty) render(); return value}, saves, storage, storageKey, events,
+    return {get value() {if (dirty) render(); return value}, saves, initializations, invalidations, storage, storageKey, events,
         async settle() {for (let i = 0; i < 10; i++) {await Promise.resolve(); if (dirty) render()}},
         remote(saved) {serverDocument = saved; notify(saved.revision)},
         tick(advance = 3000) {now += advance; dirty = true; const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach(fn => fn())}, unmount: cleanup}
 }
+
+test('an empty shared roadmap stays uninitialized until setup is saved', async () => {
+    const h = harness({saved: {revision: 0, document: null}, draft: {revision: 0, pending: true, document}})
+    await h.settle()
+    assert.equal(h.value.hasDocument, false)
+    assert.equal(h.saves.length, 0)
+    const setup = h.value.initializeSdlc({model: 'iterative', connectToTodo: true})
+    assert.equal(h.value.status, 'saving')
+    assert.equal(h.value.canEdit, false)
+    const {resolve, reject: _reject, ...request} = h.initializations[0]
+    assert.deepEqual(JSON.parse(JSON.stringify(request)), {organizationId: 'org', projectId: 'project', revision: 0, model: 'iterative', connectToTodo: true})
+    resolve({revision: 1, document: {model: 'iterative', currentPhase: 0, completed: false, notes: {},
+        roadmapId: '00000000-0000-4000-8000-000000000001', connectToTodo: true}})
+    await setup
+    await h.settle()
+    assert.equal(h.value.hasDocument, true)
+    assert.equal(h.value.document.model, 'iterative')
+    assert.equal(h.value.canUndo, false)
+    assert.equal(h.invalidations[0].id, '/organizations/org/projects/project/todos')
+})
+
+test('reinitialization preserves a conflicting remote roadmap and forms a fresh undo baseline on success', async () => {
+    const h = harness()
+    await h.settle()
+    h.value.setDocument({...document, currentPhase: 3})
+    await assert.rejects(h.value.initializeSdlc({model: 'agile', connectToTodo: false}))
+    h.tick()
+    h.saves[0].resolve({revision: 5}); await h.settle()
+    const failed = h.value.initializeSdlc({model: 'agile', connectToTodo: false})
+    h.remote({revision: 6, document: {...document, currentPhase: 5}})
+    h.initializations[0].reject({status: 409})
+    await assert.rejects(failed, {status: 409})
+    await h.settle()
+    assert.equal(h.value.document.currentPhase, 5)
+    const reset = h.value.initializeSdlc({model: 'agile', connectToTodo: false})
+    assert.equal(h.initializations[1].revision, 6)
+    h.initializations[1].resolve({revision: 7, document: {model: 'agile', currentPhase: 0, completed: false, notes: {},
+        roadmapId: '00000000-0000-4000-8000-000000000002', connectToTodo: false}})
+    await reset
+    h.value.undo()
+    assert.equal(h.value.document.model, 'agile')
+    assert.equal(h.value.canUndo, false)
+})
 test('loading and failed loads never overwrite saved project content', async () => {
     const h = harness(); h.value.setDocument(emptyDocuments.sdlc); await h.settle()
     assert.equal(h.value.document.currentPhase, 2); assert.equal(h.saves.length, 0)

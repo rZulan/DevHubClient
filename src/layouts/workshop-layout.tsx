@@ -9,13 +9,12 @@ import {
     LoaderCircle,
     LogOut,
     Menu,
-    PanelRightClose,
-    PanelRightOpen,
     Plus,
     Settings,
     Workflow,
 } from "lucide-react"
 import {ArrowSquareOutIcon} from "@phosphor-icons/react/dist/csr/ArrowSquareOut"
+import {CaretLeftIcon} from "@phosphor-icons/react/dist/csr/CaretLeft"
 import {CaretRightIcon} from "@phosphor-icons/react/dist/csr/CaretRight"
 import {FolderSimpleIcon} from "@phosphor-icons/react/dist/csr/FolderSimple"
 import {Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams,} from "react-router-dom"
@@ -391,7 +390,8 @@ export function WorkshopLayout() {
         dashboardPickerDock,
     }
 
-    return <ConnectionLightningProvider organizationId={activeOrganizationId} projectId={isPersistedOrganization ? project?.id : undefined}>
+    return <ConnectionLightningProvider organizationId={activeOrganizationId} projectId={isPersistedOrganization ? project?.id : undefined}
+        todoCalendarEnabled={project?.todoCalendarEnabled !== false}>
         <div className={cn("workshop-shell", (compactMembers || !membersOpen) && "members-collapsed")}>
             <ResponsiveWorkshopPanel compact={compact} open={navigationOpen} onOpenChange={setNavigationOpen} title="Workshop navigation" side="left">
             <aside className="workshop-sidebar">
@@ -597,7 +597,7 @@ export function WorkshopLayout() {
                         {(compactMembers || !membersOpen) && (
                             <Button aria-label="Open members" className="workshop-icon-button"
                                     onClick={() => compactMembers ? setCompactMembersOpen(true) : setMembersOpen(true)} size="icon" type="button" variant="ghost">
-                                <PanelRightOpen/>
+                                <CaretLeftIcon aria-hidden="true" className="size-3.5" weight="bold"/>
                             </Button>
                         )}
                     </div>
@@ -622,7 +622,7 @@ export function WorkshopLayout() {
                         <div>
                             <Button aria-label="Collapse members" className="workshop-members-collapse"
                                     onClick={() => compactMembers ? setCompactMembersOpen(false) : setMembersOpen(false)} size="icon" type="button" variant="ghost">
-                                <PanelRightClose/>
+                                <CaretRightIcon aria-hidden="true" className="size-3.5" weight="bold"/>
                             </Button>
                             <strong>Members</strong><span>{organization.members.length}</span>
                         </div>

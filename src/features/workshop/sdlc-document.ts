@@ -1,13 +1,18 @@
-import {isSdlcModel, iterativeReleasePhases, sdlcModels, type SdlcModel} from "./sdlc-models.ts"
+import {isSdlcModel, iterativeReleasePhases, sdlcModels, type SdlcModel, type SdlcPhase} from "./sdlc-models.ts"
 
-export type SdlcPhaseWork = {ownerId?: string; targetDate?: string; checked?: string[]; blocked?: boolean; blocker?: string}
+export type SdlcPhaseWork = {ownerId?: string; assigneeIds?: string[]; deliverables?: string[]; targetDate?: string; deliverableTargetDates?: Record<string, string>; checked?: string[]; blocked?: boolean; blocker?: string}
 export type SdlcWork = Record<string, SdlcPhaseWork>
 export type SdlcRelease = {currentPhase: number; completed: boolean; notes: Record<string, string>; work?: SdlcWork}
 export type SdlcCycle = {cycle: number; notes: Record<string, string>; work?: SdlcWork; release?: SdlcRelease; released?: boolean}
 export type SdlcProgress = {currentPhase: number; completed: boolean; notes: Record<string, string>; work?: SdlcWork; cycle?: number; history?: SdlcCycle[]; release?: SdlcRelease; released?: boolean}
-// The active model retains the legacy top-level shape; inactive models are stored alongside it.
-export type SdlcDocument = SdlcProgress & {model: SdlcModel; modelStates?: Partial<Record<SdlcModel, SdlcProgress>>}
+// Older documents may still carry progress for inactive models.
+export type SdlcDocument = SdlcProgress & {model: SdlcModel; roadmapId?: string; connectToTodo?: boolean; creatorId?: string; modelStates?: Partial<Record<SdlcModel, SdlcProgress>>}
 export const maxSdlcHistory = 1000
+export const maxSdlcAssignees = 100
+export const maxSdlcDeliverables = 50
+export const maxSdlcDeliverableLength = 500
+
+export function sdlcDeliverables(phase: SdlcPhase, work?: SdlcPhaseWork) {return work?.deliverables ?? phase.deliverables.split(", ").map(label => label.trim()).filter(Boolean)}
 
 /** Older Scrum roadmaps combined Review and Retrospective at index 6 and required release. */
 export function normalizeSdlcDocument(document: SdlcDocument): SdlcDocument {
@@ -39,11 +44,12 @@ function progressOf(document: SdlcDocument): SdlcProgress {
 }
 export function switchSdlcModel(document: SdlcDocument, model: SdlcModel): SdlcDocument {
     document = normalizeSdlcDocument(document)
-    if (model === document.model) return document
+    if (model === document.model || document.roadmapId) return document
     const modelStates = {...document.modelStates, [document.model]: progressOf(document)}
     const next = modelStates[model] ?? {currentPhase: 0, completed: false, notes: {}}
     delete modelStates[model]
-    return {model, ...next, modelStates}
+    return {model, ...next, ...(document.creatorId ? {creatorId: document.creatorId} : {}),
+        ...(document.connectToTodo === undefined ? {} : {connectToTodo: document.connectToTodo}), modelStates}
 }
 export function setSdlcPhase(document: SdlcDocument, index: number): SdlcDocument {
     document = normalizeSdlcDocument(document)
@@ -82,7 +88,9 @@ export function advanceSdlcRelease(document: SdlcDocument): SdlcDocument {
 
 export function validSdlcDocument(value: unknown): value is SdlcDocument {
     const record = (item: unknown): item is Record<string, unknown> => !!item && typeof item === "object" && !Array.isArray(item)
-    if (!record(value) || !isSdlcModel(value.model)) return false
+    if (!record(value) || !isSdlcModel(value.model) || value.creatorId !== undefined && !validSdlcText(value.creatorId, 100)) return false
+    if (value.roadmapId !== undefined && (typeof value.roadmapId !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(value.roadmapId))) return false
+    if (value.connectToTodo !== undefined && typeof value.connectToTodo !== "boolean") return false
     function notesValid(notes: unknown, model: SdlcModel) {
         return record(notes) && Object.entries(notes).every(([key, note]) => sdlcModels[model].phases.some(phase => phase.id === key) && typeof note === "string" && note.length <= 10000)
     }
@@ -121,17 +129,41 @@ export function validSdlcWork(value: unknown, phases: string[]): value is SdlcWo
     if (value === undefined) return true
     if (!value || typeof value !== "object" || Array.isArray(value)) return false
     return Object.entries(value).every(([phase, work]) => phases.includes(phase) && !!work && typeof work === "object" && !Array.isArray(work)
-        && (work.ownerId === undefined || typeof work.ownerId === "string" && !!work.ownerId.trim() && work.ownerId.length <= 100)
+        && (work.ownerId === undefined || validSdlcText(work.ownerId, 100))
+        && validSdlcList(work.assigneeIds, maxSdlcAssignees, 100)
+        && validSdlcList(work.deliverables, maxSdlcDeliverables, maxSdlcDeliverableLength)
+        && validSdlcDeliverableDates(work.deliverableTargetDates)
         && (work.targetDate === undefined || validSdlcDate(work.targetDate)) && (work.blocked === undefined || typeof work.blocked === "boolean")
         && (work.blocker === undefined || typeof work.blocker === "string" && work.blocker.length <= 2000)
-        && (work.checked === undefined || Array.isArray(work.checked) && work.checked.length <= 50 && new Set(work.checked).size === work.checked.length && work.checked.every((item: unknown) => typeof item === "string" && item.trim().length > 0 && item.length <= 500)))
+        && validSdlcList(work.checked, maxSdlcDeliverables, maxSdlcDeliverableLength))
+}
+function validSdlcDeliverableDates(value: unknown) {
+    if (value === undefined) return true
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false
+    const entries = Object.entries(value)
+    return entries.length <= maxSdlcDeliverables && entries.every(([label, date]) => validSdlcText(label, maxSdlcDeliverableLength) && validSdlcDate(date))
+}
+function validSdlcText(value: unknown, maxLength: number): value is string {
+    return typeof value === "string" && !!value.trim() && value.length <= maxLength
+}
+function validSdlcList(value: unknown, maxItems: number, maxLength: number) {
+    return value === undefined || Array.isArray(value) && value.length <= maxItems && new Set(value).size === value.length
+        && value.every(item => validSdlcText(item, maxLength))
 }
 /** The model argument prevents a late field event from editing another model after navigation. */
 export function updateSdlcWork(document: SdlcDocument, model: SdlcModel, phase: string, changes: Partial<SdlcPhaseWork>, release = false): SdlcDocument {
-    if (document.model !== model || !(release ? iterativeReleasePhases : sdlcModels[model].phases).some(p => p.id === phase) || release && !document.release || !release && document.release) return document
+    const definition = (release ? iterativeReleasePhases : sdlcModels[model].phases).find(item => item.id === phase)
+    if (document.model !== model || !definition || release && !document.release || !release && document.release) return document
     const progress = release ? document.release! : document, work = {...progress.work?.[phase], ...changes}
     for (const key of Object.keys(work) as (keyof SdlcPhaseWork)[]) if (work[key] === undefined) delete work[key]
-    if (!validSdlcWork({[phase]: work}, [phase]) || JSON.stringify(work) === JSON.stringify(progress.work?.[phase] ?? {})) return document
+    if (!validSdlcWork({[phase]: work}, [phase])) return document
+    if (work.deliverableTargetDates && ("deliverables" in changes || "deliverableTargetDates" in changes)) {
+        const labels = new Set(sdlcDeliverables(definition, work))
+        const dates = Object.entries(work.deliverableTargetDates).filter(([label]) => labels.has(label))
+        if (dates.length) work.deliverableTargetDates = Object.fromEntries(dates)
+        else delete work.deliverableTargetDates
+    }
+    if (JSON.stringify(work) === JSON.stringify(progress.work?.[phase] ?? {})) return document
     const next = {...progress, work: {...progress.work, [phase]: work}}
     return release ? {...document, release: next as SdlcRelease} : {...document, ...next}
 }

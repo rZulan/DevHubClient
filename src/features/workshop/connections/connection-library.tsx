@@ -1,5 +1,6 @@
 import {useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState} from "react"
-import {Link} from "react-router-dom"
+import {skipToken} from "@reduxjs/toolkit/query"
+import {Link, useNavigate} from "react-router-dom"
 import {ArrowLeft, ArrowUpRight, ChevronDown, ChevronUp, Link2, Pencil, Plus, Search, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
@@ -11,14 +12,16 @@ import {overviewGraph, previewGraph} from "./connection-graph-layout"
 import {projectConnectionGraph, type ProjectMapSelection} from "./connection-project-graph"
 import {connectionError} from "./connection-errors"
 import {ConnectionLoadError} from "./connection-load-error"
-import {anchorNode, connectionPageLink, findCapability, findNode, newConnectionDraft, sameNode} from "./connections-model"
+import {useGetToolDocumentQuery} from "../tool-documents-api"
+import {anchorNode, connectionNodeLink, connectionPageLink, findCapability, findNode, isSdlcTodoConnected, newConnectionDraft, sameNode, sdlcTodoConnection, todoCalendarConnection, type ConnectionSummary} from "./connections-model"
+import {TodoCalendarConnectionSettings} from "./todo-calendar-connection-settings"
 import "./connections.css"
 import "./connection-dialog.css"
 
 export type ConnectionCarry = {draft: ConnectionDraft; projectId: string}
 
 const validationLabels = {ready: "Conditions pass", "conditions-unmet": "Conditions do not pass", "condition-unavailable": "Condition unavailable"}
-const connectionStateLabels = {enabled: "Enabled", triggered: "Triggered once", paused: "Paused", draft: "Draft"}
+const connectionStateLabels = {enabled: "Enabled", triggered: "Triggered once", paused: "Paused", draft: "Draft", removed: "Removed"}
 
 function connectionState({rules, triggeredRuleIds}: ConnectionDefinition) {
     if (rules.some(rule => rule.enabled && !(rule.runOnce && triggeredRuleIds?.includes(rule.id)))) return "enabled"
@@ -41,15 +44,24 @@ function DraftValidation({result, draft, catalog}: {result: ConnectionValidation
     </section>
 }
 
-export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSelect, onClose}: {
-    scope: ConnectionScope; anchor?: ConnectionAnchor; initialDraft?: ConnectionDraft; selection?: string | null
+export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSelect, onClose, todoCalendarEnabled}: {
+    scope: ConnectionScope; anchor?: ConnectionAnchor; initialDraft?: ConnectionDraft; selection?: string | null; todoCalendarEnabled: boolean
     onSelect?: (id: string | null) => void; onClose?: () => void
 }) {
+    const navigate = useNavigate()
     const list = useListConnectionsQuery(scope, {refetchOnFocus: true, refetchOnMountOrArgChange: true})
     const access = useConnectionAccessQuery(scope)
     const catalog = useConnectionCatalogQuery(scope)
     const anchorLookup = useConnectionNodesQuery({...scope, kind: anchor?.kind,
         id: anchor?.id ?? undefined, parentId: anchor?.parentId ?? undefined, page: 1}, {skip: !anchor})
+    const showRoadmapConnection = !anchor || sdlcTodoConnection.nodes.some(node => sameNode(node.reference, anchor))
+    const roadmap = useGetToolDocumentQuery(showRoadmapConnection ? {...scope, tool: "sdlc"} : skipToken,
+        {refetchOnFocus: true, refetchOnMountOrArgChange: true})
+    const sdlcTodoEnabled = isSdlcTodoConnected(roadmap.currentData?.document)
+    const builtIns = useMemo(() => [
+        ...(todoCalendarEnabled ? [todoCalendarConnection] : []),
+        ...(sdlcTodoEnabled ? [sdlcTodoConnection] : []),
+    ], [sdlcTodoEnabled, todoCalendarEnabled])
     const [save, saveResult] = useSaveConnectionMutation()
     const [validate, validationResult] = useValidateConnectionMutation()
     const [remove, removeResult] = useDeleteConnectionMutation()
@@ -69,6 +81,9 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
     const editorTrigger = useRef<HTMLButtonElement>(null)
     const q = useDeferredValue(search.trim().toLocaleLowerCase())
     const selectedId = selection === undefined ? localSelection : selection
+    const selectedTodoCalendar = selectedId === todoCalendarConnection.id
+    const selectedSdlcTodo = sdlcTodoEnabled && selectedId === sdlcTodoConnection.id
+    const selectedBuiltIn = selectedTodoCalendar ? todoCalendarConnection : selectedSdlcTodo ? sdlcTodoConnection : undefined
     const connections = useMemo(() => (list.currentData ?? []).filter(item => !anchor || item.nodes.some(node => sameNode(node.reference, anchor))),
         [list.currentData, anchor])
     const selected = connections.find(item => item.id === selectedId)
@@ -76,11 +91,14 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
     const liveAnchor = anchorLookup.currentData?.find(node => anchor && sameNode(node.reference, anchor))
     const draft = sourceDraft && liveAnchor ? {...sourceDraft, nodes: sourceDraft.nodes.map(node => sameNode(node.reference, liveAnchor.reference) ? liveAnchor : node)} : sourceDraft
     const writable = access.currentData?.canManage === true
-    const filtered = connections.filter(connection => {
-        const current = connectionState(connection)
-        return (!stateFilter || current === stateFilter) && (!q || [connection.title, ...connection.nodes.flatMap(node => [node.label, node.path])]
+    function matchesFilter(connection: ConnectionSummary, state: string) {
+        return (!stateFilter || state === stateFilter) && (!q || [connection.title, ...connection.nodes.flatMap(node => [node.label, node.path])]
             .some(value => value.toLocaleLowerCase().includes(q)))
-    })
+    }
+    const filtered = connections.filter(connection => matchesFilter(connection, connectionState(connection)))
+    const todoCalendarState = todoCalendarEnabled ? "enabled" : "removed"
+    const showTodoCalendar = matchesFilter(todoCalendarConnection, todoCalendarState)
+    const showSdlcTodo = sdlcTodoEnabled && matchesFilter(sdlcTodoConnection, "enabled")
 
     const select = useCallback((id: string | null) => {
         if (onSelect) onSelect(id)
@@ -109,10 +127,11 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
     }, [open, selectedId])
     const map = useMemo(() => {
         if (anchor) return null
-        const selection = selected ? {connectionId: selected.id} : selectedNodeId ? {nodeId: selectedNodeId} : null
-        return projectConnectionGraph(connections, selection, selectMapItem)
-    }, [anchor, connections, selected, selectedNodeId, selectMapItem])
-    const hasMapSelection = !!selected || !!map?.vertices.some(node => node.emphasis === "selected")
+        const connectionId = selected?.id ?? builtIns.find(connection => connection.id === selectedBuiltIn?.id)?.id
+        const selection = connectionId ? {connectionId} : selectedNodeId ? {nodeId: selectedNodeId} : null
+        return projectConnectionGraph([...builtIns, ...connections], selection, selectMapItem)
+    }, [anchor, builtIns, connections, selected, selectedBuiltIn, selectedNodeId, selectMapItem])
+    const hasMapSelection = !!selectedBuiltIn || !!selected || !!map?.vertices.some(node => node.emphasis === "selected")
     useEffect(() => {
         if (anchor || !hasMapSelection || showEditor) return
         function handleEscape(event: KeyboardEvent) {
@@ -178,7 +197,13 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
     if (anchor) {
         const source = liveAnchor ?? anchorNode(anchor)
         const hasSelection = connections.length > 0 || !!draft
+        const linkedBuiltIns = builtIns.filter(connection => connection.nodes.some(node => sameNode(node.reference, anchor)))
         function openConnection(id: string) {
+            if (linkedBuiltIns.some(connection => connection.id === id)) {
+                onClose?.()
+                navigate(connectionPageLink(scope, id))
+                return
+            }
             if (draft?.id !== id) open(id)
             setShowEditor(true)
         }
@@ -194,7 +219,8 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
             const Icon = hasSelection ? writable ? Pencil : Link2 : writable ? Plus : ArrowUpRight
             const action = <><Icon aria-hidden="true"/><span className="connection-overview-action-label" aria-hidden="true"><span>{label}</span></span></>
 
-            return <ConnectionGraph key="overview" title="Source graph" hideTitle graph={overviewGraph(source, connections, openConnection)}
+            return <ConnectionGraph key="overview" title="Source graph" hideTitle
+                graph={overviewGraph(source, [...linkedBuiltIns, ...connections], openConnection)}
                 toolbar={hasSelection || writable
                     ? <Button type="button" size="icon" className="connection-overview-action" aria-label={label} onClick={editConnections}>{action}</Button>
                     : <Button size="icon" className="connection-overview-action" asChild>
@@ -266,33 +292,54 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
                             <option key={state} value={state}>{label}</option>)}
                     </select>
                 </div>
-                {filtered.length ? <ul className="connection-index-list">{filtered.map(item => <li key={item.id}>
-                    <button type="button" aria-pressed={selected?.id === item.id} onClick={() => open(item.id)}>
-                        <span><strong>{item.title}</strong><small>{item.nodes.map(node => node.label).join(" · ")}</small></span>
-                        <small>{connectionStateLabels[connectionState(item)]}</small>
-                    </button>
-                </li>)}</ul> : <p className="connection-muted">{connections.length ? "No matching connections." : "No saved connections."}</p>}
+                {showTodoCalendar || showSdlcTodo || filtered.length ? <ul className="connection-index-list">
+                    {showTodoCalendar && <li><button type="button" aria-pressed={selectedTodoCalendar} onClick={event => {
+                        editorTrigger.current = event.currentTarget
+                        open(todoCalendarConnection.id)
+                        setShowEditor(true)
+                    }}><span><strong>{todoCalendarConnection.title}</strong><small>Default connection</small></span>
+                        <small>{connectionStateLabels[todoCalendarState]}</small></button></li>}
+                    {showSdlcTodo && <li><button type="button" aria-pressed={selectedSdlcTodo} onClick={event => {
+                        editorTrigger.current = event.currentTarget
+                        open(sdlcTodoConnection.id)
+                        setShowEditor(true)
+                    }}><span><strong>{sdlcTodoConnection.title}</strong><small>Default connection</small></span>
+                        <small>{connectionStateLabels.enabled}</small></button></li>}
+                    {filtered.map(item => <li key={item.id}>
+                        <button type="button" aria-pressed={selected?.id === item.id} onClick={() => open(item.id)}>
+                            <span><strong>{item.title}</strong><small>{item.nodes.map(node => node.label).join(" · ")}</small></span>
+                            <small>{connectionStateLabels[connectionState(item)]}</small>
+                        </button>
+                    </li>)}
+                </ul> : <p className="connection-muted">No matching connections.</p>}
             </div>
         </aside>
         <ConnectionGraph graph={map} title="Project map" hideTitle recenterOnDrop={false}
             onBackgroundClick={hasMapSelection && !showEditor ? clearMapSelection : undefined}
             toolbar={(draft || hasMapSelection) && <div className="connection-map-actions">
                 {hasMapSelection && <Button type="button" variant="ghost" size="sm" onClick={clearMapSelection}>Clear selection</Button>}
-                {draft && <Button type="button" size="sm" onClick={event => {
+                {(draft || selectedBuiltIn) && <Button type="button" size="sm" onClick={event => {
                     editorTrigger.current = event.currentTarget
                     setShowEditor(true)
-                }}>{writable && <Pencil/>}{writable ? draft.id ? "Edit connection" : "Edit draft" : "View connection"}</Button>}
+                }}>{writable && !selectedSdlcTodo && <Pencil/>}{writable && !selectedSdlcTodo ? selectedTodoCalendar ? "Manage connection" : draft?.id ? "Edit connection" : "Edit draft" : "View connection"}</Button>}
             </div>}/>
-        <Dialog open={showEditor && !!draft} onOpenChange={setShowEditor}>
-            {draft && showEditor && <DialogContent className="connection-page-editor-dialog" onCloseAutoFocus={event => {
+        <Dialog open={showEditor && (!!draft || !!selectedBuiltIn)} onOpenChange={setShowEditor}>
+            {showEditor && (draft || selectedBuiltIn) && <DialogContent className={selectedBuiltIn ? undefined : "connection-page-editor-dialog"} onCloseAutoFocus={event => {
                 const trigger = editorTrigger.current
                 if (trigger?.isConnected) {event.preventDefault(); trigger.focus()}
             }}>
                 <DialogHeader>
-                    <DialogTitle>{draft.id ? draft.title || "Connection details" : "New connection"}</DialogTitle>
-                    <DialogDescription className="sr-only">Review the project nodes and rules for this connection.</DialogDescription>
+                    <DialogTitle>{selectedBuiltIn?.title ?? (draft?.id ? draft.title || "Connection details" : "New connection")}</DialogTitle>
+                    <DialogDescription className={selectedBuiltIn ? undefined : "sr-only"}>
+                        {selectedSdlcTodo ? "Each roadmap phase has a TODO board. Checking a deliverable moves its task to the final column, and roadmap target dates appear on the linked boards and tasks." :
+                            selectedTodoCalendar ? "Show dated TODO boards and tasks in this project’s Calendar." : "Review the project nodes and rules for this connection."}
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="connection-main-editor">
+                {selectedSdlcTodo ? <div className="connection-editor-footer">
+                    <Button asChild variant="outline"><Link to={connectionNodeLink(scope, {kind: "sdlc"})}>Open roadmap<ArrowUpRight/></Link></Button>
+                    <Button asChild><Link to={connectionNodeLink(scope, {kind: "todo"})}>Open TODOs<ArrowUpRight/></Link></Button>
+                </div> : selectedTodoCalendar ? <TodoCalendarConnectionSettings scope={scope} enabled={todoCalendarEnabled} writable={writable}/>
+                    : draft && <div className="connection-main-editor">
                     {notice && <p className="connection-notice" role="status">{notice}</p>}
                     <ConnectionEditor key={draft.id ?? "new"} scope={scope} draft={draft} catalog={capabilities} writable={writable} busy={saveResult.isLoading}
                         checking={validationResult.isLoading} problem={problem} onChange={updateDraft}
@@ -309,7 +356,7 @@ export function ConnectionLibrary({scope, anchor, initialDraft, selection, onSel
                             <Button type="button" variant="destructive" size="sm" disabled={removeResult.isLoading} onClick={() => void deleteCurrent()}>{removeResult.isLoading ? "Deleting…" : "Delete connection"}</Button>
                         </div>
                     </div>}
-                </div>
+                </div>}
             </DialogContent>}
         </Dialog>
     </>

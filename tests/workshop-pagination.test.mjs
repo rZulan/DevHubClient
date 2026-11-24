@@ -3,13 +3,18 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
+import {current} from '@reduxjs/toolkit'
 
 const source=ts.transpileModule(fs.readFileSync(new URL('../src/features/workshop/todo-api.ts',import.meta.url),'utf8'),{
     compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText
 const exports={}
 const api={enhanceEndpoints(){return this},injectEndpoints(definition){return {endpoints:definition.endpoints({query:x=>x,mutation:x=>x,infiniteQuery:x=>x})}}}
-vm.runInNewContext(source,{exports,require:name=>{if(name==='@/services/api')return {api};throw Error(name)}})
+vm.runInNewContext(source,{exports,require:name=>{
+    if(name==='@/services/api')return {api}
+    if(name==='@reduxjs/toolkit')return {current}
+    throw Error(name)
+}})
 const list=exports.todoApi.endpoints.listTodos.queryFn
 test('calendar fetches bounded TODO pages without silently dropping later boards',async()=>{
     const requests=[]

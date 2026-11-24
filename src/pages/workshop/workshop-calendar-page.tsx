@@ -27,8 +27,11 @@ function CalendarContent() {
     const userId = useAppSelector(state => state.auth.user?.id) ?? "current", scope = {organizationId: organization.id, projectId: project!.id}
     const canWrite = hasWorkshopPermission(organization, userId, "Manage tasks")
     const editor = useToolDocument({...scope, tool: "calendar"}, userId, canWrite, isPersistedOrganization)
-    const todos = useListTodosQuery(scope, {skip: !isPersistedOrganization, refetchOnFocus: true, refetchOnReconnect: true})
-    useProjectToolUpdates({...scope, tool: "todo"}, isPersistedOrganization, () => {void todos.refetch()})
+    const showTodos = isPersistedOrganization && project!.todoCalendarEnabled !== false
+    const todos = useListTodosQuery(scope, {skip: !showTodos, refetchOnMountOrArgChange: true, refetchOnFocus: true, refetchOnReconnect: true})
+    useProjectToolUpdates({...scope, tool: "todo"}, showTodos, () => {
+        if (!todos.isUninitialized) void todos.refetch()
+    })
     const [editing, setEditing] = useState<{event: CalendarEvent; existing: boolean} | null>(null)
     const [linkedDate, setLinkedDate] = useState<{date: string}>()
     useConnectionNodeLink(scope.projectId, ({kind, id}) => {
@@ -56,10 +59,10 @@ function CalendarContent() {
             <Button size="sm" variant="outline" onClick={() => downloadFile(JSON.stringify(editor.document, null, 2), "calendar-draft.json", "application/json")}>Download draft</Button>
             {editor.status === "conflict" ? <Button size="sm" variant="outline" onClick={editor.reload}>Discard draft & reload</Button> : <Button size="sm" variant="outline" onClick={editor.retry}>Retry</Button>}
         </WorkshopToast>}
-        {isPersistedOrganization && todos.isLoading && <p className="calendar-data-notice" role="status">Loading TODO deadlines…</p>}
-        {isPersistedOrganization && todos.isError && <WorkshopToast variant="error">TODO deadlines could not be loaded.<Button size="sm" variant="ghost" onClick={() => void todos.refetch()}>Retry</Button></WorkshopToast>}
+        {showTodos && todos.isLoading && <p className="calendar-data-notice" role="status">Loading TODO deadlines…</p>}
+        {showTodos && todos.isError && <WorkshopToast variant="error">TODO deadlines could not be loaded.<Button size="sm" variant="ghost" onClick={() => void todos.refetch()}>Retry</Button></WorkshopToast>}
         {editor.document.events.length >= 2000 && <WorkshopToast variant="warning">This calendar has reached its 2,000-event limit.</WorkshopToast>}
-        <ProjectCalendar key={editor.document.timeZone} items={calendarItems(editor.document, todos.currentData ?? [])} timeZone={editor.document.timeZone} linkedDate={linkedDate} canEdit={editor.canEdit && editor.document.events.length < 2000} onAdd={newEvent} onOpen={item => {
+        <ProjectCalendar key={editor.document.timeZone} items={calendarItems(editor.document, showTodos ? todos.currentData ?? [] : [])} timeZone={editor.document.timeZone} linkedDate={linkedDate} canEdit={editor.canEdit && editor.document.events.length < 2000} onAdd={newEvent} onOpen={item => {
             if (item.todoId) {navigate({pathname: `/workshop/${organization.id}/todo`, search: new URLSearchParams({project: project!.id, todoProject: project!.id, todo: item.todoId, ...(item.taskId ? {task: item.taskId} : {})}).toString()}); return}
             const event = editor.document.events.find(event => event.id === item.id)
             if (event) setEditing({event, existing: true})

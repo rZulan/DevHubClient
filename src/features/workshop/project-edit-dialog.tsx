@@ -9,7 +9,6 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Textarea} from "@/components/ui/textarea"
 import {ProjectFormField as Field} from "./project-form-field"
 import {ProjectChipInput} from "./project-chip-input"
-import {sdlcModelIds, sdlcModels} from "./sdlc-models"
 import type {WorkshopProject} from "./workshop-types"
 import "./project-create.css"
 import "./project-edit-dialog.css"
@@ -35,8 +34,6 @@ export function ProjectEditDialog({project, busy, error, initialSection = "basic
     const id = useId()
     const [section, setSection] = useState<string>(initialSection)
     const [validationError, setValidationError] = useState("")
-    const method = project.sdlc === "Not specified" ? "" : project.sdlc
-    const knownMethod = sdlcModelIds.some(model => sdlcModels[model].title === method)
 
     function focusField(field: HTMLInputElement | HTMLTextAreaElement, message: string) {
         setValidationError(message)
@@ -103,14 +100,6 @@ export function ProjectEditDialog({project, busy, error, initialSection = "basic
                             </Tabs.Content>
                             <Tabs.Content value="delivery" forceMount className="project-edit-panel" data-edit-section="delivery">
                                 <div className="project-create-grid">
-                                    <Field id={`${id}-method`} label="SDLC method" hint="Optional" wide><Select defaultValue={method || "unspecified"} name="sdlcMethod" disabled={busy}>
-                                        <SelectTrigger id={`${id}-method`}><SelectValue/></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="unspecified">Not specified</SelectItem>
-                                            {method && !knownMethod && <SelectItem value={method}>{method}</SelectItem>}
-                                            {sdlcModelIds.map(model => <SelectItem key={model} value={sdlcModels[model].title}>{sdlcModels[model].title}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select></Field>
                                     <Field id={`${id}-start`} label="Start date" hint="Optional"><Input id={`${id}-start`} defaultValue={project.startDate} name="startDate" type="date"/></Field>
                                     <Field id={`${id}-target`} label="Target release" hint="Optional"><Input id={`${id}-target`} defaultValue={project.targetDate} name="targetDate" type="date"/></Field>
                                 </div>

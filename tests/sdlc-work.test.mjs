@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {advanceSdlc, advanceSdlcRelease, setSdlcPhase, startSdlcCycle, startSdlcRelease, switchSdlcModel, updateSdlcNote, updateSdlcWork, validSdlcDate, validSdlcDocument} from '../src/features/workshop/sdlc-document.ts'
 import {sdlcModels} from '../src/features/workshop/sdlc-models.ts'
-import {sdlcCompletion, sdlcMarkdown, sdlcOverdue, sdlcPhaseState, sdlcReadiness, sdlcStoredModels} from '../src/features/workshop/sdlc-work.ts'
+import {sdlcAssignees, sdlcCompletion, sdlcDeliverableDate, sdlcMarkdown, sdlcOverdue, sdlcPhaseState, sdlcReadiness, sdlcStoredModels} from '../src/features/workshop/sdlc-work.ts'
 
 const empty = () => ({model:'waterfall', currentPhase:0, completed:false, notes:{}})
 test('phase work is optional for old roadmaps and isolated between models', () => {
@@ -40,13 +40,15 @@ test('blockers stop normal completion until resolved without deleting the blocke
 })
 test('starting a Sprint archives ownership, dates and checks and starts the next cycle cleanly', () => {
     let doc = switchSdlcModel(empty(),'agile')
-    doc = updateSdlcWork(doc,'agile','planning',{ownerId:'member',checked:['Sprint Goal']})
+    doc = updateSdlcWork(doc,'agile','planning',{ownerId:'member',checked:['Sprint Goal'],targetDate:'2027-01-10',deliverableTargetDates:{'Sprint Goal':'2027-01-08'}})
     doc = advanceSdlc(setSdlcPhase(doc,7))
     const next = startSdlcCycle(doc)
     assert.equal(next.work,undefined); assert.deepEqual(next.history[0].work,doc.work)
     assert.notEqual(next.history[0].work,doc.work)
     doc.work.planning.checked.push('Changed afterwards')
+    doc.work.planning.deliverableTargetDates['Sprint Goal'] = '2027-01-09'
     assert.deepEqual(next.history[0].work.planning.checked,['Sprint Goal'])
+    assert.equal(next.history[0].work.planning.deliverableTargetDates['Sprint Goal'],'2027-01-08')
     assert.ok(validSdlcDocument(next))
 })
 test('release work is independent, respects blockers, and survives archive and model switches', () => {
@@ -66,6 +68,30 @@ test('dates are real ISO calendar dates, including leap-year rules', () => {
     for (const date of ['2026-10-25','2028-02-29','1900-01-01']) assert.ok(validSdlcDate(date),date)
     for (const date of ['2026-02-29','2026-13-01','2026-04-31','2026-1-01','1899-12-31','',null,'tomorrow']) assert.equal(validSdlcDate(date),false,String(date))
 })
+test('deliverable dates survive serialization and are removed with their deliverable', () => {
+    const phase = 'requirements'
+    const doc = updateSdlcWork(empty(), 'waterfall', phase, {
+        targetDate: '2027-01-10',
+        deliverableTargetDates: {'Requirements specification': '2026-12-15'},
+    })
+    const reloaded = JSON.parse(JSON.stringify(doc))
+    assert.ok(validSdlcDocument(reloaded))
+    assert.equal(sdlcDeliverableDate(reloaded.work[phase], 'Requirements specification'), '2026-12-15')
+    assert.equal(sdlcDeliverableDate(reloaded.work[phase], 'constructor'), undefined)
+    assert.match(sdlcMarkdown(reloaded, 'Demo'), /Requirements specification \(target 2026-12-15\)/)
+    assert.equal(updateSdlcWork(doc, 'waterfall', phase, {deliverableTargetDates: {'Requirements specification': '2026-02-29'}}), doc)
+    assert.equal(updateSdlcWork(doc, 'waterfall', phase, {deliverables: ['stakeholder approval']}).work[phase].deliverableTargetDates, undefined)
+})
+test('initialized roadmaps retain their identity and allow writes only to their selected model', () => {
+    const doc = {...empty(), roadmapId: 'd23145a7-cb7a-4c4e-b8aa-4369f62058a6', connectToTodo: true}
+    assert.ok(validSdlcDocument(doc))
+    assert.equal(switchSdlcModel(doc, 'iterative'), doc)
+    const updated = updateSdlcWork(doc, 'waterfall', 'requirements', {targetDate: '2027-01-10'})
+    assert.equal(updated.roadmapId, doc.roadmapId)
+    assert.equal(updated.connectToTodo, true)
+    assert.equal(validSdlcDocument({...doc, roadmapId: 'invalid'}), false)
+    assert.equal(validSdlcDocument({...doc, connectToTodo: 'true'}), false)
+})
 test('validation covers phase work in active, inactive, archived, and release state', () => {
     const good = updateSdlcWork(empty(),'waterfall','requirements',{ownerId:'member',checked:['Requirements specification'],blocked:false})
     for (const work of [null,[],{missing:{}},{requirements:{ownerId:''}},{requirements:{targetDate:'2026-02-29'}},{requirements:{blocked:'yes'}},{requirements:{blocker:'x'.repeat(2001)}},{requirements:{checked:['same','same']}},{requirements:{checked:[{}]}}]) assert.equal(validSdlcDocument({...empty(),work}),false)
@@ -82,6 +108,23 @@ test('readiness counts visible deliverables, while attention status respects com
     assert.ok(sdlcOverdue({targetDate:'2026-10-24'},false,new Date(2026,9,25)))
     assert.equal(sdlcOverdue({targetDate:'2026-10-25'},false,new Date(2026,9,25)),false)
     assert.equal(sdlcOverdue({targetDate:'2026-10-24'},true,new Date(2026,9,25)),false)
+})
+test('custom phase lists override presets and survive model changes with the roadmap creator', () => {
+    const phase = sdlcModels.waterfall.phases[0]
+    const legacy = {ownerId:'original',checked:['Requirements specification']}
+    assert.deepEqual(sdlcAssignees(legacy),['original'])
+
+    const work = {...legacy,assigneeIds:['original','teammate'],deliverables:['Scope brief'],checked:['Scope brief']}
+    const saved = updateSdlcWork({...empty(),creatorId:'author'},'waterfall',phase.id,work)
+    const restored = switchSdlcModel(switchSdlcModel(saved,'iterative'),'waterfall')
+    assert.equal(restored.creatorId,'author')
+    assert.ok(validSdlcDocument(restored))
+    assert.deepEqual(sdlcAssignees(restored.work[phase.id]),['original','teammate'])
+    assert.deepEqual(sdlcReadiness(phase,restored.work[phase.id]).missing,[])
+    assert.deepEqual(sdlcReadiness(phase,{deliverables:[]}).items,[])
+    assert.deepEqual(sdlcAssignees({...legacy,assigneeIds:[]}),[])
+    assert.equal(updateSdlcWork(saved,'waterfall',phase.id,{deliverables:['duplicate','duplicate']}),saved)
+    assert.equal(updateSdlcWork(saved,'waterfall',phase.id,{assigneeIds:['']}),saved)
 })
 test('Markdown reports include model snapshots, real checklist state, names, blockers and release history', () => {
     let doc = updateSdlcWork(empty(),'waterfall','requirements',{ownerId:'member',targetDate:'2026-11-01',checked:['Requirements specification'],blocked:true,blocker:'Waiting for review'})

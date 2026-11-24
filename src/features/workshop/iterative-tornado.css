@@ -17,7 +17,7 @@
 .tornado-labels path { fill: none; stroke: currentColor; stroke-width: .7; opacity: .3; }
 .tornado-labels text { font-size: 12px; font-weight: 450; fill: var(--muted-foreground); stroke: var(--background); stroke-width: 5px; paint-order: stroke; stroke-linejoin: round; }
 .tornado-labels .selected text { fill: var(--foreground); }
-.tornado-view-badge { position: absolute; top: 17px; left: 20px; display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted-foreground); pointer-events: none; }
+.tornado-view-badge { position: absolute; top: 52px; right: 16px; display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted-foreground); pointer-events: none; }
 .tornado-view-badge > span:first-child { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
 .tornado-toolbar { position: absolute; top: 8px; right: 16px; display: flex; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in oklab, var(--background) 94%, transparent); }
 .tornado-toolbar button { display: flex; gap: 6px; align-items: center; justify-content: center; min-width: 30px; min-height: 30px; padding: 5px 7px; border-radius: 5px; font-size: 11px; cursor: pointer; }
@@ -55,7 +55,7 @@
     .tornado-view { min-height: 300px; }
     .tornado-toolbar { right: 10px; }
     .tornado-toolbar button { min-height: 36px; padding: 4px 6px; }
-    .tornado-view-badge { left: 12px; top: 22px; font-size: 10px; }
+    .tornado-view-badge { top: 58px; right: 10px; font-size: 10px; }
     .tornado-layer-legend { left: 12px; right: 12px; }
     .tornado-layer-legend button { min-height: 32px; }
     .tornado-labels text { font-size: 11px; }

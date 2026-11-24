@@ -22,6 +22,9 @@ import {useWorkshop} from "@/features/workshop/workshop-context"
 import {mapApiProject} from "@/features/workshop/workshop-data"
 import {ProjectEditDialog, type ProjectEditSection} from "@/features/workshop/project-edit-dialog"
 import {readGitHubSelections} from "@/features/workshop/github-repository-selection"
+import {connectionNodeLink} from "@/features/workshop/connections/connections-model"
+import {isSdlcModel, sdlcModels} from "@/features/workshop/sdlc-models"
+import {toolDocumentStorageKey, useGetToolDocumentQuery, type ToolKey} from "@/features/workshop/tool-documents-api"
 import type {ProjectStatus, SaveProjectInput, WorkshopProject,} from "@/features/workshop/workshop-types"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import {useUpdateProjectMutation} from "@/services/api"
@@ -39,6 +42,9 @@ export function WorkshopProjectDetailPage() {
     const [saveError, setSaveError] = useState("")
     const [updateProject, {isLoading: isSaving}] = useUpdateProjectMutation()
     const matchingProject = organization.projects.find((candidate) => candidate.id === projectId)
+    const isPersistedOrganization = guidPattern.test(organization.id)
+    const roadmapKey = {organizationId: organization.id, projectId: matchingProject?.id ?? "", tool: "sdlc"} as const
+    const roadmap = useGetToolDocumentQuery(roadmapKey, {skip: !matchingProject || !isPersistedOrganization, refetchOnMountOrArgChange: true})
 
     if (!matchingProject) {
         return (
@@ -59,7 +65,10 @@ export function WorkshopProjectDetailPage() {
     const progress = projectTasks.length > 0
         ? Math.round((completedTasks / projectTasks.length) * 100)
         : 0
-    const isPersistedOrganization = guidPattern.test(organization.id)
+    const savedRoadmap = roadmap.currentData?.document
+    const model = isPersistedOrganization
+        ? savedRoadmap && "model" in savedRoadmap ? savedRoadmap.model : null
+        : localRoadmapModel(roadmapKey, user?.id ?? "current")
     const canManage = organization.ownerUserId === user?.id
         || (!isPersistedOrganization && organization.ownerUserId === "current")
         || team?.leaderId === user?.id
@@ -103,7 +112,7 @@ export function WorkshopProjectDetailPage() {
             documentationUrl: optionalValue(form, "documentationUrl"),
             designUrl: optionalValue(form, "designUrl"),
             liveUrl: optionalValue(form, "liveUrl"),
-            sdlcMethod: form.get("sdlcMethod") === "unspecified" ? undefined : optionalValue(form, "sdlcMethod"),
+            sdlcMethod: project.sdlc === "Not specified" ? undefined : project.sdlc,
             databaseDetails: optionalValue(form, "databaseDetails"),
             environments: splitTags(form.get("environments")),
             startDate,
@@ -206,7 +215,8 @@ export function WorkshopProjectDetailPage() {
                     <section className="project-detail-section" aria-labelledby="project-technical-title">
                         <h2 id="project-technical-title">Technical setup</h2>
                         <dl className="project-detail-facts">
-                            <ProjectFact label="SDLC method" value={project.sdlc}/>
+                            <ProjectFact label="SDLC roadmap" value={roadmap.isError ? "Unavailable" : roadmap.isLoading ? "Loading…" :
+                                <Link to={connectionNodeLink(roadmapKey, {kind: "sdlc"})}>{isSdlcModel(model) ? sdlcModels[model].title : "Not initialized"}</Link>}/>
                             <ProjectFact label="Database & storage" value={project.database}/>
                             <ProjectFact label="Environments" value={project.environments.join(" · ") || "Not specified"}/>
                         </dl>
@@ -239,6 +249,11 @@ function ProjectFact({label, value}: {label: string; value: ReactNode}) {
 }
 function optionalValue(form: FormData, name: string) {
     return String(form.get(name) ?? "").trim() || undefined
+}
+
+function localRoadmapModel(key: ToolKey, userId: string): unknown {
+    try {return JSON.parse(localStorage.getItem(toolDocumentStorageKey(key, userId)) ?? "null")?.document?.model}
+    catch {return null}
 }
 
 function splitTags(value: FormDataEntryValue | null) {

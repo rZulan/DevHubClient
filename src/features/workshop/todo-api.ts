@@ -1,4 +1,5 @@
 import {api} from "@/services/api"
+import {current} from "@reduxjs/toolkit"
 import type {FetchBaseQueryError, QueryReturnValue} from "@reduxjs/toolkit/query"
 
 export type TodoTask = {
@@ -157,12 +158,36 @@ export const todoApi = api.enhanceEndpoints({addTagTypes: ["Todos"]}).injectEndp
             }),
             invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
-        moveTodoTask: builder.mutation<TodoTask, Scope & { todoId: string; taskId: string; status: string }>({
-            query: ({todoId, taskId, status, ...scope}) => ({
+        moveTodoTask: builder.mutation<TodoTask, Scope & { todoId: string; taskId: string; status: string; position?: number; boardRevision?: number }>({
+            query: ({todoId, taskId, status, position, boardRevision, ...scope}) => ({
                 url: `${path(scope)}/${todoId}/tasks/${taskId}`,
                 method: "PATCH",
-                body: {status}
+                body: {status, position, boardRevision}
             }),
+            async onQueryStarted({todoId, taskId, status, position, boardRevision, ...scope}, {dispatch, queryFulfilled}) {
+                if (position === undefined) return
+                const key = {...scope, todoId}
+                let previousTasks: TodoTask[] | undefined
+                dispatch(todoApi.util.updateQueryData("getTodo", key, board => {
+                    if (board.boardRevision !== boardRevision) return
+                    const originalTasks = current(board).tasks
+                    const task = originalTasks.find(item => item.id === taskId)
+                    if (!task) return
+                    previousTasks = originalTasks
+                    const tasks = originalTasks.filter(item => item.id !== taskId)
+                    const nextTask = tasks.filter(item => item.status === status)[position]
+                    tasks.splice(nextTask ? tasks.indexOf(nextTask) : tasks.length, 0, {...task, status})
+                    board.tasks = tasks
+                }))
+                try {
+                    await queryFulfilled
+                } catch {
+                    const tasks = previousTasks
+                    if (tasks) dispatch(todoApi.util.updateQueryData("getTodo", key, board => {
+                        if (board.boardRevision === boardRevision) board.tasks = tasks
+                    }))
+                }
+            },
             invalidatesTags: (_data, _error, scope) => [{type: "Todos", id: path(scope)}],
         }),
     }),

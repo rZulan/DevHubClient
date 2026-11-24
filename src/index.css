@@ -51,13 +51,18 @@
 
 @media (forced-colors: none) {
     /* Scope by active Workshop view so controls inside portals use the same treatment. */
+    :where(body:has(.workshop-shell, .workshop-entry), .dashboard-picker-window)
+    [class~="focus-visible:ring-3"]:focus-visible:not([aria-invalid="true"]) {
+        @apply ring-1 ring-ring/30;
+    }
+
     body:has(:where(.workshop-shell, .workshop-entry))
     :is(
         button, select, textarea, [data-slot="button"],
         input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="image"]))
     ):not(
         :focus-visible, [aria-invalid="true"],
-        :where(.note-color-picker button, .bug-portal-switch, .workshop-dashboard-nav-switch, .bug-report-row, .directory-create-card)
+        :where(.note-color-picker button, .bug-portal-switch, .workshop-dashboard-nav-switch, .bug-report-row, .directory-create-card, .sdlc-control-trigger)
     ) {
         border-color: transparent !important;
     }
@@ -78,17 +83,17 @@
     }
 
     :is(.ui-color-field, .ui-layer-search, .uml-directory-search, .uml-suggestions-search):focus-within {
-        outline: 2px solid var(--ring);
-        outline-offset: 2px;
+        outline: 1px solid var(--ring);
+        outline-offset: 1px;
     }
 
     :root:not(.dark, [data-workshop-scheme]) body:has(:where(.workshop-shell, .workshop-entry))
-    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select], select) {
+    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select]:not(:where(.sdlc-control-trigger)), select) {
         background-color: var(--secondary);
     }
 
     :root:not(.dark, [data-workshop-scheme]) body:has(:where(.workshop-shell, .workshop-entry))
-    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select], select):is(:hover, [aria-expanded="true"]):not(:disabled) {
+    :is([data-slot="button"][data-variant="outline"], [data-slot="select-trigger"], [data-workshop-select]:not(:where(.sdlc-control-trigger)), select):is(:hover, [aria-expanded="true"]):not(:disabled) {
         background-color: color-mix(in oklab, var(--secondary), var(--foreground) 5%);
     }
 }
@@ -322,6 +327,10 @@
     padding: .45rem;
     text-align: left;
     font-size: 0.8125rem;
+}
+
+.workshop-assignee-options > button:enabled {
+    cursor: pointer;
 }
 
 .workshop-assignee-options > button:hover, .workshop-assignee-options > button:focus-visible {
@@ -780,7 +789,7 @@
 
     .workshop-modal input:focus, .workshop-modal textarea:focus {
         border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, .12);
     }
 
     .workshop-form-error {
@@ -997,8 +1006,8 @@
     }
 
     .workshop-nav-chevron {
-        width: .75rem;
-        height: .75rem;
+        width: .6875rem;
+        height: .6875rem;
         margin-left: auto;
         transition: transform .15s ease;
     }
@@ -1540,7 +1549,6 @@
         width: 1.75rem;
         height: 1.75rem;
         margin-right: .05rem;
-        border: 1px solid #2c3240;
         border-radius: .42rem;
         color: #718096;
     }
@@ -1550,13 +1558,7 @@
         color: #e2e8f0;
     }
 
-    .workshop-members-collapse svg {
-        width: .78rem;
-        height: .78rem;
-    }
-
     .workshop-members > header > div svg {
-        width: .85rem;
         color: #8b5cf6;
     }
 
@@ -2223,7 +2225,7 @@
 
     .workshop-team-modal :is(select, [data-workshop-select]):focus {
         border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, .12);
     }
 
     .workshop-member-picker {
@@ -3048,7 +3050,7 @@
 
     .workshop-project-modal :is(select, [data-workshop-select]):focus {
         border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, .12);
     }
 
     .workshop-tag-editor {
@@ -3080,7 +3082,7 @@
 
     .workshop-tag-entry > input:focus {
         border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, .12);
     }
 
     .workshop-tag-entry > input::placeholder {
@@ -4374,7 +4376,7 @@
 
     .workshop-shape-menu > label input:focus {
         border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .1);
+        box-shadow: 0 0 0 1px rgba(124, 58, 237, .1);
     }
 
     .workshop-shape-sections {
@@ -7725,7 +7727,7 @@
     .workshop-modal input:focus,
     .workshop-modal textarea:focus {
         border-color: var(--ring);
-        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 18%, transparent);
+        box-shadow: 0 0 0 1px color-mix(in oklab, var(--ring) 18%, transparent);
     }
 
     .workshop-primary-action,
@@ -7884,7 +7886,6 @@
     }
 
     .workshop-members-collapse {
-        border-color: var(--border);
         color: var(--muted-foreground);
     }
 
@@ -8241,7 +8242,7 @@
 
     .workshop-shape-menu > label input:focus {
         border-color: var(--ring);
-        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 18%, transparent);
+        box-shadow: 0 0 0 1px color-mix(in oklab, var(--ring) 18%, transparent);
     }
 
     .workshop-canvas-frame > header span,
@@ -12093,9 +12094,6 @@
     .sdlc-stars-near circle:nth-child(3n) { animation-delay: -3s; }
     .sdlc-stars-near circle:nth-child(3n + 1) { animation-delay: -1.5s; }
     .sdlc-canvas-toolbar { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 28px 12px; }
-    .sdlc-model-control { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; min-width: 0; }
-    .sdlc-model-control label { display: flex; flex-direction: column; gap: 7px; color: var(--muted-foreground); font-size: 12px; }
-    .sdlc-model-control :is(select, [data-workshop-select]) { background: var(--secondary); border: 1px solid var(--border); border-radius: 7px; padding: 8px 28px 8px 10px; color: var(--foreground); font-size: 13px; max-width: 100%; }
     .sdlc-map-label { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sdlc-map-label > span { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 10px color-mix(in oklab, var(--primary) 40%, transparent); }
     .sdlc-viewport { position: relative; flex: 1; min-height: 260px; overflow: hidden; cursor: grab; touch-action: none; user-select: none; overscroll-behavior: none; }
@@ -12110,9 +12108,9 @@
     .sdlc-roadmap-links > path.sdlc-cycle-return { stroke-dasharray: 3 9; stroke-width: 1; opacity: .24; }
     .sdlc-constellation .sdlc-path-shadow { transform: translateY(9px); filter: blur(4px); opacity: .15; }
     .sdlc-constellation .sdlc-path-shadow path { stroke: var(--foreground); stroke-width: 3; stroke-dasharray: none; }
-    .sdlc-model-art { stroke: var(--sdlc-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .sdlc-model-art { stroke: var(--sdlc-ink); stroke-width: calc(1.8 / var(--sdlc-artwork-scale, 1)); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     .sdlc-illustration-contour { opacity: .42; }
-    .sdlc-illustration-detail { opacity: .5; stroke-width: 1.2; }
+    .sdlc-illustration-detail { opacity: .5; stroke-width: calc(1.2 / var(--sdlc-artwork-scale, 1)); }
     .sdlc-phase-star { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; cursor: pointer; width: 60px; height: 60px; color: var(--muted-foreground); border-radius: 50%; }
     .sdlc-star-core { --sdlc-glow-low: .5; --sdlc-glow-high: .85; --sdlc-glow-radius: 8px; position: relative; display: grid; place-items: center; width: 48px; height: 48px; color: var(--sdlc-ink); transition: transform .2s; }
     .sdlc-star-core svg { width: 100%; height: 100%; overflow: visible; animation: sdlc-star-glow 2.4s ease-in-out infinite alternate; }
@@ -12157,7 +12155,6 @@
     .sdlc-zoom-controls output { min-width: 42px; text-align: center; font-size: 11px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
     .sdlc-phase-inspector { width: 280px; }
     .sdlc-phase-number { display: grid; place-items: center; width: 38px; height: 38px; background: color-mix(in oklab, var(--primary) 13%, var(--background)); color: var(--primary); border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
-    .sdlc-phase-description { font-size: 13px; line-height: 1.8; color: var(--muted-foreground); margin-bottom: 22px; }
     .sdlc-deliverables { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 24px; }
     .sdlc-deliverables li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted-foreground); line-height: 1.5; }
     .sdlc-deliverables svg { width: 13px; height: 13px; color: var(--primary); flex-shrink: 0; }
@@ -12168,7 +12165,7 @@
     .sdlc-phase-list > button > span { display: grid; place-items: center; width: 22px; height: 22px; color: var(--muted-foreground); border: 1px solid var(--border); border-radius: 50%; font-size: 13px; }
     .sdlc-phase-list svg { width: 12px; height: 12px; color: var(--primary); }
     .sdlc-phase-list i { margin-left: auto; background: var(--primary); width: 5px; height: 5px; border-radius: 50%; }
-    .project-tools-settings:focus-visible, .project-tool-option button:focus-visible, .project-tool-option input:focus-visible, .tool-inspector input:focus-visible, .tool-inspector textarea:focus-visible, .tool-inspector :is(select, [data-workshop-select]):focus-visible, .sdlc-phase-star:focus-visible, .sdlc-model-control :is(select, [data-workshop-select]):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+    .project-tools-settings:focus-visible, .project-tool-option button:focus-visible, .project-tool-option input:focus-visible, .tool-inspector input:focus-visible, .tool-inspector textarea:focus-visible, .tool-inspector :is(select, [data-workshop-select]):focus-visible, .sdlc-phase-star:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
     @media (max-width: 1200px) {
         .tool-layer-panel { width: 145px; }
         .tool-inspector { width: 240px; padding: 12px; }
@@ -12257,7 +12254,7 @@
 .task-edit-field input, .task-edit-select :is(select, [data-workshop-select]) { height: 42px; }
 .task-edit-field textarea { min-height: 112px; resize: vertical; }
 .task-edit-field input:focus, .task-edit-field textarea:focus, .task-edit-select :is(select, [data-workshop-select]):focus {
-    border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 15%, transparent);
+    border-color: var(--ring); box-shadow: 0 0 0 1px color-mix(in oklab, var(--ring) 15%, transparent);
 }
 .task-edit-metadata { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .task-edit-select { position: relative; }
@@ -12387,7 +12384,7 @@ body:has(.workshop-shell) :is([data-slot="dropdown-menu-content"], [data-slot="s
 .workshop-projects-heading .workshop-projects-link { flex: 1; min-width: 0; width: auto; }
 .workshop-projects-toggle { display: grid; place-items: center; flex-shrink: 0; width: 32px; min-height: 36px; border: 0; border-radius: .5rem; background: transparent; color: var(--muted-foreground); cursor: pointer; }
 .workshop-projects-toggle:hover { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
-.workshop-projects-toggle > .workshop-nav-chevron { width: .75rem; height: .75rem; margin-left: 0; }
+.workshop-projects-toggle > .workshop-nav-chevron { margin-left: 0; }
 .workshop-projects-link:focus-visible, .workshop-projects-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .workshop-drawer .workshop-projects-toggle { width: 44px; min-height: 44px; }
 .workshop-nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent; }
@@ -12504,10 +12501,6 @@ body:has(.workshop-shell) :is([data-slot="dropdown-menu-content"], [data-slot="s
     .sdlc-universe { flex: none; min-height: 560px; height: 75svh; overflow: hidden; }
     .sdlc-canvas-toolbar { padding: 20px 20px 8px; }
     .sdlc-map-label { display: none; }
-    .sdlc-model-control { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 12px; width: 100%; }
-    .sdlc-model-control > label:nth-child(3) { grid-column: 1 / -1; max-width: 180px; }
-    .sdlc-model-control label { min-width: 0; flex: 1; font-size: 13px; }
-    .sdlc-model-control :is(select, [data-workshop-select]) { max-width: 100%; min-height: 40px; font-size: 14px; padding-right: 12px; }
     .sdlc-canvas-footer { padding: 8px 20px 20px; gap: 12px; }
     .sdlc-progress-card { flex: 1 1 130px; padding: 12px; }
     .sdlc-navigation { max-width: 170px; }

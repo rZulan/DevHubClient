@@ -7,7 +7,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
-import {TodoAssignees} from "./todo-assignees"
+import {WorkshopAssignees} from "./workshop-assignees"
 import {TodoDateFields} from "./todo-dates"
 import {readTodoDates, todoDateError} from "./todo-schedule"
 import type {TodoTask, TodoColumn, TodoTaskDetails} from "./todo-api"
@@ -49,7 +49,7 @@ export function TodoTaskEditDialog({task, columns, members, disabled, onClose, o
                 <div className="task-edit-field"><div className="task-edit-label"><Label htmlFor={`${formId}-description`}>Description</Label><span>Optional</span></div><Textarea id={`${formId}-description`} name="description" defaultValue={task.description} maxLength={2000} rows={4} placeholder="Add context, requirements, or useful links…"/></div>
                 <div className="task-edit-metadata">
                     <div className="task-edit-field"><Label htmlFor={`${formId}-status`}>Column</Label><div className="task-edit-select"><WorkshopSelect id={`${formId}-status`} name="status" defaultValue={task.status}>{columns.map(column => <option value={column.id} key={column.id}>{column.name}</option>)}</WorkshopSelect><ChevronDown aria-hidden="true"/></div></div>
-                    <div className="task-edit-field"><div className="task-edit-label"><Label>Assignees</Label><span>Optional</span></div><div className="task-edit-assignees"><TodoAssignees ids={assignees} members={members} editable disabled={pending || !!disabled} taskTitle={task.title}
+                    <div className="task-edit-field"><div className="task-edit-label"><Label>Assignees</Label><span>Optional</span></div><div className="task-edit-assignees"><WorkshopAssignees ids={assignees} members={members} editable disabled={pending || !!disabled} subject={task.title}
                         onAdd={id => setAssignees(current => [...new Set([...current, id])])} onRemove={id => setAssignees(current => current.filter(value => value !== id))}/></div></div>
                 </div>
                 <TodoDateFields startDate={task.startDate} targetDate={task.targetDate}/>

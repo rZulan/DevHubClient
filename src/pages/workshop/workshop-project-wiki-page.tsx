@@ -2,7 +2,9 @@ import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyPage, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
 import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from "react"
 import {Link, useLocation, useNavigate, useOutletContext, useSearchParams} from "react-router-dom"
-import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Plus, Trash2} from "lucide-react"
+import {Bold, BookOpen, Check, ChevronDown, Code, Download, Ellipsis, Eye, FileText, Heading, History, Home, Image as ImageIcon, Italic, Link2, LoaderCircle, Pencil, Plus, Trash2} from "lucide-react"
+import {CaretLeftIcon} from "@phosphor-icons/react/dist/csr/CaretLeft"
+import {CaretRightIcon} from "@phosphor-icons/react/dist/csr/CaretRight"
 import {useAppSelector} from "@/app/hooks"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -216,13 +218,26 @@ function ProjectWiki() {
             </aside>
             <section className="wiki-main">
                 <div className="wiki-toolbar">
-                    <div className="wiki-toolbar-navigation"><Button variant="ghost" size="icon-sm" aria-label={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} title={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} aria-expanded={sidebarOpen} aria-controls={sidebarId} onClick={() => setSidebarOpen(value => !value)}>{sidebarOpen ? <PanelLeftClose/> : <PanelLeftOpen/>}</Button><div className="wiki-breadcrumb"><BookOpen/><span>Wiki</span><span aria-hidden="true">/</span><strong>{editing && pageForm && canManage ? pageForm.title || "New page" : page?.title || "Pages"}</strong></div></div>
+                    <div className="wiki-toolbar-navigation">
+                        <Button variant="ghost" size="icon-sm" aria-label={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"}
+                            title={sidebarOpen ? "Collapse pages sidebar" : "Expand pages sidebar"} aria-expanded={sidebarOpen}
+                            aria-controls={sidebarId} onClick={() => setSidebarOpen(value => !value)}>
+                            {sidebarOpen ? <CaretLeftIcon aria-hidden="true" className="size-3.5" weight="bold"/> : <CaretRightIcon aria-hidden="true" className="size-3.5" weight="bold"/>}
+                        </Button>
+                        <div className="wiki-breadcrumb"><BookOpen/><span>Wiki</span><span aria-hidden="true">/</span><strong>{editing && pageForm && canManage ? pageForm.title || "New page" : page?.title || "Pages"}</strong></div>
+                    </div>
                     <div className="wiki-actions">
                         <WikiSearchDialog pages={document.pages} currentId={page?.id} homePageId={document.homePageId} canNavigate={!hasUnsavedEdits} shortcutEnabled={!deleting && !imageOpen && !importOpen} onNavigate={navigateSearchResult}/>
                         <WikiFileActions document={document} page={page} projectName={project.name} userId={userId}
                             canWrite={canWrite} canImport={canImport} open={importOpen} onOpenChange={setImportOpen}
                             onExportPage={exportPage} onImportPage={importPage} onImportWiki={importWiki}/>
-                        <span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}{hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm" aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"} title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen} aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>{tocOpen ? <PanelRightClose/> : <PanelRightOpen/>}</Button>}
+                        <span className="wiki-mode" role="status">{canManage ? <><Pencil/>Editing</> : <><Eye/>Read only</>}</span>{canWrite && (canManage ? <Button variant="outline" size="sm" onClick={finishEditing}><Check/>Done editing</Button> : <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setEditMode(true)}><Pencil/>Edit wiki</Button>)}
+                        {hasToc && page && !editing && <Button className="wiki-toc-toggle" variant="ghost" size="icon-sm"
+                            aria-label={tocOpen ? "Collapse table of contents" : "Expand table of contents"}
+                            title={tocOpen ? "Collapse table of contents" : "Expand table of contents"} aria-expanded={tocOpen}
+                            aria-controls={tocId} onClick={() => setTocPreference(!tocOpen)}>
+                            {tocOpen ? <CaretRightIcon aria-hidden="true" className="size-3.5" weight="bold"/> : <CaretLeftIcon aria-hidden="true" className="size-3.5" weight="bold"/>}
+                        </Button>}
                     </div>
                 </div>
                 <span className="sr-only" role="status">{statusText}</span>

@@ -1,7 +1,9 @@
 import {useEffect, useEffectEvent, useRef, useState, type SetStateAction} from "react"
 import {useAppDispatch} from "@/app/hooks"
+import {createClientId} from "@/lib/create-client-id"
 import {emptyDocuments, validToolDocument, type DocumentTool, type ToolDocumentMap} from "./tool-documents"
-import {toolDocumentsApi, type ToolKey, type SavedToolDocument} from "./tool-documents-api"
+import {toolDocumentStorageKey, toolDocumentsApi, type ToolKey, type SavedToolDocument, type SdlcSetup} from "./tool-documents-api"
+import {todoApi} from "./todo-api"
 import {useProjectToolUpdates} from "./use-project-tool-updates"
 import {normalizeSdlcDocument, type SdlcDocument} from "./sdlc-document"
 import {canvasObjectCount, canGrowCanvas, retrySeconds, saveFailureDetail, workshopDefaults} from "./workshop-limits"
@@ -18,16 +20,25 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
     const countdown = useRetryCountdown(retryAt)
     const notBefore = useRef(0), savedObjects = useRef(0)
     const [document, renderDocument] = useState<Document>(emptyDocuments[key.tool] as Document)
+    const [hasDocument, setHasDocument] = useState(false)
     const [status, renderStatus] = useState<Status>("loading")
     const [error, setError] = useState("")
     const [historyVersion, setHistoryVersion] = useState(0)
     const current = useRef(document), revision = useRef(0), state = useRef<Status>("loading")
     const alive = useRef(true), pending = useRef(false), saving = useRef(false)
+    const initializing = useRef(false)
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const past = useRef<Document[]>([]), future = useRef<Document[]>([]), transaction = useRef<Document | undefined>(undefined)
     const queuedRemote = useRef<SavedToolDocument | null>(null)
-    const storageKey = `devhub.tool-document:${userId}:${key.organizationId}:${key.projectId}:${key.tool}`
+    const storageKey = toolDocumentStorageKey(key, userId)
     function setStatus(next: Status) {state.current = next; if (alive.current) renderStatus(next)}
+    function clearHistory() {
+        past.current = []; future.current = []; transaction.current = undefined
+        if (alive.current) setHistoryVersion(value => value + 1)
+    }
+    function refreshTodos() {
+        dispatch(todoApi.util.invalidateTags([{type: "Todos", id: `/organizations/${key.organizationId}/projects/${key.projectId}/todos`}]))
+    }
     function backup() {
         try { localStorage.setItem(storageKey, JSON.stringify({revision: revision.current, document: current.current, pending: pending.current})); return true }
         catch {if (alive.current) setError("Browser recovery storage is unavailable. Keep this page open until saved."); return false}
@@ -46,8 +57,9 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         }
         const next = normalize((saved.document ?? emptyDocuments[key.tool]) as Document)
         revision.current = saved.revision; current.current = next; renderDocument(next)
+        setHasDocument(saved.document !== null)
         savedObjects.current = canvasObjectCount(key.tool, next) ?? 0
-        past.current = []; future.current = []; transaction.current = undefined; setHistoryVersion(value => value + 1)
+        clearHistory()
         queuedRemote.current = null; setError(""); setStatus("saved"); backup()
     }
     async function refreshSharedDocument(noticeRevision?: number) {
@@ -77,14 +89,24 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
                 const snapshot = current.current
                 pending.current = false; setStatus("saving")
                 try {
+                    let creatorId: string | undefined
                     if (persisted) {
                         notBefore.current = Date.now() + Math.ceil(60_000 / (limits?.savesPerMinute ?? workshopDefaults.savesPerMinute)) + 100
                         const response = await dispatch(toolDocumentsApi.endpoints.saveToolDocument.initiate({...key, revision: revision.current, document: snapshot})).unwrap()
                         revision.current = response.revision
+                        if (key.tool === "sdlc") {
+                            const roadmap = response.document as SdlcDocument | null
+                            creatorId = roadmap?.creatorId
+                            if (roadmap?.connectToTodo) refreshTodos()
+                        }
                         savedObjects.current = canvasObjectCount(key.tool, snapshot) ?? 0
                         if (alive.current) setRetryAt(0)
                     }
                     pending.current = current.current !== snapshot
+                    if (creatorId && (current.current as SdlcDocument).creatorId !== creatorId) {
+                        current.current = {...current.current, creatorId}
+                        if (alive.current) renderDocument(current.current)
+                    }
                     const remote = queuedRemote.current; queuedRemote.current = null
                     if (remote && remote.revision > revision.current) acceptRemote(remote, true)
                     if (!backup() && !persisted) throw new Error("Browser storage unavailable")
@@ -115,20 +137,24 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
             const response = persisted ? await dispatch(toolDocumentsApi.endpoints.getToolDocument.initiate(key, {forceRefetch: true, subscribe: false})).unwrap() : {revision: 0, document: null}
             if (!alive.current) return
             let next = (response.document ?? emptyDocuments[key.tool]) as Document
+            let available = response.document !== null
             savedObjects.current = canvasObjectCount(key.tool, next) ?? 0
             revision.current = response.revision; pending.current = false
             let conflict = false
             try {
                 const draft = JSON.parse(localStorage.getItem(storageKey) ?? "null")
-                if (!discard && Number.isInteger(draft?.revision) && validToolDocument(key.tool, draft?.document) && (canWrite || !persisted) && (!persisted || draft.pending)) {
+                if (!discard && (key.tool !== "sdlc" || available || !persisted) && Number.isInteger(draft?.revision) &&
+                    validToolDocument(key.tool, draft?.document) && (canWrite || !persisted) && (!persisted || draft.pending)) {
                     next = draft.document as Document
+                    available = true
                     pending.current = persisted && Boolean(draft.pending) && JSON.stringify(next) !== JSON.stringify(response.document)
                     conflict = pending.current && draft.revision !== response.revision
                 }
             } catch { /* A malformed backup cannot grant project access. */ }
             next = normalize(next)
             current.current = next; renderDocument(next)
-            past.current = []; future.current = []; transaction.current = undefined; setHistoryVersion(value => value + 1)
+            setHasDocument(available)
+            clearHistory()
             setError(conflict ? "A recovered draft conflicts with the saved project. Download your draft before reloading." : "")
             setStatus(conflict ? "conflict" : pending.current ? "unsaved" : "saved")
             if (discard) backup()
@@ -137,13 +163,51 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
             if (pending.current && state.current !== "conflict") void flush()
         } catch {if (alive.current) {setStatus("load-error"); setError("The project document could not be loaded. Retry to continue.")}}
     }
+    async function initializeSdlc(setup: SdlcSetup) {
+        if (key.tool !== "sdlc" || !canWrite || state.current !== "saved" || saving.current || pending.current) {
+            throw new Error("Save or reload the current roadmap before starting setup.")
+        }
+        let refresh = false
+        initializing.current = true
+        saving.current = true
+        setStatus("saving")
+        try {
+            const saved = persisted
+                ? await dispatch(toolDocumentsApi.endpoints.initializeSdlc.initiate({
+                    organizationId: key.organizationId, projectId: key.projectId, ...setup, revision: revision.current,
+                })).unwrap()
+                : {revision: revision.current + 1, document: {...emptyDocuments.sdlc, ...setup, connectToTodo: false, roadmapId: createClientId(), creatorId: userId}}
+            if (!validToolDocument("sdlc", saved.document)) throw new Error("The saved roadmap could not be loaded.")
+            const next = normalize(saved.document as Document)
+            if (!persisted) localStorage.setItem(storageKey, JSON.stringify({revision: saved.revision, document: next, pending: false}))
+            revision.current = saved.revision
+            current.current = next
+            clearHistory()
+            if (alive.current) {renderDocument(next); setHasDocument(true); setError("")}
+            if (persisted) {backup(); refreshTodos()}
+        } catch (failure) {
+            refresh = (failure as {status?: number})?.status === 409
+            throw failure
+        } finally {
+            initializing.current = false
+            saving.current = false
+            setStatus("saved")
+            const remote = queuedRemote.current; queuedRemote.current = null
+            if (remote && alive.current) acceptRemote(remote)
+            if (refresh) void refreshSharedDocument()
+        }
+    }
     function update(next: Document) {
-        if (!canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
+        if (!canWrite || initializing.current || ["loading", "load-error", "conflict"].includes(state.current)) return
+        if (key.tool === "sdlc") {
+            const creatorId = (current.current as SdlcDocument).creatorId ?? (persisted ? undefined : userId)
+            if (creatorId && (next as SdlcDocument).creatorId !== creatorId) next = {...next, creatorId}
+        }
         current.current = next; renderDocument(next); pending.current = true; backup(); setStatus("unsaved")
         clearTimeout(timer.current); timer.current = setTimeout(() => void flush(), 500)
     }
     function setDocument(action: SetStateAction<Document>) {
-        if (!canWrite || ["loading", "load-error", "conflict"].includes(state.current)) return
+        if (!canWrite || initializing.current || ["loading", "load-error", "conflict"].includes(state.current)) return
         const next = typeof action === "function" ? (action as (value: Document) => Document)(current.current) : action
         if (next === current.current) return
         const count = canvasObjectCount(key.tool, next)
@@ -159,8 +223,8 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         if (transaction.current && transaction.current !== current.current) {past.current.push(transaction.current); if (past.current.length > 100) past.current.shift(); setHistoryVersion(value => value + 1)}
         transaction.current = undefined
     }
-    function undo() {const previous = past.current.pop(); if (previous) {future.current.push(current.current); update(previous); setHistoryVersion(value => value + 1)}}
-    function redo() {const next = future.current.pop(); if (next) {past.current.push(current.current); update(next); setHistoryVersion(value => value + 1)}}
+    function undo() {if (initializing.current) return; const previous = past.current.pop(); if (previous) {future.current.push(current.current); update(previous); setHistoryVersion(value => value + 1)}}
+    function redo() {if (initializing.current) return; const next = future.current.pop(); if (next) {past.current.push(current.current); update(next); setHistoryVersion(value => value + 1)}}
     const loadLatest = useEffectEvent(() => void load())
     const flushLatest = useEffectEvent(() => void flush())
     useEffect(() => {
@@ -173,7 +237,7 @@ export function useToolDocument<T extends DocumentTool>(key: ToolKey & {tool: T}
         window.addEventListener("keydown", saveShortcut)
         return () => {alive.current = false; clearTimeout(timer.current); flushLatest(); window.removeEventListener("beforeunload", leaving); window.removeEventListener("keydown", saveShortcut)}
     }, [])
-    const canEdit = canWrite && !["loading", "load-error", "conflict"].includes(status)
-    return {document, setDocument, status, error: countdown > 0 ? `Saving resumes in ${countdown}s. Your draft is kept locally and remains editable.` : error, canEdit, save: flush, retry: () => status === "load-error" ? void load() : void flush(), reload: () => void load(true),
+    const canEdit = canWrite && !initializing.current && !["loading", "load-error", "conflict"].includes(status)
+    return {document, hasDocument, initializeSdlc, setDocument, status, error: countdown > 0 ? `Saving resumes in ${countdown}s. Your draft is kept locally and remains editable.` : error, canEdit, save: flush, retry: () => status === "load-error" ? void load() : void flush(), reload: () => void load(true),
         undo, redo, canUndo: historyVersion >= 0 && past.current.length > 0, canRedo: future.current.length > 0, beginTransaction, endTransaction}
 }

@@ -1,5 +1,6 @@
 import {createClientId} from "@/lib/create-client-id"
-import type {ConnectionAnchor, ConnectionBindings, ConnectionCapability, ConnectionChoice, ConnectionDraft, ConnectionField, ConnectionNode, ConnectionNodeRef, ConnectionRule, ConnectionScope} from "./connections-api"
+import type {SavedToolDocument} from "../tool-documents-api"
+import type {ConnectionAnchor, ConnectionBindings, ConnectionCapability, ConnectionChoice, ConnectionDefinition, ConnectionDraft, ConnectionField, ConnectionNode, ConnectionNodeRef, ConnectionRule, ConnectionScope} from "./connections-api"
 
 export const toolLabels: Record<string, string> = {
     todo: "TODOs", erd: "ERD", calendar: "Calendar", "bug-reports": "Bug Reports", "ui-editor": "UI/UX Editor",
@@ -21,6 +22,26 @@ export const findCapability = (catalog: ConnectionCapability[], reference: Conne
 
 export function anchorNode({label, ...reference}: ConnectionAnchor): ConnectionNode {
     return {reference, label, path: toolLabels[nodeTool(reference.kind)] ?? label}
+}
+
+export type ConnectionSummary = Pick<ConnectionDefinition, "id" | "title" | "nodes" | "rules">
+
+export const todoCalendarConnection: ConnectionSummary = {
+    id: "todo-calendar",
+    title: "TODOs → Calendar",
+    nodes: [anchorNode({kind: "todo", label: toolLabels.todo}), anchorNode({kind: "calendar", label: toolLabels.calendar})],
+    rules: [],
+}
+
+export const sdlcTodoConnection: ConnectionSummary = {
+    id: "sdlc-todo",
+    title: "SDLC Roadmap → TODOs",
+    nodes: [anchorNode({kind: "sdlc", label: toolLabels.sdlc}), anchorNode({kind: "todo", label: toolLabels.todo})],
+    rules: [],
+}
+
+export function isSdlcTodoConnected(document: SavedToolDocument["document"] | undefined) {
+    return !!document && "connectToTodo" in document && document.connectToTodo === true
 }
 
 export function newConnectionDraft(anchor?: ConnectionAnchor): ConnectionDraft {

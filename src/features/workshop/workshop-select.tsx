@@ -3,22 +3,22 @@ import {Select} from "radix-ui"
 import {Check, ChevronDown} from "lucide-react"
 
 type Option = {value: string; label: ReactNode; text: string; disabled: boolean}
-type OptionProps = {value?: string | number; children?: ReactNode; disabled?: boolean}
+type OptionProps = {value?: string | number; children?: ReactNode; disabled?: boolean; "data-typeahead"?: string}
 function text(children: ReactNode): string {
     return Children.toArray(children).map(child => isValidElement<OptionProps>(child) ? text(child.props.children) : typeof child === "string" || typeof child === "number" ? String(child) : "").join("")
 }
 function optionsFrom(children: ReactNode, disabled = false): Option[] {
     return Children.toArray(children).flatMap(child => {
         if (!isValidElement<OptionProps>(child)) return []
-        if (child.type === "option") return [{value: String(child.props.value ?? text(child.props.children)), label: child.props.children, text: text(child.props.children), disabled: disabled || !!child.props.disabled}]
+        if (child.type === "option") return [{value: String(child.props.value ?? text(child.props.children)), label: child.props.children, text: child.props["data-typeahead"] ?? text(child.props.children), disabled: disabled || !!child.props.disabled}]
         return optionsFrom(child.props.children, disabled || !!child.props.disabled)
     })
 }
 
 /** A keyboard-accessible workshop select with a styleable, portalled option list. */
-export function WorkshopSelect({children, value, defaultValue, onValueChange, disabled, name, id, title, className, "aria-label": ariaLabel}: {
+export function WorkshopSelect({children, value, defaultValue, onValueChange, disabled, name, id, title, className, triggerCaption, "aria-label": ariaLabel}: {
     children: ReactNode; value?: string | number; defaultValue?: string | number; onValueChange?: (value: string) => void
-    disabled?: boolean; name?: string; id?: string; title?: string; className?: string; "aria-label"?: string
+    disabled?: boolean; name?: string; id?: string; title?: string; className?: string; triggerCaption?: ReactNode; "aria-label"?: string
 }) {
     const options = optionsFrom(children)
     const [localValue, setLocalValue] = useState(() => String(defaultValue ?? options[0]?.value ?? ""))
@@ -33,6 +33,7 @@ export function WorkshopSelect({children, value, defaultValue, onValueChange, di
         }}>
             <Select.Trigger id={id} title={title} aria-label={ariaLabel} data-workshop-select="" className={["workshop-select-trigger", className].filter(Boolean).join(" ")}>
                 <Select.Value placeholder="Choose…">{options[selectedIndex]?.label}</Select.Value>
+                {triggerCaption && <span className="workshop-select-caption" aria-hidden="true">{triggerCaption}</span>}
                 <Select.Icon className="workshop-select-icon"><ChevronDown aria-hidden="true"/></Select.Icon>
             </Select.Trigger>
             <Select.Portal><Select.Content className="workshop-select-menu workshop-scrollbar" position="popper" align="start" sideOffset={4} collisionPadding={8}>

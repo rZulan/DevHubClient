@@ -37,7 +37,7 @@ body:has(.workshop-shell) [data-radix-popper-content-wrapper] ::-webkit-scrollba
 .workshop-select-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workshop-select-icon { display: inline-flex; flex-shrink: 0; opacity: .65; }
 .workshop-select-icon svg { width: 12px; height: 12px; }
-.workshop-select-trigger:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.workshop-select-trigger:focus-visible { outline: 1px solid var(--ring); outline-offset: 1px; }
 .workshop-select-trigger:disabled { opacity: .5; cursor: not-allowed; }
 .workshop-select-menu { z-index: 100; width: var(--radix-select-trigger-width); min-width: min(180px, calc(100vw - 24px)); max-width: min(340px, calc(100vw - 24px)); max-height: min(320px, var(--radix-select-content-available-height)); padding: 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 24px #0002; overflow: hidden; }
 .workshop-select-viewport { max-height: min(310px, calc(var(--radix-select-content-available-height) - 10px)); scrollbar-gutter: stable; }

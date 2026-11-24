@@ -1,5 +1,7 @@
+import type {CSSProperties} from "react"
 import type {SdlcModel} from "./sdlc-models"
 import {SdlcWaterfallIllustration} from "./sdlc-waterfall-illustration"
+import {waterfallArtworkScale} from "./sdlc-waterfall-geometry"
 
 function VModelBird() {
     const wing = "M140 65C134 164 187 204 220 215C156 230 115 207 100 165C107 257 160 299 221 302C170 316 129 305 105 276C145 369 235 392 275 411C301 423 319 447 320 457C295 465 264 451 250 434C289 514 363 511 405 567C435 608 454 642 480 660M140 65C150 146 252 176 315 251C378 327 365 415 434 469C462 493 479 484 482 461"
@@ -19,7 +21,8 @@ function AgileHummingbird() {
     </g>
 }
 export function SdlcConstellationIllustration({model}: {model: Exclude<SdlcModel, "iterative">}) {
-    return <svg className={`sdlc-model-art sdlc-art-${model}`} viewBox="0 0 1000 900" fill="none" aria-hidden="true">
+    return <svg className={`sdlc-model-art sdlc-art-${model}`} viewBox="0 0 1000 900" fill="none" aria-hidden="true"
+        style={model === "waterfall" ? {"--sdlc-artwork-scale": waterfallArtworkScale} as CSSProperties : undefined}>
         {model === "waterfall" ? <SdlcWaterfallIllustration/> : model === "v-model" ? <VModelBird/> : <AgileHummingbird/>}
     </svg>
 }

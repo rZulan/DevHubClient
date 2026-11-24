@@ -1,6 +1,6 @@
 import {WorkshopToast} from "@/features/workshop/workshop-toast"
 import {WorkshopNoProject, WorkshopEmptyState} from "@/features/workshop/workshop-empty-state"
-import {type CSSProperties, type DragEvent, type FormEvent, useEffect, useLayoutEffect, useRef, useState} from "react"
+import {Fragment, type CSSProperties, type DragEvent, type FormEvent, useEffect, useLayoutEffect, useRef, useState} from "react"
 import {
     ArrowLeft,
     ArrowRight,
@@ -20,7 +20,7 @@ import {ConnectionLightning} from "@/features/workshop/connections/connection-li
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
-import {TodoAssignees} from "@/features/workshop/todo-assignees"
+import {WorkshopAssignees} from "@/features/workshop/workshop-assignees"
 import {TodoBoardSettings} from "@/features/workshop/todo-board-settings"
 import {TodoBoardProgress} from "@/features/workshop/todo-board-progress"
 import {TodoTaskCard} from "@/features/workshop/todo-task-card"
@@ -48,6 +48,19 @@ import {
 } from "@/features/workshop/todo-api"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 import "@/features/workshop/todo-board.css"
+
+type TaskPlacement = {columnId: string; position: number}
+
+function taskDropPosition(column: HTMLElement, taskId: string, clientY: number) {
+    let position = 0
+    for (const card of column.querySelectorAll(".workshop-task-list > .workshop-task")) {
+        if (card.id === `todo-task-${taskId}`) continue
+        const bounds = card.getBoundingClientRect()
+        if (clientY < bounds.top + bounds.height / 2) break
+        position++
+    }
+    return position
+}
 
 const formatDate = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
     year: "numeric",
@@ -170,12 +183,14 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
     const [draftAssignees, setDraftAssignees] = useState<string[]>([])
     const [addingTo, setAddingTo] = useState<string | null>(null)
     const [error, setError] = useState("")
-    const [draggedId, setDraggedId] = useState<string | null>(null)
-    const [dropColumn, setDropColumn] = useState<string | null>(null)
+    const [draggedTask, setDraggedTask] = useState<{id: string; todoId: string; boardRevision: number; height: number; origin: TaskPlacement} | null>(null)
+    const [dropTarget, setDropTarget] = useState<TaskPlacement | null>(null)
+    const dragPreviewPlacement = dropTarget ?? draggedTask?.origin
     const dragPreviewCleanup = useRef<(() => void) | null>(null)
     useEffect(() => () => dragPreviewCleanup.current?.(), [])
 
-    function startDrag(event: DragEvent<HTMLDivElement>, taskId: string) {
+    function startDrag(event: DragEvent<HTMLDivElement>, task: TodoTask, position: number) {
+        if (!selected) {event.preventDefault(); return}
         dragPreviewCleanup.current?.()
         const card = event.currentTarget
         const bounds = card.getBoundingClientRect()
@@ -186,6 +201,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         preview.classList.add("workshop-task-drag-preview")
         preview.inert = true
         preview.setAttribute("aria-hidden", "true")
+        preview.removeAttribute("id")
         preview.removeAttribute("draggable")
         preview.style.width = bounds.width + "px"
         preview.style.height = bounds.height + "px"
@@ -195,7 +211,7 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         const blank = document.createElement("canvas")
         blank.width = blank.height = 1
         event.dataTransfer.setDragImage(blank, 0, 0)
-        event.dataTransfer.setData("text/plain", taskId)
+        event.dataTransfer.setData("text/plain", task.id)
         event.dataTransfer.effectAllowed = "move"
         let lastX = event.clientX
         const move = (pointer: globalThis.DragEvent) => {
@@ -210,15 +226,22 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         const cleanup = () => {
             preview.remove()
             document.removeEventListener("dragover", move)
-            document.removeEventListener("drop", cleanup)
-            document.removeEventListener("dragend", cleanup)
+            document.removeEventListener("drop", endDrag)
+            document.removeEventListener("dragend", endDrag)
             dragPreviewCleanup.current = null
         }
         document.addEventListener("dragover", move)
-        document.addEventListener("drop", cleanup)
-        document.addEventListener("dragend", cleanup)
+        document.addEventListener("drop", endDrag)
+        document.addEventListener("dragend", endDrag)
         dragPreviewCleanup.current = cleanup
-        setDraggedId(taskId)
+        setDraggedTask({id: task.id, todoId: selected.id, boardRevision: selected.boardRevision, height: bounds.height,
+            origin: {columnId: task.status, position}})
+    }
+
+    function endDrag() {
+        dragPreviewCleanup.current?.()
+        setDraggedTask(null)
+        setDropTarget(null)
     }
 
     const saving = useRef(false)
@@ -315,16 +338,22 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
         }
     }
 
-    async function changeStatus(taskId: string, status: string) {
-        setDraggedId(null)
+    async function moveBoardTask(taskId: string, status: string, position?: number, boardRevision = selected?.boardRevision) {
         const task = selected?.tasks.find(t => t.id === taskId)
-        if (!selected || !task || task.status === status || !canManage || saving.current) return
+        if (!selected || !task || !canManage || saving.current) return
+        if (position !== undefined && boardRevision !== selected.boardRevision) {
+            setError("The board changed while you were dragging. Try again.")
+            return
+        }
+        if (task.status === status && (position === undefined || selected.tasks.filter(t => t.status === status).indexOf(task) === position)) return
         saving.current = true
         setError("")
         try {
-            await moveTask({...scope, todoId: selected.id, taskId, status}).unwrap()
-        } catch {
-            setError("The task could not be moved. Please try again.")
+            await moveTask({...scope, todoId: selected.id, taskId, status, position, boardRevision: position === undefined ? undefined : boardRevision}).unwrap()
+        } catch (error) {
+            setError(typeof error === "object" && error && "status" in error && error.status === 409
+                ? "The board changed before the move could be saved. Try again."
+                : "The task could not be moved. Please try again.")
         } finally {
             saving.current = false
         }
@@ -402,28 +431,37 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                         : selected ? (
                             <div className="workshop-board workshop-todo-board"
                                  style={{"--todo-column-count": columns.length} as CSSProperties}
+                                 data-dragging={draggedTask ? "" : undefined}
                                  aria-busy={busy || isFetching}>
                                 {columns.map(({id, name}, columnIndex) => {
                                     const isComplete = columnIndex === columns.length - 1
                                     const Icon = isComplete ? CheckCircle2 : columnIndex === 0 ? Circle : Clock3
                                     const tasks = selected.tasks.filter(t => t.status === id)
+                                    const preview = draggedTask?.todoId === selected.id && dragPreviewPlacement?.columnId === id ? dragPreviewPlacement : null
+                                    const insertBefore = preview ? tasks.filter(task => task.id !== draggedTask?.id)[preview.position]?.id : undefined
+                                    const dropSlot = preview && draggedTask && <div className="workshop-task-drop-slot" aria-hidden="true" style={{height: draggedTask.height}}/>
                                     return <section
-                                        className={`workshop-board-column${dropColumn === id && draggedId ? " workshop-board-column-drop" : ""}`}
+                                        className={`workshop-board-column${dropTarget?.columnId === id ? " workshop-board-column-drop" : ""}`}
                                         key={id}
                                         onDragOver={event => {
-                                            if (canManage && !busy && draggedId) {
-                                                event.preventDefault();
-                                                event.dataTransfer.dropEffect = "move";
-                                                setDropColumn(id)
-                                            }
+                                            if (!canManage || busy || draggedTask?.todoId !== selected.id) return
+                                            event.preventDefault()
+                                            event.dataTransfer.dropEffect = "move"
+                                            const position = taskDropPosition(event.currentTarget, draggedTask.id, event.clientY)
+                                            setDropTarget(current => current?.columnId === id && current.position === position ? current : {columnId: id, position})
                                         }}
                                         onDragLeave={event => {
-                                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropColumn(null)
+                                            const next = event.relatedTarget ?? document.elementFromPoint(event.clientX, event.clientY)
+                                            if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+                                                setDropTarget(current => current?.columnId === id ? null : current)
+                                            }
                                         }}
                                         onDrop={event => {
-                                            event.preventDefault();
-                                            setDropColumn(null);
-                                            if (draggedId) void changeStatus(draggedId, id)
+                                            if (!canManage || busy || draggedTask?.todoId !== selected.id) return
+                                            event.preventDefault()
+                                            const position = dropTarget?.columnId === id ? dropTarget.position : taskDropPosition(event.currentTarget, draggedTask.id, event.clientY)
+                                            endDrag()
+                                            void moveBoardTask(draggedTask.id, id, position, draggedTask.boardRevision)
                                         }}>
                                         <header id={`todo-column-${id}`} tabIndex={-1} className="connection-node-anchor">
                                             <span><Icon/><strong>{name}</strong><b>{tasks.length}</b></span>{isComplete &&
@@ -432,15 +470,20 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                             <ConnectionLightning node={{kind: "todo-column", id: id, parentId: selected.id, label: name}}/>
                                         </header>
                                         <div className="workshop-task-list" role="region" aria-label={`${name} tasks`} tabIndex={0}>
-                                            {tasks.map(task => <TodoTaskCard key={task.id} task={task} columns={columns} members={members} userId={userId}
-                                                canManage={canManage} disabled={busy || isFetching} dragging={draggedId === task.id}
-                                                onEdit={() => setEditing({task, boardRevision: selected.boardRevision})}
-                                                onDelete={() => setDeleting({task, boardRevision: selected.boardRevision})}
-                                                onDuplicate={() => void duplicateTask(task)} onMove={status => void changeStatus(task.id, status)}
-                                                onAssign={(id, remove) => void changeAssignee(task.id, id, remove)} onError={setError}
-                                                onDragStart={event => startDrag(event, task.id)} onDragEnd={() => {setDraggedId(null); setDropColumn(null)}}/>)}
-                                            {!tasks.length &&
-                                                <p className="workshop-todo-empty-column">No tasks yet</p>}
+                                            {tasks.map((task, index) => <Fragment key={task.id}>
+                                                {task.id === insertBefore && dropSlot}
+                                                <TodoTaskCard task={task} columns={columns} members={members} userId={userId}
+                                                    canManage={canManage} disabled={busy || isFetching} dragging={draggedTask?.id === task.id}
+                                                    onEdit={() => setEditing({task, boardRevision: selected.boardRevision})}
+                                                    onDelete={() => setDeleting({task, boardRevision: selected.boardRevision})}
+                                                    onDuplicate={() => void duplicateTask(task)} onMove={status => void moveBoardTask(task.id, status)}
+                                                    onMoveUp={index > 0 ? () => void moveBoardTask(task.id, id, index - 1) : undefined}
+                                                    onMoveDown={index < tasks.length - 1 ? () => void moveBoardTask(task.id, id, index + 1) : undefined}
+                                                    onAssign={(id, remove) => void changeAssignee(task.id, id, remove)} onError={setError}
+                                                    onDragStart={event => startDrag(event, task, index)} onDragEnd={endDrag}/>
+                                            </Fragment>)}
+                                            {!insertBefore && dropSlot}
+                                            {!tasks.length && !dropSlot && <p className="workshop-todo-empty-column">No tasks yet</p>}
                                         </div>
                                         {canManage &&
                                             <Button className="workshop-add-task" disabled={busy} variant="ghost"
@@ -512,8 +555,8 @@ function TodoPageContent({organization, project, isPersistedOrganization}: Works
                                                                           rows={3}/></Label>
                         <TodoDateFields key={creating ? "todo-dates" : "task-dates"}/>
                         {!creating && <div className="grid gap-2"><Label>Assignees <span>Optional</span></Label>
-                            <TodoAssignees ids={draftAssignees} members={members} editable disabled={busy}
-                                           taskTitle="new task"
+                            <WorkshopAssignees ids={draftAssignees} members={members} editable disabled={busy}
+                                               subject="new task"
                                            onAdd={id => setDraftAssignees(current => [...new Set([...current, id])])}
                                            onRemove={id => setDraftAssignees(current => current.filter(value => value !== id))}/>
                         </div>}

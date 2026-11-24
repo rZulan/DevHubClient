@@ -1,9 +1,15 @@
 import {iterativeReleasePhases, sdlcModelIds, sdlcModels, type SdlcModel, type SdlcPhase} from "./sdlc-models.ts"
-import {sdlcPhaseDone, type SdlcDocument, type SdlcPhaseWork, type SdlcProgress, type SdlcRelease} from "./sdlc-document.ts"
+import {sdlcDeliverables, sdlcPhaseDone, type SdlcDocument, type SdlcPhaseWork, type SdlcProgress, type SdlcRelease} from "./sdlc-document.ts"
 
-export function sdlcDeliverables(phase: SdlcPhase) {return phase.deliverables.split(", ").map(label => label.trim()).filter(Boolean)}
+export {sdlcDeliverables}
+
+export function sdlcAssignees(work?: SdlcPhaseWork) {return work?.assigneeIds ?? (work?.ownerId ? [work.ownerId] : [])}
+export function sdlcDeliverableDate(work: SdlcPhaseWork | undefined, label: string) {
+    const dates = work?.deliverableTargetDates
+    return dates && Object.hasOwn(dates, label) ? dates[label] : undefined
+}
 export function sdlcReadiness(phase: SdlcPhase, work?: SdlcPhaseWork) {
-    const items = sdlcDeliverables(phase), checked = new Set(work?.checked)
+    const items = sdlcDeliverables(phase, work), checked = new Set(work?.checked)
     return {items, done: items.filter(item => checked.has(item)).length, missing: items.filter(item => !checked.has(item)), blocked: work?.blocked === true}
 }
 export function sdlcPhaseState(phase: SdlcPhase, work: SdlcPhaseWork | undefined, done: boolean, current: boolean) {
@@ -31,10 +37,14 @@ export function sdlcMarkdown(document: SdlcDocument, project: string, owners: Re
             const work = progress.work?.[phase.id], done = release ? progress.completed || index < progress.currentPhase : sdlcPhaseDone({...progress, model}, index)
             const status = sdlcPhaseState(phase, work, done, !progress.completed && index === progress.currentPhase)
             lines.push(`### ${escape(phase.title)}`, "", `Status: **${status}**`, "")
-            if (work?.ownerId) lines.push(`Owner: ${escape(owners[work.ownerId] ?? "Former or unavailable member")}`, "")
+            const assignees = sdlcAssignees(work).map(id => escape(owners[id] ?? "Former or unavailable member"))
+            if (assignees.length) lines.push(`${work?.assigneeIds ? "Assignees" : "Owner"}: ${assignees.join(", ")}`, "")
             if (work?.targetDate) lines.push(`Target date: ${work.targetDate}`, "")
             if (work?.blocked) lines.push(`Blocker: ${escape(work.blocker || "Needs attention")}`, "")
-            lines.push(phase.description, "", "Deliverables:", "", ...sdlcDeliverables(phase).map(item => `- [${work?.checked?.includes(item) ? "x" : " "}] ${escape(item)}`), "")
+            lines.push(phase.description, "", "Deliverables:", "", ...sdlcDeliverables(phase, work).map(item => {
+                const target = sdlcDeliverableDate(work, item)
+                return `- [${work?.checked?.includes(item) ? "x" : " "}] ${escape(item)}${target ? ` (target ${target})` : ""}`
+            }), "")
             if (progress.notes[phase.id]) lines.push("Notes:", "", progress.notes[phase.id], "")
         }
     }

@@ -66,6 +66,7 @@ export type WorkshopTeam = {
 
 export type WorkshopProject = {
     githubRepositories?: import("./github-api").GitHubRepository[]
+    todoCalendarEnabled?: boolean
     id: string
     name: string
     summary: string
@@ -231,6 +232,7 @@ export type ApiTeam = {
 
 export type ApiProject = {
     gitHubRepositories?: import("./github-api").GitHubRepository[] | null
+    todoCalendarEnabled?: boolean
     id: string
     organizationId: string
     teamId: string

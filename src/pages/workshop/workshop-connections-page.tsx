@@ -4,6 +4,7 @@ import {WorkshopEmptyPage, WorkshopNoProject} from "@/features/workshop/workshop
 import {ConnectionCatalog} from "@/features/workshop/connections/connection-catalog"
 import {ConnectionLibrary, type ConnectionCarry} from "@/features/workshop/connections/connection-library"
 import {ConnectionRuns} from "@/features/workshop/connections/connection-runs"
+import {sdlcTodoConnection, todoCalendarConnection} from "@/features/workshop/connections/connections-model"
 import type {WorkshopOutletContext} from "@/layouts/workshop-layout"
 
 export function WorkshopConnectionsPage() {
@@ -15,6 +16,7 @@ export function WorkshopConnectionsPage() {
     const scope = {organizationId: organization.id, projectId: project.id}
     const carry = location.state as ConnectionCarry | null
     const connectionId = params.get("connection") ?? undefined
+    const runConnectionId = connectionId === todoCalendarConnection.id || connectionId === sdlcTodoConnection.id ? undefined : connectionId
     const rawView = params.get("view")
     const view = rawView === "catalog" || rawView === "runs" ? rawView : "connections"
     const tabs = [{id: "connections", label: "Connections"}, {id: "catalog", label: "Catalog"}, {id: "runs", label: "Run history"}] as const
@@ -37,13 +39,14 @@ export function WorkshopConnectionsPage() {
             <nav className="connections-tabs" aria-label="Connections views">{tabs.map(tab => {
                 const query = new URLSearchParams({project: scope.projectId})
                 if (tab.id !== "connections") query.set("view", tab.id)
-                if (connectionId) query.set("connection", connectionId)
+                const id = tab.id === "runs" ? runConnectionId : connectionId
+                if (id) query.set("connection", id)
                 return <Link key={tab.id} to={{search: `?${query}`}} aria-current={view === tab.id ? "page" : undefined}>{tab.label}</Link>
             })}</nav>
         </div>
         {view === "connections" && <ConnectionLibrary key={scope.projectId} scope={scope} initialDraft={carry?.projectId === scope.projectId ? carry.draft : undefined}
-            selection={connectionId ?? null} onSelect={select}/>}
+            selection={connectionId ?? null} onSelect={select} todoCalendarEnabled={project.todoCalendarEnabled !== false}/>}
         {view === "catalog" && <ConnectionCatalog scope={scope}/>}
-        {view === "runs" && <ConnectionRuns scope={scope} connectionId={connectionId} focusId={params.get("run") ?? undefined} onFilter={select}/>}
+        {view === "runs" && <ConnectionRuns scope={scope} connectionId={runConnectionId} focusId={params.get("run") ?? undefined} onFilter={select}/>}
     </div>
 }

@@ -50,6 +50,18 @@ export const connectionsApi = api.enhanceEndpoints({addTagTypes: ["Connections"]
         providesTags: (_data, _error, scope) => [connectionsTag(scope)],
     }),
     connectionAccess: builder.query<{canManage: boolean}, ConnectionScope>({query: scope => `${path(scope)}/access`}),
+    setTodoCalendarConnection: builder.mutation<boolean, ConnectionScope & {enabled: boolean}>({
+        query: ({enabled, ...scope}) => ({url: `${path(scope)}/todo-calendar`, method: "PUT", body: {enabled}}),
+        async onQueryStarted({organizationId, projectId}, {dispatch, queryFulfilled}) {
+            const saved = await queryFulfilled.then(({data}) => data, () => null)
+            if (saved === null) return
+            dispatch(api.util.updateQueryData("listProjects", organizationId, projects => {
+                const project = projects.find(item => item.id === projectId)
+                if (project) project.todoCalendarEnabled = saved
+            }))
+        },
+        invalidatesTags: (_data, error, {organizationId}) => error ? [] : [{type: "Projects", id: organizationId}],
+    }),
     connectionCatalog: builder.query<ConnectionCapability[], ConnectionScope>({query: scope => `${path(scope)}/catalog`}),
     connectionNodes: builder.query<ConnectionNode[], ConnectionScope & {q?: string; kind?: string; page?: number; id?: string; parentId?: string}>({
         query: ({q, kind, page, id, parentId, ...scope}) => ({url: `${path(scope)}/nodes`, params: {q, kind, page, id, parentId}}),
@@ -83,5 +95,5 @@ export const connectionsApi = api.enhanceEndpoints({addTagTypes: ["Connections"]
 
 export const {
     useListConnectionsQuery, useConnectionAccessQuery, useConnectionCatalogQuery, useConnectionNodesQuery,
-    useConnectionRunsQuery, useSaveConnectionMutation, useValidateConnectionMutation, useDeleteConnectionMutation,
+    useConnectionRunsQuery, useSaveConnectionMutation, useValidateConnectionMutation, useDeleteConnectionMutation, useSetTodoCalendarConnectionMutation,
 } = connectionsApi

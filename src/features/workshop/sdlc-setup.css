@@ -1,0 +1,39 @@
+.sdlc-setup-dialog .project-create-progress > ol { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sdlc-setup-dialog .project-create-body > h3:focus { outline: none; }
+.sdlc-setup-models { align-items: stretch; gap: 12px; }
+.sdlc-setup-choice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--background);
+    cursor: pointer;
+}
+.sdlc-setup-choice:hover:not(:has(> input:disabled)) { background: var(--accent); }
+.sdlc-setup-choice:has(> input:disabled) { cursor: default; }
+.sdlc-setup-choice:has(> input:checked) {
+    border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
+    background: color-mix(in oklab, var(--primary) 8%, var(--background));
+}
+.sdlc-setup-choice > input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--primary); }
+.sdlc-setup-choice > span { display: grid; gap: 4px; }
+.sdlc-setup-choice strong { color: var(--foreground); font-size: 13px; font-weight: 600; }
+.sdlc-setup-choice small { color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+.sdlc-setup-review { display: grid; gap: 16px; }
+.sdlc-setup-review dl { display: grid; gap: 8px; margin: 0; }
+.sdlc-setup-review dl > div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 12px; }
+.sdlc-setup-review dt { color: var(--muted-foreground); }
+.sdlc-setup-review dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.sdlc-setup-confirm { border-color: color-mix(in oklab, var(--destructive) 35%, var(--border)); }
+.sdlc-model-display .sdlc-reinitialize { grid-area: chevron; width: 28px; height: 28px; }
+.sdlc-model-display .sdlc-reinitialize:enabled { cursor: pointer; }
+.sdlc-model-display > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) {
+    .sdlc-model-display .sdlc-reinitialize { width: 24px; height: 24px; }
+    .sdlc-setup-dialog .project-create-footer { padding-inline: 12px; }
+    .sdlc-setup-dialog .project-create-footer > div { gap: 4px; }
+}

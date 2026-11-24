@@ -25,7 +25,7 @@ export const iterativeReleasePhases: readonly SdlcPhase[] = [waterfallPhases[4],
 export const sdlcModels: Record<SdlcModel, SdlcDefinition> = {
     waterfall: {
         title: "Waterfall", color: "#6fcbd7", summary: "Approve each stage before the next. Verification failures return to implementation for correction and retesting.", guidance: "Requirements → design → implementation → verification → deployment → maintenance. Reviews and test planning start early; system testing follows the build. Rework revisits an earlier stage and invalidates later completion while preserving its notes.", sources: [lifecycleSource, testingSource], phases: waterfallPhases,
-        positions: waterfallLandings.slice(0, 6).map((point, index) => ({...point,
+        positions: waterfallLandings.map((point, index) => ({...point,
             label: index % 2 ? "right" : "left",
         })),
     },

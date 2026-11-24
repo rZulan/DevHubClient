@@ -1,18 +1,19 @@
 import {useRef, type DragEvent} from "react"
-import {ChevronsLeft, ChevronsRight, Copy, Pencil, Trash2, UserRound, CheckCircle2, GripHorizontal, Ellipsis} from "lucide-react"
+import {ArrowDown, ArrowUp, ChevronsLeft, ChevronsRight, Copy, Pencil, Trash2, UserRound, CheckCircle2, GripHorizontal, Ellipsis} from "lucide-react"
 import {Card} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent} from "@/components/ui/context-menu"
 import {DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent} from "@/components/ui/dropdown-menu"
-import {TodoAssignees} from "./todo-assignees"
+import {WorkshopAssignees} from "./workshop-assignees"
 import {ConnectionLightning} from "./connections/connection-lightning"
 import {todoDateLabel} from "./todo-schedule"
 import type {TodoTask, TodoColumn} from "./todo-api"
 import type {WorkshopMember} from "./workshop-types"
 
-export function TodoTaskCard({task, columns, members, userId, canManage, disabled, dragging, onEdit, onDuplicate, onDelete, onMove, onAssign, onError, onDragStart, onDragEnd}: {
+export function TodoTaskCard({task, columns, members, userId, canManage, disabled, dragging, onEdit, onDuplicate, onDelete, onMove, onMoveUp, onMoveDown, onAssign, onError, onDragStart, onDragEnd}: {
     task: TodoTask; columns: TodoColumn[]; members: WorkshopMember[]; userId?: string; canManage: boolean; disabled: boolean; dragging?: boolean
     onEdit: () => void; onDuplicate: () => void; onDelete: () => void; onMove: (status: string) => void
+    onMoveUp?: () => void; onMoveDown?: () => void
     onAssign: (id: string, remove: boolean) => void; onError: (message: string) => void
     onDragStart?: (event: DragEvent<HTMLDivElement>) => void; onDragEnd?: () => void
 }) {
@@ -37,6 +38,10 @@ export function TodoTaskCard({task, columns, members, userId, canManage, disable
                 <Sub><SubTrigger disabled={disabled}>Move to</SubTrigger><SubContent>
                     {columns.map(column => <Item key={column.id} disabled={task.status === column.id} onSelect={() => onMove(column.id)}>{column.name}</Item>)}
                 </SubContent></Sub>
+                {(onMoveUp || onMoveDown) && <>
+                    <Item disabled={disabled || !onMoveUp} onSelect={onMoveUp}><ArrowUp className="size-4"/> Move up</Item>
+                    <Item disabled={disabled || !onMoveDown} onSelect={onMoveDown}><ArrowDown className="size-4"/> Move down</Item>
+                </>}
                 {complete && task.status !== complete.id && <Item disabled={disabled} onSelect={() => onMove(complete.id)}><CheckCircle2 className="size-4"/> Mark complete</Item>}
                 {userId && members.some(member => member.id === userId) && <Item disabled={disabled} onSelect={() => onAssign(userId, ids.includes(userId))}><UserRound className="size-4"/>{ids.includes(userId) ? "Unassign me" : "Assign to me"}</Item>}
                 <Separator/>
@@ -60,12 +65,12 @@ export function TodoTaskCard({task, columns, members, userId, canManage, disable
         </div>
         {task.description && <p>{task.description}</p>}
         {task.targetDate && <span className="workshop-task-dates" data-completed={task.status === complete?.id}>{todoDateLabel(task)}</span>}
-        <TodoAssignees ids={ids} members={members} editable={canManage} disabled={disabled} taskTitle={task.title}
+        <WorkshopAssignees ids={ids} members={members} editable={canManage} disabled={disabled} subject={task.title}
             onAdd={id => onAssign(id, false)} onRemove={id => onAssign(id, true)}/>
         {canManage && <>
             {previous && <Button aria-label={`Move ${task.title} to ${previous.name}`} title={`Move to ${previous.name}`} className="workshop-task-edge workshop-task-edge-left" disabled={disabled} variant="ghost" onClick={() => onMove(previous.id)}><ChevronsLeft/></Button>}
             {next && <Button aria-label={`Move ${task.title} to ${next.name}`} title={`Move to ${next.name}`} className="workshop-task-edge workshop-task-edge-right" disabled={disabled} variant="ghost" onClick={() => onMove(next.id)}><ChevronsRight/></Button>}
-            <span className="workshop-task-drag-handle" title="Drag task to another column" aria-hidden="true"><GripHorizontal/></span>
+            <span className="workshop-task-drag-handle" title="Drag to reorder or move to another column" aria-hidden="true"><GripHorizontal/></span>
         </>}
     </Card></ContextMenuTrigger>
         <ContextMenuContent onCloseAutoFocus={closeMenu}>{items()}</ContextMenuContent>

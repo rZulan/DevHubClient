@@ -1,6 +1,6 @@
-import type {ConnectionDefinition, ConnectionNode} from "./connections-api"
+import type {ConnectionNode} from "./connections-api"
 import {projectVertex, type Edge, type Graph, type Point} from "./connection-graph-layout"
-import {nodeKey} from "./connections-model"
+import {nodeKey, type ConnectionSummary} from "./connections-model"
 
 type Item = {node: ConnectionNode; connections: Set<string>; neighbors: Set<string>}
 type Link = {a: string; b: string; connections: Set<string>}
@@ -61,7 +61,7 @@ function projectPositions(items: Map<string, Item>) {
     return positions
 }
 
-export function projectConnectionGraph(connections: ConnectionDefinition[], selected: ProjectMapSelection | null,
+export function projectConnectionGraph(connections: ConnectionSummary[], selected: ProjectMapSelection | null,
     select: (selection: ProjectMapSelection) => void): Graph {
     const items = new Map<string, Item>()
     const links = new Map<string, Link>()
